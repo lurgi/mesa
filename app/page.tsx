@@ -1,4 +1,4 @@
-import Canvas from "@/components/Canvas";
+import { Canvas } from "@/components/Canvas/Canvas";
 import Sidebar from "@/components/SIdebar/Sidebar";
 
 export default function TypographyEditor() {
