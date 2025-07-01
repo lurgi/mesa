@@ -59,23 +59,23 @@ export function BaseCanvas({
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-sm font-medium text-gray-700">캔버스 컨트롤</span>
+            <span className="text-sm font-medium text-gray-700">Canvas Controls</span>
           </div>
 
           <div className="space-y-2 text-xs text-gray-600">
             <div className="flex items-center gap-2">
               <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Space</kbd>
-              <span>+ 드래그로 캔버스 이동</span>
+              <span>+ drag to move canvas</span>
             </div>
             <div className="flex items-center gap-2">
-              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Ctrl</kbd>
-              <span>+ 휠로 줌 인/아웃</span>
+              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Ctrl/Command</kbd>
+              <span>+ wheel to zoom in/out</span>
             </div>
           </div>
 
           <div className="pt-2 border-t border-gray-100">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">현재 줌</span>
+              <span className="text-xs text-gray-500">Current Zoom</span>
               <span className="text-sm font-semibold text-gray-700">{Math.round(transform.scale * 100)}%</span>
             </div>
             <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
@@ -134,7 +134,7 @@ function ZoomControl({
         }`}
         onClick={handleZoomIn}
         disabled={isMaxZoom}
-        title={isMaxZoom ? "최대 줌 도달" : "줌 인"}
+        title={isMaxZoom ? "Maximum zoom reached" : "Zoom in"}
       >
         +
       </button>
@@ -146,14 +146,14 @@ function ZoomControl({
         }`}
         onClick={handleZoomOut}
         disabled={isMinZoom}
-        title={isMinZoom ? "최소 줌 도달" : "줌 아웃"}
+        title={isMinZoom ? "Minimum zoom reached" : "Zoom out"}
       >
         -
       </button>
       <button
         className="w-10 h-10 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors text-xs"
         onClick={handleResetZoom}
-        title="줌 리셋"
+        title="Reset zoom"
       >
         ⌂
       </button>
