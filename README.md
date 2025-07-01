@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# 🧑‍🎨 Mesa
 
-First, run the development server:
+**Simple but Professional**  
+텍스트 로고 제작 전용 웹앱
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+</div>
+
+## 🎯 개요
+
+Mesa는 브랜드 로고 제작을 위한 특화된 도구입니다. 복잡한 디자인 프로그램의 무거움을 버리고, 오직 텍스트 로고 커스터마이징에만 집중했습니다.
+
+## ✨ 주요 특징
+
+| 기능                  | 설명                                 |
+| --------------------- | ------------------------------------ |
+| **초정밀 자간 조절**  | 마우스 드래그만으로 완벽한 자간 설정 |
+| **직관적 인터페이스** | 두 가지 모드로 간단하게 편집         |
+| **실시간 벡터 편집**  | 크기와 품질의 제약 없는 로고 제작    |
+| **즉시 다운로드**     | SVG, PNG, JPG 다양한 형식 지원       |
+
+## 💡 왜 Mesa인가?
+
+> 기존의 피그마나 일러스트레이터는 강력하지만 텍스트 로고 하나 만들기엔 너무 복잡합니다.  
+> Mesa는 "텍스트 로고"라는 하나의 목적을 위해 설계된 전문 도구입니다.
+
+## 🛠 워크플로우
+
+### 📝 Type Stage
+
+- 직관적인 폰트 선택
+- Weight 및 Slant 기본 설정
+
+### 🎨 Edit Stage
+
+- **자간 조절 모드** › 정밀한 글자 간격 조정
+- **개별 편집 모드** › 글자별 세부 커스터마이징
+- **고급 스타일링** › Radius, Stroke, 색상 등
+
+## 🚀 Quick Start
+
+```
+1. 텍스트 입력 → 브랜드명을 입력하고 폰트를 선택
+2. 자간 조절 → 글자 사이 핸들을 드래그해서 완벽한 간격 설정
+3. 디테일 조정 → 개별 글자의 크기, 위치, 스타일을 자유롭게 편집
+4. 다운로드 → 원하는 형식으로 즉시 다운로드
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+<div align="center">
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Mesa로 당신만의 완벽한 텍스트 로고를 만들어보세요**
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</div>
