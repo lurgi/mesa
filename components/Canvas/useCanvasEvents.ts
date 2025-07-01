@@ -83,23 +83,107 @@ export function useCanvasEvents({
     setIsPanning(false);
   }, []);
 
-  const handleZoomIn = useCallback(() => {
-    const newScale = Math.min(maxZoom, transform.scale * 1.2);
-    if (newScale === maxZoom && transform.scale === maxZoom) {
-      showZoomFeedback(`최대 줌: ${Math.round(maxZoom * 100)}%`);
-      return;
-    }
-    setTransform((prev) => ({ ...prev, scale: newScale }));
-  }, [transform.scale, maxZoom, showZoomFeedback]);
+  // Zoom관련 함수
+  const handleZoomIn = useCallback(
+    (centerX?: number, centerY?: number) => {
+      const newScale = Math.min(maxZoom, transform.scale * 1.2);
+      if (newScale === maxZoom && transform.scale === maxZoom) {
+        showZoomFeedback(`최대 줌: ${Math.round(maxZoom * 100)}%`);
+        return;
+      }
 
-  const handleZoomOut = useCallback(() => {
-    const newScale = Math.max(minZoom, transform.scale * 0.8);
-    if (newScale === minZoom && transform.scale === minZoom) {
-      showZoomFeedback(`최소 줌: ${Math.round(minZoom * 100)}%`);
-      return;
-    }
-    setTransform((prev) => ({ ...prev, scale: newScale }));
-  }, [transform.scale, minZoom, showZoomFeedback]);
+      if (centerX !== undefined && centerY !== undefined) {
+        const scaleRatio = newScale / transform.scale;
+        const newX = centerX - (centerX - transform.x) * scaleRatio;
+        const newY = centerY - (centerY - transform.y) * scaleRatio;
+
+        setTransform({
+          x: newX,
+          y: newY,
+          scale: newScale,
+        });
+      } else {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const canvasCenterX = rect.width / 2;
+          const canvasCenterY = rect.height / 2;
+          const scaleRatio = newScale / transform.scale;
+          const newX = canvasCenterX - (canvasCenterX - transform.x) * scaleRatio;
+          const newY = canvasCenterY - (canvasCenterY - transform.y) * scaleRatio;
+
+          setTransform({
+            x: newX,
+            y: newY,
+            scale: newScale,
+          });
+        } else {
+          setTransform((prev) => ({ ...prev, scale: newScale }));
+        }
+      }
+    },
+    [transform, maxZoom, showZoomFeedback]
+  );
+
+  const handleZoomOut = useCallback(
+    (centerX?: number, centerY?: number) => {
+      const newScale = Math.max(minZoom, transform.scale * 0.8);
+      if (newScale === minZoom && transform.scale === minZoom) {
+        showZoomFeedback(`최소 줌: ${Math.round(minZoom * 100)}%`);
+        return;
+      }
+
+      if (centerX !== undefined && centerY !== undefined) {
+        const scaleRatio = newScale / transform.scale;
+        const newX = centerX - (centerX - transform.x) * scaleRatio;
+        const newY = centerY - (centerY - transform.y) * scaleRatio;
+
+        setTransform({
+          x: newX,
+          y: newY,
+          scale: newScale,
+        });
+      } else {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const canvasCenterX = rect.width / 2;
+          const canvasCenterY = rect.height / 2;
+          const scaleRatio = newScale / transform.scale;
+          const newX = canvasCenterX - (canvasCenterX - transform.x) * scaleRatio;
+          const newY = canvasCenterY - (canvasCenterY - transform.y) * scaleRatio;
+
+          setTransform({
+            x: newX,
+            y: newY,
+            scale: newScale,
+          });
+        } else {
+          setTransform((prev) => ({ ...prev, scale: newScale }));
+        }
+      }
+    },
+    [transform, minZoom, showZoomFeedback]
+  );
+
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (e.deltaY > 0) {
+          handleZoomOut(mouseX, mouseY);
+        } else {
+          handleZoomIn(mouseX, mouseY);
+        }
+      }
+    },
+    [handleZoomIn, handleZoomOut]
+  );
 
   const handleResetZoom = useCallback(() => {
     setTransform({ x: 0, y: 0, scale: 1 });
@@ -126,6 +210,7 @@ export function useCanvasEvents({
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handleWheel,
     handleZoomIn,
     handleZoomOut,
     handleResetZoom,

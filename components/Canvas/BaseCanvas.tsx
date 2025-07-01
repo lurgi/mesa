@@ -18,6 +18,7 @@ export function BaseCanvas({
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handleWheel,
     handleZoomIn,
     handleZoomOut,
     handleResetZoom,
@@ -36,6 +37,7 @@ export function BaseCanvas({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
         style={{
           backgroundImage: `radial-gradient(circle, #D2D6DB 1px, transparent 1px)`,
           backgroundSize: "20px 20px",
@@ -43,25 +45,51 @@ export function BaseCanvas({
         }}
       >
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 w-[2000px] h-[1500px] max-w-[4000px] max-h-[3000px]"
           style={{
             transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-            minWidth: "2000px",
-            minHeight: "1500px",
-            maxWidth: "4000px",
-            maxHeight: "3000px",
+            transformOrigin: "0 0",
           }}
         >
           {children}
         </div>
       </div>
 
-      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg text-sm text-gray-600">
-        <div className="space-y-1">
-          <div>스페이스바 + 드래그: 캔버스 이동</div>
-          <div>Ctrl/Cmd + 휠: 줌 인/아웃</div>
-          <div className="text-xs text-gray-400 mt-2">
-            줌: {Math.round(transform.scale * 100)}% ({Math.round(minZoom * 100)}%~{Math.round(maxZoom * 100)}%)
+      <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-xl border border-gray-100">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <span className="text-sm font-medium text-gray-700">캔버스 컨트롤</span>
+          </div>
+
+          <div className="space-y-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Space</kbd>
+              <span>+ 드래그로 캔버스 이동</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Ctrl</kbd>
+              <span>+ 휠로 줌 인/아웃</span>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">현재 줌</span>
+              <span className="text-sm font-semibold text-gray-700">{Math.round(transform.scale * 100)}%</span>
+            </div>
+            <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+              <div
+                className="bg-blue-500 h-1.5 rounded-full transition-all duration-200"
+                style={{
+                  width: `${((transform.scale - minZoom) / (maxZoom - minZoom)) * 100}%`,
+                }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>{Math.round(minZoom * 100)}%</span>
+              <span>{Math.round(maxZoom * 100)}%</span>
+            </div>
           </div>
         </div>
       </div>
