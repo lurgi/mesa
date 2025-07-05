@@ -1,5 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import React from "react";
 import type { CanvasTransform } from "@/src/domain/canvas";
+
+const ZOOM_IN_RATIO = 1.04;
+const ZOOM_OUT_RATIO = 2 - ZOOM_IN_RATIO;
 
 export function useCanvasEvents({
   minZoom = 0.25,
@@ -12,59 +15,49 @@ export function useCanvasEvents({
   initialTransform?: Partial<CanvasTransform>;
   onTransformChange?: (transform: CanvasTransform) => void;
 }) {
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const [isPanning, setIsPanning] = useState(false);
-  const [isSpacePressed, setIsSpacePressed] = useState(false);
-  const [transform, setTransform] = useState<CanvasTransform>({
+  const canvasRef = React.useRef<HTMLDivElement>(null);
+  const [isPanning, setIsPanning] = React.useState(false);
+  const [isSpacePressed, setIsSpacePressed] = React.useState(false);
+  const [transform, setTransform] = React.useState<CanvasTransform>({
     x: 0,
     y: 0,
     scale: 1,
     ...initialTransform,
   });
-  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [lastMousePos, setLastMousePos] = React.useState({ x: 0, y: 0 });
 
-  const showZoomFeedback = useCallback((message: string) => {
-    setFeedbackMessage(message);
-    // 3초 후에 feedback message를 리셋
-    setTimeout(() => {
-      setFeedbackMessage(null);
-    }, 3000);
-  }, []);
+  // Zoom 이벤트 훅 사용
+  const { feedbackMessage, handleZoomIn, handleZoomOut, handleWheel, handleResetZoom, isMinZoom, isMaxZoom } =
+    useCanvasZoomEvents({
+      minZoom,
+      maxZoom,
+      transform,
+      setTransform,
+      canvasRef,
+    });
 
-  useEffect(() => {
+  // Key 이벤트 훅 사용
+  useCanvasKeyEvents({
+    isSpacePressed,
+    setIsSpacePressed,
+    setIsPanning,
+  });
+
+  React.useEffect(() => {
     onTransformChange?.(transform);
   }, [transform, onTransformChange]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.code === "Space" && !isSpacePressed && document.activeElement?.tagName !== "INPUT") {
-        e.preventDefault();
-        setIsSpacePressed(true);
-      }
-    },
-    [isSpacePressed]
-  );
-
-  const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    if (e.code === "Space") {
-      e.preventDefault();
-      setIsSpacePressed(false);
-      setIsPanning(false);
-    }
-  }, []);
-
-  const handleMouseDown = useCallback(
+  const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
       if (isSpacePressed) {
         setIsPanning(true);
         setLastMousePos({ x: e.clientX, y: e.clientY });
       }
     },
-    [isSpacePressed]
+    [isSpacePressed, setIsPanning]
   );
 
-  const handleMouseMove = useCallback(
+  const handleMouseMove = React.useCallback(
     (e: React.MouseEvent) => {
       if (isPanning && isSpacePressed) {
         const deltaX = e.clientX - lastMousePos.x;
@@ -79,17 +72,57 @@ export function useCanvasEvents({
         setLastMousePos({ x: e.clientX, y: e.clientY });
       }
     },
-    [isPanning, isSpacePressed, lastMousePos]
+    [isPanning, isSpacePressed, lastMousePos, setTransform]
   );
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = React.useCallback(() => {
     setIsPanning(false);
+  }, [setIsPanning]);
+
+  return {
+    canvasRef,
+    isPanning,
+    isSpacePressed,
+    transform,
+    feedbackMessage,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleWheel,
+    handleZoomIn,
+    handleZoomOut,
+    handleResetZoom,
+    isMinZoom,
+    isMaxZoom,
+  };
+}
+
+function useCanvasZoomEvents({
+  minZoom = 0.25,
+  maxZoom = 4,
+  transform,
+  setTransform,
+  canvasRef,
+}: {
+  minZoom?: number;
+  maxZoom?: number;
+  transform: CanvasTransform;
+  setTransform: React.Dispatch<React.SetStateAction<CanvasTransform>>;
+  canvasRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [feedbackMessage, setFeedbackMessage] = React.useState<string | null>(null);
+
+  const showZoomFeedback = React.useCallback((message: string) => {
+    setFeedbackMessage(message);
+    // 3초 후에 feedback message를 리셋
+    setTimeout(() => {
+      setFeedbackMessage(null);
+    }, 3000);
   }, []);
 
-  // Zoom관련 함수
-  const handleZoomIn = useCallback(
+  const handleZoomIn = React.useCallback(
     (centerX?: number, centerY?: number) => {
-      const newScale = Math.min(maxZoom, transform.scale * 1.2);
+      const newScale = Math.min(maxZoom, transform.scale * ZOOM_IN_RATIO);
       if (newScale === maxZoom && transform.scale === maxZoom) {
         showZoomFeedback(`최대 줌: ${Math.round(maxZoom * 100)}%`);
         return;
@@ -124,12 +157,12 @@ export function useCanvasEvents({
         }
       }
     },
-    [transform, maxZoom, showZoomFeedback]
+    [transform, maxZoom, showZoomFeedback, setTransform, canvasRef]
   );
 
-  const handleZoomOut = useCallback(
+  const handleZoomOut = React.useCallback(
     (centerX?: number, centerY?: number) => {
-      const newScale = Math.max(minZoom, transform.scale * 0.8);
+      const newScale = Math.max(minZoom, transform.scale * ZOOM_OUT_RATIO);
       if (newScale === minZoom && transform.scale === minZoom) {
         showZoomFeedback(`최소 줌: ${Math.round(minZoom * 100)}%`);
         return;
@@ -164,10 +197,10 @@ export function useCanvasEvents({
         }
       }
     },
-    [transform, minZoom, showZoomFeedback]
+    [transform, minZoom, showZoomFeedback, setTransform, canvasRef]
   );
 
-  const handleWheel = useCallback(
+  const handleWheel = React.useCallback(
     (e: React.WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
@@ -188,11 +221,55 @@ export function useCanvasEvents({
     [handleZoomIn, handleZoomOut]
   );
 
-  const handleResetZoom = useCallback(() => {
+  const handleResetZoom = React.useCallback(() => {
     setTransform({ x: 0, y: 0, scale: 1 });
-  }, []);
+  }, [setTransform]);
 
-  useEffect(() => {
+  const isMinZoom = transform.scale <= minZoom;
+  const isMaxZoom = transform.scale >= maxZoom;
+
+  return {
+    feedbackMessage,
+    handleZoomIn,
+    handleZoomOut,
+    handleWheel,
+    handleResetZoom,
+    isMinZoom,
+    isMaxZoom,
+  };
+}
+
+function useCanvasKeyEvents({
+  isSpacePressed,
+  setIsSpacePressed,
+  setIsPanning,
+}: {
+  isSpacePressed: boolean;
+  setIsSpacePressed: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsPanning: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  const handleKeyDown = React.useCallback(
+    (e: KeyboardEvent) => {
+      if (e.code === "Space" && !isSpacePressed && document.activeElement?.tagName !== "INPUT") {
+        e.preventDefault();
+        setIsSpacePressed(true);
+      }
+    },
+    [isSpacePressed, setIsSpacePressed]
+  );
+
+  const handleKeyUp = React.useCallback(
+    (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        setIsSpacePressed(false);
+        setIsPanning(false);
+      }
+    },
+    [setIsSpacePressed, setIsPanning]
+  );
+
+  React.useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     return () => {
@@ -200,24 +277,4 @@ export function useCanvasEvents({
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [handleKeyDown, handleKeyUp]);
-
-  const isMinZoom = transform.scale <= minZoom;
-  const isMaxZoom = transform.scale >= maxZoom;
-
-  return {
-    canvasRef,
-    isPanning,
-    isSpacePressed,
-    transform,
-    feedbackMessage,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-    handleWheel,
-    handleZoomIn,
-    handleZoomOut,
-    handleResetZoom,
-    isMinZoom,
-    isMaxZoom,
-  };
 }
