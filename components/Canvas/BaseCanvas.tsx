@@ -1,6 +1,6 @@
 import React from "react";
 import { useCanvasEvents } from "./useCanvasEvents";
-import type { CanvasProps } from "@/src/domain/canvas";
+import type { CanvasProps, CanvasTransform } from "@/src/domain/canvas";
 import { useToast } from "@/components/Toaster/useToast";
 
 export function BaseCanvas({
@@ -69,44 +69,7 @@ export function BaseCanvas({
         </div>
       </div>
 
-      <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-xl border border-gray-100">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-sm font-medium text-gray-700">Canvas Controls</span>
-          </div>
-
-          <div className="space-y-2 text-xs text-gray-600">
-            <div className="flex items-center gap-2">
-              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Space</kbd>
-              <span>+ drag to move canvas</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Ctrl/Command</kbd>
-              <span>+ wheel to zoom in/out</span>
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-gray-100">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Current Zoom</span>
-              <span className="text-sm font-semibold text-gray-700">{Math.round(transform.scale * 100)}%</span>
-            </div>
-            <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
-              <div
-                className="bg-blue-500 h-1.5 rounded-full transition-all duration-200"
-                style={{
-                  width: `${((transform.scale - minZoom) / (maxZoom - minZoom)) * 100}%`,
-                }}
-              ></div>
-            </div>
-            <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>{Math.round(minZoom * 100)}%</span>
-              <span>{Math.round(maxZoom * 100)}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ZoomHelper transform={transform} minZoom={minZoom} maxZoom={maxZoom} />
 
       <ZoomControl
         isMaxZoom={isMaxZoom}
@@ -115,6 +78,55 @@ export function BaseCanvas({
         handleZoomOut={handleZoomOut}
         handleResetZoom={handleResetZoom}
       />
+    </div>
+  );
+}
+
+interface ZoomHelperProps {
+  transform: CanvasTransform;
+  minZoom: number;
+  maxZoom: number;
+}
+
+function ZoomHelper({ transform, minZoom, maxZoom }: ZoomHelperProps) {
+  return (
+    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-xl border border-gray-100">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <span className="text-sm font-medium text-gray-700">Canvas Controls</span>
+        </div>
+
+        <div className="space-y-2 text-xs text-gray-600">
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Space</kbd>
+            <span>+ drag to move canvas</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Ctrl/Command</kbd>
+            <span>+ wheel to zoom in/out</span>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Current Zoom</span>
+            <span className="text-sm font-semibold text-gray-700">{Math.round(transform.scale * 100)}%</span>
+          </div>
+          <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+            <div
+              className="bg-blue-500 h-1.5 rounded-full transition-all duration-200"
+              style={{
+                width: `${((transform.scale - minZoom) / (maxZoom - minZoom)) * 100}%`,
+              }}
+            ></div>
+          </div>
+          <div className="flex justify-between text-xs text-gray-400 mt-1">
+            <span>{Math.round(minZoom * 100)}%</span>
+            <span>{Math.round(maxZoom * 100)}%</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
