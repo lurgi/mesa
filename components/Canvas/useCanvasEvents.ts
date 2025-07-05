@@ -1,5 +1,6 @@
 import React from "react";
 import { CONSTRAIN_CANVAS_SIZE, type CanvasTransform } from "@/src/domain/canvas";
+import { useState, useEffect, useCallback } from "react";
 
 const ZOOM_IN_RATIO = 1.04;
 const ZOOM_OUT_RATIO = 2 - ZOOM_IN_RATIO;
@@ -7,26 +8,24 @@ const ZOOM_OUT_RATIO = 2 - ZOOM_IN_RATIO;
 export function useCanvasEvents({
   minZoom = 0.25,
   maxZoom = 4,
-  initialTransform = {},
   onTransformChange,
 }: {
   minZoom?: number;
   maxZoom?: number;
-  initialTransform?: Partial<CanvasTransform>;
   onTransformChange?: (transform: CanvasTransform) => void;
 }) {
   const canvasRef = React.useRef<HTMLDivElement>(null);
-  const [isPanning, setIsPanning] = React.useState(false);
-  const [isSpacePressed, setIsSpacePressed] = React.useState(false);
-  const [transform, setTransform] = React.useState<CanvasTransform>({
-    x: 0,
-    y: 0,
-    scale: 1,
-    ...initialTransform,
-  });
-  const [lastMousePos, setLastMousePos] = React.useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
 
-  const constrainTransform = React.useCallback((newTransform: CanvasTransform) => {
+  const [transform, setTransform] = useState<CanvasTransform>({
+    x: -CONSTRAIN_CANVAS_SIZE.width / 2,
+    y: -CONSTRAIN_CANVAS_SIZE.height / 2,
+    scale: 1,
+  });
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+
+  const constrainTransform = useCallback((newTransform: CanvasTransform) => {
     if (!canvasRef.current) return newTransform;
 
     const rect = canvasRef.current.getBoundingClientRect();
@@ -51,7 +50,7 @@ export function useCanvasEvents({
     };
   }, []);
 
-  const setTransformWithConstraints = React.useCallback(
+  const setTransformWithConstraints = useCallback(
     (newTransform: CanvasTransform | ((prev: CanvasTransform) => CanvasTransform)) => {
       setTransform((prev) => {
         const next = typeof newTransform === "function" ? newTransform(prev) : newTransform;
@@ -85,7 +84,7 @@ export function useCanvasEvents({
     setTransform: setTransformWithConstraints,
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     onTransformChange?.(transform);
   }, [transform, onTransformChange]);
 
@@ -178,7 +177,6 @@ function useCanvasZoomEvents({
 
   const showZoomFeedback = React.useCallback((message: string) => {
     setFeedbackMessage(message);
-    // 3초 후에 feedback message를 리셋
     setTimeout(() => {
       setFeedbackMessage(null);
     }, 3000);
@@ -285,8 +283,12 @@ function useCanvasZoomEvents({
     [handleZoomIn, handleZoomOut]
   );
 
-  const handleResetZoom = React.useCallback(() => {
-    setTransform({ x: 0, y: 0, scale: 1 });
+  const handleResetZoom = useCallback(() => {
+    setTransform({
+      x: -CONSTRAIN_CANVAS_SIZE.width / 2,
+      y: -CONSTRAIN_CANVAS_SIZE.height / 2,
+      scale: 1,
+    });
   }, [setTransform]);
 
   const isMinZoom = transform.scale <= minZoom;

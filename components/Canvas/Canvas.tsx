@@ -1,18 +1,12 @@
 "use client";
 
-import type React from "react";
+import React from "react";
 import { BaseCanvas } from "./BaseCanvas";
 import { CanvasElement } from "./CanvasElement";
 
 export function Canvas() {
   return (
-    <BaseCanvas
-      minZoom={0.25}
-      maxZoom={4}
-      onTransformChange={(transform) => {
-        console.log("Transform changed:", transform);
-      }}
-    >
+    <BaseCanvas>
       <CanvasElement x={400} y={300}>
         <div className="w-32 h-32 bg-blue-500 rounded-lg shadow-lg flex items-center justify-center text-white font-semibold">
           Blue Box
