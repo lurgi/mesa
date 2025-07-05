@@ -22,11 +22,14 @@ export function useCanvasEvents({
     ...initialTransform,
   });
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
-  const [zoomFeedback, setZoomFeedback] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   const showZoomFeedback = useCallback((message: string) => {
-    setZoomFeedback(message);
-    setTimeout(() => setZoomFeedback(null), 1000);
+    setFeedbackMessage(message);
+    // 3초 후에 feedback message를 리셋
+    setTimeout(() => {
+      setFeedbackMessage(null);
+    }, 3000);
   }, []);
 
   useEffect(() => {
@@ -206,7 +209,7 @@ export function useCanvasEvents({
     isPanning,
     isSpacePressed,
     transform,
-    zoomFeedback,
+    feedbackMessage,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,

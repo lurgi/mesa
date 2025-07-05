@@ -1,5 +1,7 @@
+import React from "react";
 import { useCanvasEvents } from "./useCanvasEvents";
 import type { CanvasProps } from "@/src/domain/canvas";
+import { useToast } from "@/components/Toaster/useToast";
 
 export function BaseCanvas({
   children,
@@ -14,7 +16,7 @@ export function BaseCanvas({
     isPanning,
     isSpacePressed,
     transform,
-    zoomFeedback,
+    feedbackMessage,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
@@ -25,6 +27,18 @@ export function BaseCanvas({
     isMinZoom,
     isMaxZoom,
   } = useCanvasEvents({ minZoom, maxZoom, initialTransform, onTransformChange });
+
+  const { showToast } = useToast();
+
+  React.useEffect(() => {
+    if (feedbackMessage) {
+      showToast(feedbackMessage, {
+        duration: 2000,
+        position: "top-center",
+        dismissible: true,
+      });
+    }
+  }, [feedbackMessage, showToast]);
 
   return (
     <div className="w-full h-screen overflow-hidden bg-white relative" {...props}>
@@ -93,12 +107,6 @@ export function BaseCanvas({
           </div>
         </div>
       </div>
-
-      {zoomFeedback && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-sm font-medium pointer-events-none">
-          {zoomFeedback}
-        </div>
-      )}
 
       <ZoomControl
         isMaxZoom={isMaxZoom}
