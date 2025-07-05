@@ -1,6 +1,6 @@
 import React from "react";
 import { useCanvasEvents } from "./useCanvasEvents";
-import type { CanvasProps, CanvasTransform } from "@/src/domain/canvas";
+import { CONSTRAIN_CANVAS_SIZE, type CanvasProps, type CanvasTransform } from "@/src/domain/canvas";
 import { useToast } from "@/components/Toaster/useToast";
 
 export function BaseCanvas({
@@ -52,15 +52,15 @@ export function BaseCanvas({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
-        style={{
-          backgroundImage: `radial-gradient(circle, #D2D6DB 1px, transparent 1px)`,
-          backgroundSize: "20px 20px",
-          backgroundPosition: "0 0",
-        }}
       >
         <div
-          className="absolute inset-0 w-[2000px] h-[1500px] max-w-[4000px] max-h-[3000px]"
+          className={`absolute inset-0`}
           style={{
+            width: `${CONSTRAIN_CANVAS_SIZE.width}px`,
+            height: `${CONSTRAIN_CANVAS_SIZE.height}px`,
+            backgroundImage: `radial-gradient(circle, #D2D6DB 1px, transparent 1px)`,
+            backgroundSize: "20px 20px",
+            backgroundPosition: "0 0",
             transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
             transformOrigin: "0 0",
           }}

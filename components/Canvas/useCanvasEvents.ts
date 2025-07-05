@@ -1,5 +1,5 @@
 import React from "react";
-import type { CanvasTransform } from "@/src/domain/canvas";
+import { CONSTRAIN_CANVAS_SIZE, type CanvasTransform } from "@/src/domain/canvas";
 
 const ZOOM_IN_RATIO = 1.04;
 const ZOOM_OUT_RATIO = 2 - ZOOM_IN_RATIO;
@@ -26,27 +26,102 @@ export function useCanvasEvents({
   });
   const [lastMousePos, setLastMousePos] = React.useState({ x: 0, y: 0 });
 
-  // Zoom 이벤트 훅 사용
+  const constrainTransform = React.useCallback((newTransform: CanvasTransform) => {
+    if (!canvasRef.current) return newTransform;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const viewportWidth = rect.width;
+    const viewportHeight = rect.height;
+
+    const canvasWidth = CONSTRAIN_CANVAS_SIZE.width;
+    const canvasHeight = CONSTRAIN_CANVAS_SIZE.height;
+
+    const scaledCanvasWidth = canvasWidth * newTransform.scale;
+    const scaledCanvasHeight = canvasHeight * newTransform.scale;
+
+    const minX = viewportWidth - scaledCanvasWidth;
+    const maxX = 0;
+    const minY = viewportHeight - scaledCanvasHeight;
+    const maxY = 0;
+
+    return {
+      ...newTransform,
+      x: Math.min(Math.max(newTransform.x, minX), maxX),
+      y: Math.min(Math.max(newTransform.y, minY), maxY),
+    };
+  }, []);
+
+  const setTransformWithConstraints = React.useCallback(
+    (newTransform: CanvasTransform | ((prev: CanvasTransform) => CanvasTransform)) => {
+      setTransform((prev) => {
+        const next = typeof newTransform === "function" ? newTransform(prev) : newTransform;
+        return constrainTransform(next);
+      });
+    },
+    [constrainTransform]
+  );
+
   const { feedbackMessage, handleZoomIn, handleZoomOut, handleWheel, handleResetZoom, isMinZoom, isMaxZoom } =
     useCanvasZoomEvents({
       minZoom,
       maxZoom,
       transform,
-      setTransform,
+      setTransform: setTransformWithConstraints,
       canvasRef,
     });
 
-  // Key 이벤트 훅 사용
   useCanvasKeyEvents({
     isSpacePressed,
     setIsSpacePressed,
     setIsPanning,
   });
 
+  const { handleMouseDown, handleMouseMove, handleMouseUp } = useCanvasMouseEvents({
+    isSpacePressed,
+    isPanning,
+    setIsPanning,
+    lastMousePos,
+    setLastMousePos,
+    setTransform: setTransformWithConstraints,
+  });
+
   React.useEffect(() => {
     onTransformChange?.(transform);
   }, [transform, onTransformChange]);
 
+  return {
+    canvasRef,
+    isPanning,
+    isSpacePressed,
+    transform,
+    feedbackMessage,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleWheel,
+    handleZoomIn,
+    handleZoomOut,
+    handleResetZoom,
+    isMinZoom,
+    isMaxZoom,
+  };
+}
+
+function useCanvasMouseEvents({
+  isSpacePressed,
+  isPanning,
+  setIsPanning,
+  lastMousePos,
+  setLastMousePos,
+  setTransform,
+}: {
+  isSpacePressed: boolean;
+  isPanning: boolean;
+  setIsPanning: React.Dispatch<React.SetStateAction<boolean>>;
+  lastMousePos: { x: number; y: number };
+  setLastMousePos: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  setTransform: React.Dispatch<React.SetStateAction<CanvasTransform>>;
+}) {
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
       if (isSpacePressed) {
@@ -54,7 +129,7 @@ export function useCanvasEvents({
         setLastMousePos({ x: e.clientX, y: e.clientY });
       }
     },
-    [isSpacePressed, setIsPanning]
+    [isSpacePressed, setIsPanning, setLastMousePos]
   );
 
   const handleMouseMove = React.useCallback(
@@ -72,7 +147,7 @@ export function useCanvasEvents({
         setLastMousePos({ x: e.clientX, y: e.clientY });
       }
     },
-    [isPanning, isSpacePressed, lastMousePos, setTransform]
+    [isPanning, isSpacePressed, lastMousePos, setTransform, setLastMousePos]
   );
 
   const handleMouseUp = React.useCallback(() => {
@@ -80,20 +155,9 @@ export function useCanvasEvents({
   }, [setIsPanning]);
 
   return {
-    canvasRef,
-    isPanning,
-    isSpacePressed,
-    transform,
-    feedbackMessage,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
-    handleWheel,
-    handleZoomIn,
-    handleZoomOut,
-    handleResetZoom,
-    isMinZoom,
-    isMaxZoom,
   };
 }
 
