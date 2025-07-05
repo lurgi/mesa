@@ -1,4 +1,4 @@
-import type { CanvasElementProps } from "@/src/types/canvas";
+import type { CanvasElementProps } from "@/src/domain/canvas";
 
 export function CanvasElement({ children, x = 0, y = 0, className = "" }: CanvasElementProps) {
   return (

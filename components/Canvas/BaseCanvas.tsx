@@ -1,5 +1,5 @@
 import { useCanvasEvents } from "./useCanvasEvents";
-import type { CanvasProps } from "@/src/types/canvas";
+import type { CanvasProps } from "@/src/domain/canvas";
 
 export function BaseCanvas({
   children,

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import type { CanvasTransform } from "@/src/types/canvas";
+import type { CanvasTransform } from "@/src/domain/canvas";
 
 export function useCanvasEvents({
   minZoom = 0.25,
