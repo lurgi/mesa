@@ -2,12 +2,14 @@ import React from "react";
 import { CONSTRAIN_CANVAS_SIZE, type CanvasTransform } from "@/src/domain/canvas";
 import { useState, useEffect, useCallback } from "react";
 
-const ZOOM_IN_RATIO = 1.04;
+const ZOOM_IN_RATIO = 1.05;
 const ZOOM_OUT_RATIO = 2 - ZOOM_IN_RATIO;
+const MAX_ZOOM = 2;
+const MIN_ZOOM = 0.5;
 
 export function useCanvasEvents({
-  minZoom = 0.25,
-  maxZoom = 4,
+  minZoom = MIN_ZOOM,
+  maxZoom = MAX_ZOOM,
   onTransformChange,
 }: {
   minZoom?: number;
@@ -103,6 +105,8 @@ export function useCanvasEvents({
     handleResetZoom,
     isMinZoom,
     isMaxZoom,
+    minZoom,
+    maxZoom,
   };
 }
 
@@ -161,8 +165,8 @@ function useCanvasMouseEvents({
 }
 
 function useCanvasZoomEvents({
-  minZoom = 0.25,
-  maxZoom = 4,
+  minZoom = MIN_ZOOM,
+  maxZoom = MAX_ZOOM,
   transform,
   setTransform,
   canvasRef,
@@ -280,7 +284,7 @@ function useCanvasZoomEvents({
         }
       }
     },
-    [handleZoomIn, handleZoomOut]
+    [handleZoomIn, handleZoomOut, canvasRef]
   );
 
   const handleResetZoom = useCallback(() => {

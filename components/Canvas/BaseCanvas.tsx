@@ -5,12 +5,10 @@ import { useToast } from "@/components/Toaster/useToast";
 
 interface BaseCanvasProps {
   children?: React.ReactNode;
-  minZoom?: number;
-  maxZoom?: number;
   onTransformChange?: (transform: CanvasTransform) => void;
 }
 
-export function BaseCanvas({ children, minZoom = 0.25, maxZoom = 4, onTransformChange, ...props }: BaseCanvasProps) {
+export function BaseCanvas({ children, onTransformChange, ...props }: BaseCanvasProps) {
   const {
     canvasRef,
     isPanning,
@@ -26,7 +24,9 @@ export function BaseCanvas({ children, minZoom = 0.25, maxZoom = 4, onTransformC
     handleResetZoom,
     isMinZoom,
     isMaxZoom,
-  } = useCanvasEvents({ minZoom, maxZoom, onTransformChange });
+    minZoom,
+    maxZoom,
+  } = useCanvasEvents({ onTransformChange });
 
   const { showToast } = useToast();
 
