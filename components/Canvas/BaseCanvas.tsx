@@ -3,9 +3,10 @@ import { useCanvasEvents } from "./useCanvasEvents";
 import { CONSTRAIN_CANVAS_SIZE, type CanvasTransform } from "@/src/domain/canvas";
 import { useToast } from "@/components/Toaster/useToast";
 
-interface BaseCanvasProps {
+interface BaseCanvasProps extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode;
   onTransformChange?: (transform: CanvasTransform) => void;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 export function BaseCanvas({ children, onTransformChange, ...props }: BaseCanvasProps) {
@@ -56,8 +57,8 @@ export function BaseCanvas({ children, onTransformChange, ...props }: BaseCanvas
         <div
           className={`absolute inset-0`}
           style={{
-            width: `${CONSTRAIN_CANVAS_SIZE.width}px`,
-            height: `${CONSTRAIN_CANVAS_SIZE.height}px`,
+            width: `${CONSTRAIN_CANVAS_SIZE.WIDTH}px`,
+            height: `${CONSTRAIN_CANVAS_SIZE.HEIGHT}px`,
             backgroundImage: `radial-gradient(circle, #D2D6DB 1px, transparent 1px)`,
             backgroundSize: "20px 20px",
             backgroundPosition: "0 0",

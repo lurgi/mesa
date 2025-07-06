@@ -10,6 +10,6 @@ export interface CanvasElementProps extends React.HTMLAttributes<HTMLDivElement>
 }
 
 export const CONSTRAIN_CANVAS_SIZE = {
-  width: 4000,
-  height: 3000,
+  WIDTH: 4000,
+  HEIGHT: 3000,
 };

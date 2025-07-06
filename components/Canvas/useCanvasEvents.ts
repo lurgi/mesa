@@ -21,8 +21,8 @@ export function useCanvasEvents({
   const [isSpacePressed, setIsSpacePressed] = useState(false);
 
   const [transform, setTransform] = useState<CanvasTransform>({
-    x: -CONSTRAIN_CANVAS_SIZE.width / 2,
-    y: -CONSTRAIN_CANVAS_SIZE.height / 2,
+    x: -CONSTRAIN_CANVAS_SIZE.WIDTH / 2,
+    y: -CONSTRAIN_CANVAS_SIZE.HEIGHT / 2,
     scale: 1,
   });
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
@@ -34,8 +34,8 @@ export function useCanvasEvents({
     const viewportWidth = rect.width;
     const viewportHeight = rect.height;
 
-    const canvasWidth = CONSTRAIN_CANVAS_SIZE.width;
-    const canvasHeight = CONSTRAIN_CANVAS_SIZE.height;
+    const canvasWidth = CONSTRAIN_CANVAS_SIZE.WIDTH;
+    const canvasHeight = CONSTRAIN_CANVAS_SIZE.HEIGHT;
 
     const scaledCanvasWidth = canvasWidth * newTransform.scale;
     const scaledCanvasHeight = canvasHeight * newTransform.scale;
@@ -289,8 +289,8 @@ function useCanvasZoomEvents({
 
   const handleResetZoom = useCallback(() => {
     setTransform({
-      x: -CONSTRAIN_CANVAS_SIZE.width / 2,
-      y: -CONSTRAIN_CANVAS_SIZE.height / 2,
+      x: -CONSTRAIN_CANVAS_SIZE.WIDTH / 2,
+      y: -CONSTRAIN_CANVAS_SIZE.HEIGHT / 2,
       scale: 1,
     });
   }, [setTransform]);
