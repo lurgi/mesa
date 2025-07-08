@@ -1,0 +1,59 @@
+"use client";
+
+import React from "react";
+import { textStore } from "@/src/store/textStore";
+import { useSnapshot } from "valtio";
+import { cn } from "@/src/lib/utils";
+
+export function TextInput() {
+  const { text, fontFamily, fontWeight } = useSnapshot(textStore);
+  const [localText, setLocalText] = React.useState(text);
+  const [isComposing, setIsComposing] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isComposing) {
+      setLocalText(text);
+    }
+  }, [text, isComposing]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalText(value);
+
+    if (!isComposing) {
+      textStore.text = value;
+    }
+  };
+
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    setIsComposing(false);
+    const value = e.currentTarget.value;
+    setLocalText(value);
+    textStore.text = value;
+  };
+
+  return (
+    <input
+      name="text"
+      type="text"
+      value={localText}
+      onChange={handleChange}
+      onCompositionStart={handleCompositionStart}
+      onCompositionEnd={handleCompositionEnd}
+      placeholder="여기에 로고 텍스트를 입력하세요!"
+      className={cn(
+        "py-4 px-6 text-2xl",
+        "relative rounded-sm",
+        "border-2 border-slate-300",
+        "hover:border-blue-400",
+        "focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20",
+        "transition-all duration-200 ease-in-out"
+      )}
+      style={{ fontFamily, fontWeight }}
+    />
+  );
+}

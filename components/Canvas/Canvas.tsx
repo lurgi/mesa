@@ -4,7 +4,7 @@ import React from "react";
 import { BaseCanvas } from "./BaseCanvas";
 import { CanvasElement } from "./CanvasElement";
 import { CONSTRAIN_CANVAS_SIZE } from "@/src/domain/canvas";
-import { CanvasTextToVector } from "../Text/CanvasTextToVector";
+import { TextInput } from "../Text/TextInput";
 
 export function Canvas() {
   const canvasRef = React.useRef<HTMLDivElement>(null);
@@ -23,7 +23,7 @@ export function Canvas() {
   return (
     <BaseCanvas ref={canvasRef}>
       <CanvasElement x={midWidth} y={midHeight}>
-        <CanvasTextToVector />
+        <TextInput />
       </CanvasElement>
     </BaseCanvas>
   );
