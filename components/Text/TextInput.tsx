@@ -45,7 +45,7 @@ export function TextInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
       onChange={handleChange}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}
-      placeholder="로고 텍스트를 입력하세요!"
+      placeholder="Type your text here!"
       className={cn(
         "py-4 text-4xl min-w-md text-center",
         "relative rounded-sm",
