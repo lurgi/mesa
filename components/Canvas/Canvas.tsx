@@ -8,6 +8,8 @@ import { TextInput } from "../Text/TextInput";
 
 export function Canvas() {
   const canvasRef = React.useRef<HTMLDivElement>(null);
+  const textInputRef = React.useRef<HTMLInputElement>(null);
+  const rect = textInputRef.current?.getBoundingClientRect();
 
   const [midWidth, setMidWidth] = React.useState<number>(0);
   const [midHeight, setMidHeight] = React.useState<number>(0);
@@ -22,8 +24,8 @@ export function Canvas() {
 
   return (
     <BaseCanvas ref={canvasRef}>
-      <CanvasElement x={midWidth} y={midHeight}>
-        <TextInput />
+      <CanvasElement x={midWidth - (rect?.width ?? 0) / 2} y={midHeight - (rect?.height ?? 0) / 2}>
+        <TextInput ref={textInputRef} />
       </CanvasElement>
     </BaseCanvas>
   );

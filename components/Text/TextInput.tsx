@@ -5,7 +5,7 @@ import { textStore } from "@/src/store/textStore";
 import { useSnapshot } from "valtio";
 import { cn } from "@/src/lib/utils";
 
-export function TextInput() {
+export function TextInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
   const { text, fontFamily, fontWeight } = useSnapshot(textStore);
   const [localText, setLocalText] = React.useState(text);
   const [isComposing, setIsComposing] = React.useState(false);
@@ -38,15 +38,16 @@ export function TextInput() {
 
   return (
     <input
+      ref={ref}
       name="text"
       type="text"
       value={localText}
       onChange={handleChange}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}
-      placeholder="여기에 로고 텍스트를 입력하세요!"
+      placeholder="로고 텍스트를 입력하세요!"
       className={cn(
-        "py-4 px-6 text-2xl",
+        "py-4 text-4xl min-w-md text-center",
         "relative rounded-sm",
         "border-2 border-slate-300",
         "hover:border-blue-400",
