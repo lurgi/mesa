@@ -4,29 +4,26 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { useSnapshot } from "valtio";
+import { textStore } from "@/src/store/textStore";
+import { FONT_MAP, FontFamily, FontSlant, FontWeight, SLANT_CONFIG } from "@/src/domain/font";
 
-// 구글 폰트 예시 데이터
-const googleFonts = [
-  { name: "Inter", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Roboto", weights: ["100", "300", "400", "500", "700", "900"] },
-  { name: "Open Sans", weights: ["300", "400", "500", "600", "700", "800"] },
-  { name: "Lato", weights: ["100", "300", "400", "700", "900"] },
-  { name: "Montserrat", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Poppins", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Source Sans Pro", weights: ["200", "300", "400", "600", "700", "900"] },
-  { name: "Oswald", weights: ["200", "300", "400", "500", "600", "700"] },
-  { name: "Raleway", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "PT Sans", weights: ["400", "700"] },
-];
+const FONTS = Object.values(FONT_MAP);
 
 export function TypeSidebar() {
-  // 하드코딩된 기본값들 (실제로는 전역 상태에서 가져올 예정)
-  const currentFont = "Inter";
-  const currentWeight = "400";
-  const currentSlant = 0;
+  const { fontFamily, fontWeight, fontSlant } = useSnapshot(textStore);
 
-  const selectedFontData = googleFonts.find((font) => font.name === currentFont);
-  const availableWeights = selectedFontData?.weights || [];
+  const handleSelectFont = (font: FontFamily) => {
+    textStore.fontFamily = font;
+  };
+
+  const handleSelectWeight = (weight: FontWeight) => {
+    textStore.fontWeight = weight;
+  };
+
+  const handleSelectSlant = (slant: FontSlant) => {
+    textStore.fontSlant = slant;
+  };
 
   return (
     <div className="w-full space-y-6">
@@ -34,58 +31,59 @@ export function TypeSidebar() {
         <div>
           <h3 className="text-lg font-semibold mb-4">Type Settings</h3>
         </div>
-
         <Separator />
-
-        {/* Font Selection */}
         <div className="space-y-2">
           <Label htmlFor="font-select" className="text-sm font-medium">
             Font Family
           </Label>
-          <Select value={currentFont}>
+          <Select value={fontFamily}>
             <SelectTrigger id="font-select">
               <SelectValue placeholder="Select a font" />
             </SelectTrigger>
             <SelectContent>
-              {googleFonts.map((font) => (
-                <SelectItem key={font.name} value={font.name}>
-                  <span style={{ fontFamily: font.name }}>{font.name}</span>
+              {FONTS.map((font) => (
+                <SelectItem key={font.family} value={font.family} onClick={() => handleSelectFont(font.family)}>
+                  <span style={{ fontFamily: font.family }}>{font.family}</span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-
-        {/* Weight Selection */}
         <div className="space-y-2">
           <Label htmlFor="weight-select" className="text-sm font-medium">
             Font Weight
           </Label>
-          <Select value={currentWeight}>
+          <Select value={fontWeight}>
             <SelectTrigger id="weight-select">
               <SelectValue placeholder="Select weight" />
             </SelectTrigger>
-            <SelectContent>
-              {availableWeights.map((weight) => (
-                <SelectItem key={weight} value={weight}>
-                  {weight}
+            <SelectContent onClick={() => handleSelectWeight(fontWeight)}>
+              {FONTS.map((font) => (
+                <SelectItem key={font.weight} value={font.weight}>
+                  {font.weight}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Slant Control */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Slant</Label>
-            <span className="text-sm text-muted-foreground">{currentSlant}°</span>
+            <span className="text-sm text-muted-foreground">{fontSlant}°</span>
           </div>
-          <Slider value={[currentSlant]} max={30} min={-30} step={1} className="w-full" />
+          <Slider
+            value={[fontSlant]}
+            max={SLANT_CONFIG.max}
+            min={SLANT_CONFIG.min}
+            step={SLANT_CONFIG.step}
+            className="w-full"
+            onValueChange={(value) => handleSelectSlant(value[0] as FontSlant)}
+          />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>-30°</span>
-            <span>0°</span>
-            <span>30°</span>
+            <span>{SLANT_CONFIG.min}°</span>
+            <span>{SLANT_CONFIG.default}°</span>
+            <span>{SLANT_CONFIG.max}°</span>
           </div>
         </div>
       </div>

@@ -6,7 +6,7 @@ import { useSnapshot } from "valtio";
 import { cn } from "@/src/lib/utils";
 
 export function TextInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
-  const { text, fontFamily, fontWeight } = useSnapshot(textStore);
+  const { text, fontFamily, fontWeight, fontSlant } = useSnapshot(textStore);
   const [localText, setLocalText] = React.useState(text);
   const [isComposing, setIsComposing] = React.useState(false);
 
@@ -37,24 +37,28 @@ export function TextInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
   };
 
   return (
-    <input
-      ref={ref}
-      name="text"
-      type="text"
-      value={localText}
-      onChange={handleChange}
-      onCompositionStart={handleCompositionStart}
-      onCompositionEnd={handleCompositionEnd}
-      placeholder="Type your text here!"
+    <div
       className={cn(
-        "py-4 text-4xl min-w-md text-center",
-        "relative rounded-sm",
+        "rounded-sm",
         "border-2 border-slate-300",
         "hover:border-blue-400",
-        "focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20",
+        "focus-within:border-blue-400",
+        "focus-within:ring-2 focus-within:ring-blue-400/20",
         "transition-all duration-200 ease-in-out"
       )}
-      style={{ fontFamily, fontWeight }}
-    />
+    >
+      <input
+        ref={ref}
+        name="text"
+        type="text"
+        value={localText}
+        onChange={handleChange}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
+        placeholder="Type your text here!"
+        className={cn("py-4 text-4xl min-w-md text-center", "focus:outline-none")}
+        style={{ fontFamily, fontWeight, transform: `skewX(${-fontSlant}deg)` }}
+      />
+    </div>
   );
 }
