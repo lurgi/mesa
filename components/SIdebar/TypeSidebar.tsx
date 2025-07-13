@@ -6,24 +6,37 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { useSnapshot } from "valtio";
 import { textStore } from "@/src/store/textStore";
-import { FONT_MAP, FontFamily, FontSlant, FontWeight, SLANT_CONFIG } from "@/src/domain/font";
-
-const FONTS = Object.values(FONT_MAP);
+import { FontSlant, GoogleFont, SLANT_CONFIG } from "@/src/domain/font";
+import { useGetGoogleFonts } from "@/src/hooks/useGetGoogleFonts";
+import { useGetSpecificGoogleFont } from "@/src/hooks/useGetSpecificGoogleFont";
 
 export function TypeSidebar() {
-  const { fontFamily, fontWeight, fontSlant } = useSnapshot(textStore);
+  const { selectedFont, selectedFontWeight, fontSlant } = useSnapshot(textStore);
+  const { data: googleFonts, isLoading } = useGetGoogleFonts();
+  const { data: specificFont } = useGetSpecificGoogleFont(selectedFont?.files[selectedFontWeight] || "");
 
-  const handleSelectFont = (font: FontFamily) => {
-    textStore.fontFamily = font;
+  console.log(specificFont);
+
+  const handleSelectFont = async (font: GoogleFont) => {
+    textStore.selectedFont = font;
+    textStore.selectedFontWeight = font.variants[0];
   };
 
-  const handleSelectWeight = (weight: FontWeight) => {
-    textStore.fontWeight = weight;
+  const handleSelectWeight = (weight: string) => {
+    textStore.selectedFontWeight = weight;
   };
 
   const handleSelectSlant = (slant: FontSlant) => {
     textStore.fontSlant = slant;
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!googleFonts?.length) {
+    return <div>Something went wrong</div>;
+  }
 
   return (
     <div className="w-full space-y-6">
@@ -36,13 +49,13 @@ export function TypeSidebar() {
           <Label htmlFor="font-select" className="text-sm font-medium">
             Font Family
           </Label>
-          <Select value={fontFamily}>
+          <Select value={selectedFont?.family}>
             <SelectTrigger id="font-select">
               <SelectValue placeholder="Select a font" />
             </SelectTrigger>
             <SelectContent>
-              {FONTS.map((font) => (
-                <SelectItem key={font.family} value={font.family} onClick={() => handleSelectFont(font.family)}>
+              {googleFonts.map((font) => (
+                <SelectItem key={font.family} value={font.family} onClick={() => handleSelectFont(font)}>
                   <span style={{ fontFamily: font.family }}>{font.family}</span>
                 </SelectItem>
               ))}
@@ -53,14 +66,14 @@ export function TypeSidebar() {
           <Label htmlFor="weight-select" className="text-sm font-medium">
             Font Weight
           </Label>
-          <Select value={fontWeight}>
+          <Select value={selectedFontWeight}>
             <SelectTrigger id="weight-select">
               <SelectValue placeholder="Select weight" />
             </SelectTrigger>
-            <SelectContent onClick={() => handleSelectWeight(fontWeight)}>
-              {FONTS.map((font) => (
-                <SelectItem key={font.weight} value={font.weight}>
-                  {font.weight}
+            <SelectContent>
+              {selectedFont?.variants.map((weight) => (
+                <SelectItem key={weight} value={weight} onClick={() => handleSelectWeight(weight)}>
+                  {weight}
                 </SelectItem>
               ))}
             </SelectContent>

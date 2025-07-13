@@ -1,17 +1,17 @@
 import { proxy } from "valtio";
-import { FontFamily, FontSlant, FontWeight } from "../domain/font";
+import { FontSlant, GoogleFont } from "../domain/font";
 
 interface TextStore {
   text: string;
-  fontFamily: FontFamily;
-  fontWeight: FontWeight;
+  selectedFont?: GoogleFont;
+  selectedFontWeight: string;
   fontSlant: FontSlant;
 }
 
 export const textStore = proxy<TextStore>({
   text: "",
-  fontFamily: "Noto Sans",
-  fontWeight: "400",
+  selectedFont: undefined,
+  selectedFontWeight: "",
   fontSlant: 0,
 });
 

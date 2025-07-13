@@ -1,13 +1,15 @@
-export const FONT_MAP = {
-  "Noto Sans": {
-    family: "Noto Sans",
-    weight: "400",
-    url: "https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.woff2",
-  },
-} as const;
-
-export type FontFamily = (typeof FONT_MAP)[keyof typeof FONT_MAP]["family"];
-export type FontWeight = (typeof FONT_MAP)[keyof typeof FONT_MAP]["weight"];
+export interface GoogleFont {
+  family: string;
+  variants: string[];
+  subsets: string[];
+  version: string;
+  lastModified: string;
+  files: { [key: string]: string };
+  category: string;
+  kind: string;
+  menu: string;
+  axes?: { tag: string; start: number; end: number }[];
+}
 
 export const SLANT_MAP = {
   "-15": -15,
@@ -36,7 +38,3 @@ export const SLANT_CONFIG = {
     "15": "15°",
   },
 } as const;
-
-export const getFontUrl = (fontName: FontFamily) => {
-  return FONT_MAP[fontName].url || FONT_MAP["Noto Sans"].url;
-};

@@ -2,15 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/src/lib/utils";
-import { textStore } from "@/src/store/textStore";
 import { ArrowRightIcon } from "lucide-react";
-import { useSnapshot } from "valtio";
 
 export function NextButton() {
-  const { text } = useSnapshot(textStore);
-
-  const handleClick = () => {
-    console.log(`TODO: textToVector: ${text}`);
+  const handleClick = async () => {
+    console.log("clicked");
   };
 
   return (
