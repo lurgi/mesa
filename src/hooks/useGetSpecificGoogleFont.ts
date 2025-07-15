@@ -12,7 +12,6 @@ export function useGetSpecificGoogleFont({ fontUrl, fontFamily }: { fontUrl: str
         const fontBuffer = await res.arrayBuffer();
 
         if (fontFamily) {
-          console.log(fontFamily, "fontFamily");
           const existingFonts = Array.from(document.fonts).filter((font) => font.family === fontFamily);
           existingFonts.forEach((font) => document.fonts.delete(font));
 
@@ -23,5 +22,6 @@ export function useGetSpecificGoogleFont({ fontUrl, fontFamily }: { fontUrl: str
 
         return fontBuffer;
       }),
+    staleTime: 1000 * 60 * 60 * 24,
   });
 }

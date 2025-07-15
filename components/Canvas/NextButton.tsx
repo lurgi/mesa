@@ -3,10 +3,27 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/src/lib/utils";
 import { ArrowRightIcon } from "lucide-react";
+import { textStore } from "@/src/store/textStore";
+import { useSnapshot } from "valtio";
+import { useGetSpecificGoogleFont } from "@/src/hooks/useGetSpecificGoogleFont";
+import { Font, create } from "fontkit";
 
 export function NextButton() {
+  const { text, selectedFont, selectedFontWeight } = useSnapshot(textStore);
+  const { data: fontBuffer } = useGetSpecificGoogleFont({
+    fontUrl: selectedFont?.files[selectedFontWeight] || "",
+    fontFamily: selectedFont?.family,
+  });
+
   const handleClick = async () => {
-    console.log("clicked");
+    if (!fontBuffer) return;
+    const buffer = Buffer.from(fontBuffer);
+    const font = create(buffer) as Font;
+
+    const run = font.layout(text);
+    const glyph = font.getGlyph(run.glyphs[0].id);
+    const path = glyph.path;
+    console.log(path);
   };
 
   return (
