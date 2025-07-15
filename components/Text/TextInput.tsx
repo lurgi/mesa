@@ -6,7 +6,7 @@ import { useSnapshot } from "valtio";
 import { cn } from "@/src/lib/utils";
 
 export function TextInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
-  const { text, fontFamily, fontWeight, fontSlant } = useSnapshot(textStore);
+  const { text, selectedFont, selectedFontWeight, fontSlant } = useSnapshot(textStore);
   const [localText, setLocalText] = React.useState(text);
   const [isComposing, setIsComposing] = React.useState(false);
 
@@ -57,7 +57,11 @@ export function TextInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
         onCompositionEnd={handleCompositionEnd}
         placeholder="Type your text here!"
         className={cn("py-4 text-4xl min-w-md text-center", "focus:outline-none")}
-        style={{ fontFamily, fontWeight, transform: `skewX(${-fontSlant}deg)` }}
+        style={{
+          fontFamily: selectedFont?.family,
+          fontWeight: selectedFontWeight,
+          transform: `skewX(${-fontSlant}deg)`,
+        }}
       />
     </div>
   );

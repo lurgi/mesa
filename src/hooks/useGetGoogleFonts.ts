@@ -13,16 +13,15 @@ async function fetchGoogleFonts() {
 
   const response = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?${searchParams.toString()}`);
   const data = await response.json();
-  return data;
+  textStore.selectedFont = data.items[0];
+  textStore.selectedFontWeight = data.items[0].variants[0];
+
+  return data.items;
 }
 
 export function useGetGoogleFonts() {
-  return useQuery<{ items: GoogleFont[] }, Error, GoogleFont[]>({
+  return useQuery<GoogleFont[], Error, GoogleFont[]>({
     queryKey: ["google-fonts"],
     queryFn: fetchGoogleFonts,
-    select: (data) => {
-      textStore.selectedFont = data.items[0];
-      return data.items;
-    },
   });
 }

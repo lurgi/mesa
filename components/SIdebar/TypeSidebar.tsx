@@ -13,11 +13,13 @@ import { useGetSpecificGoogleFont } from "@/src/hooks/useGetSpecificGoogleFont";
 export function TypeSidebar() {
   const { selectedFont, selectedFontWeight, fontSlant } = useSnapshot(textStore);
   const { data: googleFonts, isLoading } = useGetGoogleFonts();
-  const { data: specificFont } = useGetSpecificGoogleFont(selectedFont?.files[selectedFontWeight] || "");
+  useGetSpecificGoogleFont({
+    fontUrl: selectedFont?.files[selectedFontWeight] || "",
+    fontFamily: selectedFont?.family,
+  });
 
-  console.log(specificFont);
-
-  const handleSelectFont = async (font: GoogleFont) => {
+  const handleSelectFont = async (value: string) => {
+    const font = JSON.parse(value) as GoogleFont;
     textStore.selectedFont = font;
     textStore.selectedFontWeight = font.variants[0];
   };
@@ -49,14 +51,14 @@ export function TypeSidebar() {
           <Label htmlFor="font-select" className="text-sm font-medium">
             Font Family
           </Label>
-          <Select value={selectedFont?.family}>
+          <Select onValueChange={handleSelectFont} defaultValue={JSON.stringify(selectedFont)}>
             <SelectTrigger id="font-select">
-              <SelectValue placeholder="Select a font" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {googleFonts.map((font) => (
-                <SelectItem key={font.family} value={font.family} onClick={() => handleSelectFont(font)}>
-                  <span style={{ fontFamily: font.family }}>{font.family}</span>
+                <SelectItem key={font.family} value={JSON.stringify(font)}>
+                  {font.family}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -66,13 +68,13 @@ export function TypeSidebar() {
           <Label htmlFor="weight-select" className="text-sm font-medium">
             Font Weight
           </Label>
-          <Select value={selectedFontWeight}>
+          <Select value={selectedFontWeight} onValueChange={handleSelectWeight}>
             <SelectTrigger id="weight-select">
               <SelectValue placeholder="Select weight" />
             </SelectTrigger>
             <SelectContent>
               {selectedFont?.variants.map((weight) => (
-                <SelectItem key={weight} value={weight} onClick={() => handleSelectWeight(weight)}>
+                <SelectItem key={weight} value={weight}>
                   {weight}
                 </SelectItem>
               ))}
