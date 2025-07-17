@@ -7,6 +7,9 @@ import { textStore } from "@/src/store/textStore";
 import { useSnapshot } from "valtio";
 import { useGetSpecificGoogleFont } from "@/src/hooks/useGetSpecificGoogleFont";
 import { Font, create } from "fontkit";
+import { textSVGStore } from "@/src/store/textSVGStore";
+import { stepStore } from "@/src/store/stepStore";
+import { Step } from "@/src/domain/step";
 
 export function NextButton() {
   const { text, selectedFont, selectedFontWeight } = useSnapshot(textStore);
@@ -23,7 +26,9 @@ export function NextButton() {
     const run = font.layout(text);
     const glyph = font.getGlyph(run.glyphs[0].id);
     const path = glyph.path;
-    console.log(path);
+
+    textSVGStore.textSVG = path;
+    stepStore.currentStep = Step.EDIT;
   };
 
   return (

@@ -269,8 +269,6 @@ function useCanvasZoomEvents({
   const handleWheel = React.useCallback(
     (e: React.WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
 
