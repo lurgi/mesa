@@ -7,7 +7,7 @@ import { textStore } from "@/src/store/textStore";
 import { useSnapshot } from "valtio";
 import { useGetSpecificGoogleFont } from "@/src/hooks/useGetSpecificGoogleFont";
 import { Font, create } from "fontkit";
-import { textSVGStore } from "@/src/store/textSVGStore";
+import { createTextSVGItems } from "@/src/store/textSVGStore";
 import { stepStore } from "@/src/store/stepStore";
 import { Step } from "@/src/domain/step";
 
@@ -24,8 +24,9 @@ export function NextButton() {
     const font = create(buffer) as Font;
 
     const run = font.layout(text);
-    textSVGStore.textSVGList = run.glyphs.map((g) => g.path);
+    const paths = run.glyphs.map((g) => g.path);
 
+    createTextSVGItems(paths);
     stepStore.currentStep = Step.EDIT;
   };
 

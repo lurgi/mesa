@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Palette } from "lucide-react";
+import { useSnapshot } from "valtio";
+import { textSVGStore, textSVGItemManager } from "@/src/store/textSVGStore";
 
-function ColorPicker({ color, label }: { color: string; label: string }) {
+function ColorPicker({ color, label, onChange }: { color: string; label: string; onChange: (color: string) => void }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -21,8 +23,14 @@ function ColorPicker({ color, label }: { color: string; label: string }) {
       <PopoverContent className="w-64">
         <div className="space-y-3">
           <Label className="text-sm font-medium">{label}</Label>
-          <Input type="color" value={color} className="w-full h-10" />
-          <Input type="text" value={color} placeholder="#000000" className="w-full" />
+          <Input type="color" value={color} onChange={(e) => onChange(e.target.value)} className="w-full h-10" />
+          <Input
+            type="text"
+            value={color}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="#000000"
+            className="w-full"
+          />
         </div>
       </PopoverContent>
     </Popover>
@@ -30,16 +38,7 @@ function ColorPicker({ color, label }: { color: string; label: string }) {
 }
 
 export function EditSidebar() {
-  // 하드코딩된 기본값들 (실제로는 전역 상태에서 가져올 예정)
-  const globalLetterSpacing = 0;
-  const weight = 400;
-  const slant = 0;
-  const lineHeight = 1.5;
-  const letterSpacing = 0;
-  const radius = 0;
-  const fillColor = "#000000";
-  const strokeWidth = 0;
-  const strokeColor = "#000000";
+  const { globalStyle, selectionStyle } = useSnapshot(textSVGStore);
 
   return (
     <div className="w-full space-y-6">
@@ -58,9 +57,16 @@ export function EditSidebar() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Letter Spacing</Label>
-              <span className="text-sm text-muted-foreground">{globalLetterSpacing}px</span>
+              <span className="text-sm text-muted-foreground">{globalStyle.letterSpacing}px</span>
             </div>
-            <Slider value={[globalLetterSpacing]} max={10} min={-5} step={0.1} className="w-full" />
+            <Slider
+              value={[globalStyle.letterSpacing]}
+              max={10}
+              min={-5}
+              step={0.1}
+              className="w-full"
+              onValueChange={(value) => textSVGItemManager.updateGlobalStyle({ letterSpacing: value[0] })}
+            />
           </div>
         </div>
 
@@ -74,51 +80,90 @@ export function EditSidebar() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Weight</Label>
-              <span className="text-sm text-muted-foreground">{weight}</span>
+              <span className="text-sm text-muted-foreground">{selectionStyle.weight}</span>
             </div>
-            <Slider value={[weight]} max={900} min={100} step={100} className="w-full" />
+            <Slider
+              value={[selectionStyle.weight]}
+              max={900}
+              min={100}
+              step={100}
+              className="w-full"
+              onValueChange={(value) => textSVGItemManager.updateSelectionStyle({ weight: value[0] })}
+            />
           </div>
 
           {/* Slant Slider */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Slant</Label>
-              <span className="text-sm text-muted-foreground">{slant}°</span>
+              <span className="text-sm text-muted-foreground">{selectionStyle.slant}°</span>
             </div>
-            <Slider value={[slant]} max={30} min={-30} step={1} className="w-full" />
+            <Slider
+              value={[selectionStyle.slant]}
+              max={30}
+              min={-30}
+              step={1}
+              className="w-full"
+              onValueChange={(value) => textSVGItemManager.updateSelectionStyle({ slant: value[0] })}
+            />
           </div>
 
           {/* Line Height */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Line Height</Label>
-              <span className="text-sm text-muted-foreground">{lineHeight}</span>
+              <span className="text-sm text-muted-foreground">{selectionStyle.lineHeight}</span>
             </div>
-            <Slider value={[lineHeight]} max={3} min={0.5} step={0.1} className="w-full" />
+            <Slider
+              value={[selectionStyle.lineHeight]}
+              max={3}
+              min={0.5}
+              step={0.1}
+              className="w-full"
+              onValueChange={(value) => textSVGItemManager.updateSelectionStyle({ lineHeight: value[0] })}
+            />
           </div>
 
           {/* Letter Spacing */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Letter Spacing</Label>
-              <span className="text-sm text-muted-foreground">{letterSpacing}px</span>
+              <span className="text-sm text-muted-foreground">{selectionStyle.letterSpacing}px</span>
             </div>
-            <Slider value={[letterSpacing]} max={10} min={-5} step={0.1} className="w-full" />
+            <Slider
+              value={[selectionStyle.letterSpacing]}
+              max={10}
+              min={-5}
+              step={0.1}
+              className="w-full"
+              onValueChange={(value) => textSVGItemManager.updateSelectionStyle({ letterSpacing: value[0] })}
+            />
           </div>
 
           {/* Radius */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Radius</Label>
-              <span className="text-sm text-muted-foreground">{radius}px</span>
+              <span className="text-sm text-muted-foreground">{selectionStyle.radius}px</span>
             </div>
-            <Slider value={[radius]} max={50} min={0} step={1} className="w-full" />
+            <Slider
+              value={[selectionStyle.radius]}
+              max={50}
+              min={0}
+              step={1}
+              className="w-full"
+              onValueChange={(value) => textSVGItemManager.updateSelectionStyle({ radius: value[0] })}
+            />
           </div>
 
           {/* Fill Color */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Fill Color</Label>
-            <ColorPicker color={fillColor} label="Fill Color" />
+            <ColorPicker
+              color={selectionStyle.fillColor}
+              label="Fill Color"
+              onChange={(color) => textSVGItemManager.updateSelectionStyle({ fillColor: color })}
+            />
           </div>
 
           {/* Stroke Settings */}
@@ -129,15 +174,26 @@ export function EditSidebar() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-xs text-muted-foreground">Width</Label>
-                <span className="text-xs text-muted-foreground">{strokeWidth}px</span>
+                <span className="text-xs text-muted-foreground">{selectionStyle.strokeWidth}px</span>
               </div>
-              <Slider value={[strokeWidth]} max={10} min={0} step={0.5} className="w-full" />
+              <Slider
+                value={[selectionStyle.strokeWidth]}
+                max={10}
+                min={0}
+                step={0.5}
+                className="w-full"
+                onValueChange={(value) => textSVGItemManager.updateSelectionStyle({ strokeWidth: value[0] })}
+              />
             </div>
 
             {/* Stroke Color */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Color</Label>
-              <ColorPicker color={strokeColor} label="Stroke Color" />
+              <ColorPicker
+                color={selectionStyle.strokeColor}
+                label="Stroke Color"
+                onChange={(color) => textSVGItemManager.updateSelectionStyle({ strokeColor: color })}
+              />
             </div>
           </div>
         </div>
