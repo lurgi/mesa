@@ -1,10 +1,10 @@
 import { proxy } from "valtio";
-import { FontData } from "../domain/fontSVG";
+import { Glyph } from "fontkit";
 
 interface TextSVGStore {
-  textSVG?: FontData;
+  textSVGList: Glyph["path"][];
 }
 
 export const textSVGStore = proxy<TextSVGStore>({
-  textSVG: undefined,
+  textSVGList: [],
 });

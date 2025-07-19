@@ -24,10 +24,8 @@ export function NextButton() {
     const font = create(buffer) as Font;
 
     const run = font.layout(text);
-    const glyph = font.getGlyph(run.glyphs[0].id);
-    const path = glyph.path;
+    textSVGStore.textSVGList = run.glyphs.map((g) => g.path);
 
-    textSVGStore.textSVG = path;
     stepStore.currentStep = Step.EDIT;
   };
 

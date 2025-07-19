@@ -1,3 +1,4 @@
+import { commandsToSVGPath } from "@/src/lib/utils";
 import { textSVGStore } from "@/src/store/textSVGStore";
 import { useSnapshot } from "valtio";
 
@@ -16,44 +17,53 @@ export function FontGlyphRenderer({
   strokeWidth = 0,
   className = "",
 }: FontGlyphRendererProps) {
-  const { textSVG: fontData } = useSnapshot(textSVGStore);
+  const { textSVGList } = useSnapshot(textSVGStore);
 
-  const commandsToSVGPath = (
-    commands: readonly {
-      readonly command: "moveTo" | "lineTo" | "quadraticCurveTo" | "bezierCurveTo" | "closePath";
-      readonly args: readonly number[];
-    }[]
-  ) => {
-    return commands
-      .map((cmd) => {
-        switch (cmd.command) {
-          case "moveTo":
-            return `M ${cmd.args[0]} ${cmd.args[1]}`;
-          case "lineTo":
-            return `L ${cmd.args[0]} ${cmd.args[1]}`;
-          case "quadraticCurveTo":
-            return `Q ${cmd.args[0]} ${cmd.args[1]} ${cmd.args[2]} ${cmd.args[3]}`;
-          case "bezierCurveTo":
-            return `C ${cmd.args[0]} ${cmd.args[1]} ${cmd.args[2]} ${cmd.args[3]} ${cmd.args[4]} ${cmd.args[5]}`;
-          case "closePath":
-            return "Z";
-          default:
-            return "";
-        }
-      })
-      .join(" ");
-  };
+  return (
+    <div className="flex gap-4">
+      {textSVGList.map((_, index) => (
+        <GlyphRenderer
+          key={index}
+          index={index}
+          size={size}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          className={className}
+        />
+      ))}
+    </div>
+  );
+}
 
-  if (!fontData || !fontData.commands) {
-    return null;
-  }
-
-  const pathData = commandsToSVGPath(fontData.commands);
-  const bbox = fontData._bbox;
+function GlyphRenderer({
+  index,
+  size,
+  fill,
+  stroke,
+  strokeWidth,
+  className,
+}: {
+  index: number;
+  size: number;
+  fill: string;
+  stroke: string;
+  strokeWidth: number;
+  className: string;
+}) {
+  const path = useSnapshot(textSVGStore.textSVGList[index]);
+  const pathData = commandsToSVGPath(path.commands);
+  const bbox = path.bbox;
   const viewBox = bbox ? `${bbox.minX} ${bbox.minY} ${bbox.maxX - bbox.minX} ${bbox.maxY - bbox.minY}` : "0 0 648 750";
 
   return (
-    <svg width={size} height={size} viewBox={viewBox} className={className} style={{ display: "block" }}>
+    <svg
+      width={size}
+      height={size}
+      viewBox={viewBox}
+      className={className}
+      style={{ display: "block", transform: "scaleY(-1)" }}
+    >
       <path d={pathData} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />
     </svg>
   );
