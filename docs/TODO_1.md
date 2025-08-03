@@ -35,7 +35,7 @@ function Counter() {
 
 ### 3. Fine-Grained 렌더링
 
-- [ ] Fine-Grained 렌더링 테스트 케이스 작성
+- [x] Fine-Grained 렌더링 테스트 케이스 작성
 - [ ] Fine-Grained 렌더링 동작 구현
 
 ### 4. 중첩 객체 지원
