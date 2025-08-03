@@ -1,2 +1,2 @@
 export * from "./proxy";
-export * from "./useSnapshot";
+export * from "./useStore";

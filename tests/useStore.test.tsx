@@ -354,13 +354,13 @@ describe("useStore() 훅", () => {
 
       function CountComponent() {
         countRenderCount++;
-        const count = useStore(state, (s) => s.count);
+        useStore(state, (s) => s.count);
         return <div data-testid="count-renders">{countRenderCount}</div>;
       }
 
       function NameComponent() {
         nameRenderCount++;
-        const name = useStore(state, (s) => s.name);
+        useStore(state, (s) => s.name);
         return <div data-testid="name-renders">{nameRenderCount}</div>;
       }
 

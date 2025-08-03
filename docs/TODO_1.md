@@ -31,16 +31,16 @@ function Counter() {
 ### 2. useStore() 훅
 
 - [x] useStore() 테스트 케이스 작성
-- [ ] useStore() 훅 구현 (useSyncExternalStore 기반)
+- [x] useStore() 훅 구현 (useSyncExternalStore 기반)
 
 ### 3. Fine-Grained 렌더링
 
-- [x] Fine-Grained 렌더링 테스트 케이스 작성
+- [ ] Fine-Grained 렌더링 테스트 케이스 작성
 - [ ] Fine-Grained 렌더링 동작 구현
 
 ### 4. 중첩 객체 지원
 
-- [x] 중첩 객체 테스트 케이스 작성
+- [ ] 중첩 객체 테스트 케이스 작성
 - [ ] 중첩 객체 지원 구현
 
 ## 완료 조건

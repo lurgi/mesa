@@ -1,4 +1,14 @@
 const proxyMap = new WeakMap<object, any>();
+const listeners = new Set<() => void>();
+
+export function subscribe(callback: () => void) {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+function notifyAll() {
+  listeners.forEach(callback => callback());
+}
 
 export function proxy<T extends object>(target: T): T {
   if (proxyMap.has(target)) {
@@ -23,7 +33,9 @@ export function proxy<T extends object>(target: T): T {
     set(target, property, value, receiver) {
       const result = Reflect.set(target, property, value, receiver);
       
-      // TODO: 여기서 구독자들에게 변경 사항을 알릴 예정
+      if (result) {
+        notifyAll();
+      }
       
       return result;
     },
@@ -31,7 +43,9 @@ export function proxy<T extends object>(target: T): T {
     deleteProperty(target, property) {
       const result = Reflect.deleteProperty(target, property);
       
-      // TODO: 여기서 구독자들에게 삭제 사항을 알릴 예정
+      if (result) {
+        notifyAll();
+      }
       
       return result;
     },
