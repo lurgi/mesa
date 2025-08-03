@@ -1,13 +1,13 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { proxy, useSnapshot } from "../src/main";
+import { proxy, useStore } from "../src/main";
 
-describe("useSnapshot() 훅", () => {
+describe("useStore() 훅", () => {
   describe("기본 기능", () => {
     test("프록시 상태의 현재 값을 반환해야 함", () => {
       const state = proxy({ count: 42 });
 
       function TestComponent() {
-        const count = useSnapshot(state.count);
+        const count = useStore(state, (s) => s.count);
         return <div data-testid="count">{count}</div>;
       }
 
@@ -19,7 +19,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ name: "John" });
 
       function TestComponent() {
-        const name = useSnapshot(state.name);
+        const name = useStore(state, (s) => s.name);
         return <div data-testid="name">{name}</div>;
       }
 
@@ -31,7 +31,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ isVisible: true });
 
       function TestComponent() {
-        const isVisible = useSnapshot(state.isVisible);
+        const isVisible = useStore(state, (s) => s.isVisible);
         return <div data-testid="visible">{isVisible ? "visible" : "hidden"}</div>;
       }
 
@@ -45,7 +45,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ count: 0 });
 
       function TestComponent() {
-        const count = useSnapshot(state.count);
+        const count = useStore(state, (s) => s.count);
         return (
           <div>
             <div data-testid="count">{count}</div>
@@ -68,7 +68,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ count: 5 });
 
       function TestComponent() {
-        const count = useSnapshot(state.count);
+        const count = useStore(state, (s) => s.count);
         return (
           <div>
             <div data-testid="count">{count}</div>
@@ -101,7 +101,7 @@ describe("useSnapshot() 훅", () => {
 
       function TestComponent() {
         renderCount++;
-        const count = useSnapshot(state.count);
+        const count = useStore(state, (s) => s.count);
         return (
           <div>
             <div data-testid="count">{count}</div>
@@ -133,7 +133,7 @@ describe("useSnapshot() 훅", () => {
 
       function TestComponent() {
         renderCount++;
-        const count = useSnapshot(state.count);
+        const count = useStore(state, (s) => s.count);
         return (
           <div>
             <div data-testid="count">{count}</div>
@@ -170,7 +170,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ user: { name: "John", age: 30 } });
 
       function TestComponent() {
-        const userName = useSnapshot(state.user.name);
+        const userName = useStore(state, (s) => s.user.name);
         return <div data-testid="user-name">{userName}</div>;
       }
 
@@ -182,7 +182,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ user: { name: "John", age: 30 } });
 
       function TestComponent() {
-        const userName = useSnapshot(state.user.name);
+        const userName = useStore(state, (s) => s.user.name);
         return (
           <div>
             <div data-testid="user-name">{userName}</div>
@@ -213,7 +213,7 @@ describe("useSnapshot() 훅", () => {
 
       function TestComponent() {
         renderCount++;
-        const userName = useSnapshot(state.user.name);
+        const userName = useStore(state, (s) => s.user.name);
         return (
           <div>
             <div data-testid="user-name">{userName}</div>
@@ -250,7 +250,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ items: ["apple", "banana", "cherry"] });
 
       function TestComponent() {
-        const firstItem = useSnapshot(state.items[0]);
+        const firstItem = useStore(state, (s) => s.items[0]);
         return <div data-testid="first-item">{firstItem}</div>;
       }
 
@@ -262,7 +262,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ items: ["apple", "banana"] });
 
       function TestComponent() {
-        const firstItem = useSnapshot(state.items[0]);
+        const firstItem = useStore(state, (s) => s.items[0]);
         return (
           <div>
             <div data-testid="first-item">{firstItem}</div>
@@ -291,7 +291,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ items: ["apple"] });
 
       function TestComponent() {
-        const length = useSnapshot(state.items.length);
+        const length = useStore(state, (s) => s.items.length);
         return (
           <div>
             <div data-testid="length">{length}</div>
@@ -316,12 +316,12 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ count: 0 });
 
       function Component1() {
-        const count = useSnapshot(state.count);
+        const count = useStore(state, (s) => s.count);
         return <div data-testid="count1">{count}</div>;
       }
 
       function Component2() {
-        const count = useSnapshot(state.count);
+        const count = useStore(state, (s) => s.count);
         return <div data-testid="count2">{count}</div>;
       }
 
@@ -354,13 +354,13 @@ describe("useSnapshot() 훅", () => {
 
       function CountComponent() {
         countRenderCount++;
-        const count = useSnapshot(state.count);
+        const count = useStore(state, (s) => s.count);
         return <div data-testid="count-renders">{countRenderCount}</div>;
       }
 
       function NameComponent() {
         nameRenderCount++;
-        const name = useSnapshot(state.name);
+        const name = useStore(state, (s) => s.name);
         return <div data-testid="name-renders">{nameRenderCount}</div>;
       }
 
@@ -404,7 +404,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy<any>({ value: null });
 
       function TestComponent() {
-        const value = useSnapshot(state.value);
+        const value = useStore(state, (s) => s.value);
         return <div data-testid="value">{value === null ? "null" : String(value)}</div>;
       }
 
@@ -416,7 +416,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy<any>({ value: undefined });
 
       function TestComponent() {
-        const value = useSnapshot(state.value);
+        const value = useStore(state, (s) => s.value);
         return <div data-testid="value">{value === undefined ? "undefined" : String(value)}</div>;
       }
 
@@ -428,7 +428,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ value: 0 });
 
       function TestComponent() {
-        const value = useSnapshot(state.value);
+        const value = useStore(state, (s) => s.value);
         return <div data-testid="value">{value}</div>;
       }
 
@@ -440,7 +440,7 @@ describe("useSnapshot() 훅", () => {
       const state = proxy({ value: "" });
 
       function TestComponent() {
-        const value = useSnapshot(state.value);
+        const value = useStore(state, (s) => s.value);
         return <div data-testid="value">"{value}"</div>;
       }
 
