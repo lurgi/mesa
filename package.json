@@ -1,0 +1,27 @@
+{
+  "name": "mesa",
+  "private": false,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/mesa.umd.cjs",
+  "module": "./dist/mesa.js",
+  "types": "./dist/main.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/mesa.js",
+      "require": "./dist/mesa.umd.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  }
+}
