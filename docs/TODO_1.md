@@ -25,8 +25,8 @@ function Counter() {
 
 ### 1. proxy() 함수
 
-- [ ] proxy() 테스트 케이스 작성
-- [ ] proxy() 함수 구현
+- [x] proxy() 테스트 케이스 작성
+- [x] proxy() 함수 구현
 
 ### 2. useSnapshot() 훅
 

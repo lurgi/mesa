@@ -138,7 +138,7 @@ describe("proxy() 함수", () => {
 
   describe("엣지 케이스", () => {
     test("빈 객체를 처리해야 함", () => {
-      const state = proxy({});
+      const state = proxy<any>({});
 
       expect(Object.keys(state)).toEqual([]);
 
