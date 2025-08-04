@@ -5,59 +5,50 @@ export function useStore<T extends object, R>(store: T, selector: (state: T) => 
   const selectorRef = useRef(selector);
   const subscribedPathsRef = useRef<Set<string>>(new Set());
   const unsubscribersRef = useRef<Array<() => void>>([]);
+  const lastValueRef = useRef<R | undefined>(undefined);
 
   selectorRef.current = selector;
 
-  const updateSubscriptions = (callback: () => void) => {
+  const subscribe = (callback: () => void) => {
     const tracker = startTracking();
-    selectorRef.current(store);
+    const initialValue = selectorRef.current(store);
     stopTracking();
 
-    const newPaths = tracker.paths;
-    const currentPaths = subscribedPathsRef.current;
+    lastValueRef.current = initialValue;
+    const paths = tracker.paths;
+    subscribedPathsRef.current = new Set(paths);
 
-    if (!areSetsEqual(newPaths, currentPaths)) {
-      unsubscribersRef.current.forEach(unsub => unsub());
-      unsubscribersRef.current = [];
-      subscribedPathsRef.current = new Set(newPaths);
+    paths.forEach((path) => {
+      const unsubscriber = subscribeToPath(path, () => {
+        const newValue = selectorRef.current(store);
 
-      newPaths.forEach(path => {
-        const unsubscriber = subscribeToPath(path, () => {
-          updateSubscriptions(callback);
+        if (!Object.is(lastValueRef.current, newValue)) {
+          lastValueRef.current = newValue;
           callback();
-        });
-        unsubscribersRef.current.push(unsubscriber);
+        }
       });
-    }
-  };
-
-  const subscribeToStore = (callback: () => void) => {
-    updateSubscriptions(callback);
+      unsubscribersRef.current.push(unsubscriber);
+    });
 
     return () => {
-      unsubscribersRef.current.forEach(unsub => unsub());
+      unsubscribersRef.current.forEach((unsub) => unsub());
       unsubscribersRef.current = [];
       subscribedPathsRef.current.clear();
     };
   };
 
   const getSnapshot = (): R => {
-    return selectorRef.current(store);
+    if (lastValueRef.current === undefined) {
+      lastValueRef.current = selectorRef.current(store);
+    }
+    return lastValueRef.current;
   };
 
   useLayoutEffect(() => {
     return () => {
-      unsubscribersRef.current.forEach(unsub => unsub());
+      unsubscribersRef.current.forEach((unsub) => unsub());
     };
   }, []);
 
-  return useSyncExternalStore(subscribeToStore, getSnapshot, getSnapshot);
-}
-
-function areSetsEqual<T>(set1: Set<T>, set2: Set<T>): boolean {
-  if (set1.size !== set2.size) return false;
-  for (const item of set1) {
-    if (!set2.has(item)) return false;
-  }
-  return true;
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

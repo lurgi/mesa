@@ -78,32 +78,19 @@ export function proxy<T extends object>(target: T, parentPath: string = ""): T {
 
   const proxied = new Proxy(target, {
     get(target, property, receiver) {
-      const currentPath = parentPath
-        ? `${parentPath}.${String(property)}`
-        : String(property);
+      const currentPath = parentPath ? `${parentPath}.${String(property)}` : String(property);
       trackAccess(currentPath);
 
       const value = Reflect.get(target, property, receiver);
 
-      // Handle array methods that might modify the array
       if (Array.isArray(target) && typeof value === "function") {
-        const arrayMethods = [
-          "push",
-          "pop",
-          "shift",
-          "unshift",
-          "splice",
-          "sort",
-          "reverse",
-          "fill",
-        ];
+        const arrayMethods = ["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill"];
         if (arrayMethods.includes(String(property))) {
           return function (this: any, ...args: any[]) {
             const result = value.apply(this, args);
             const arrayPath = parentPath || "root";
             notifyPath(arrayPath);
             notifyPath(`${arrayPath}.length`);
-            // Also notify all indices that might be affected
             for (let i = 0; i < this.length; i++) {
               notifyPath(`${arrayPath}.${i}`);
             }
@@ -121,15 +108,13 @@ export function proxy<T extends object>(target: T, parentPath: string = ""): T {
     },
 
     set(target, property, value, receiver) {
+      const oldValue = Reflect.get(target, property, receiver);
       const result = Reflect.set(target, property, value, receiver);
 
-      if (result) {
-        const currentPath = parentPath
-          ? `${parentPath}.${String(property)}`
-          : String(property);
+      if (result && !Object.is(oldValue, value)) {
+        const currentPath = parentPath ? `${parentPath}.${String(property)}` : String(property);
         notifyPath(currentPath);
 
-        // Handle array length changes
         if (Array.isArray(target)) {
           if (property === "length" || !isNaN(Number(property))) {
             notifyPath(parentPath);
@@ -147,9 +132,7 @@ export function proxy<T extends object>(target: T, parentPath: string = ""): T {
       const result = Reflect.deleteProperty(target, property);
 
       if (result) {
-        const currentPath = parentPath
-          ? `${parentPath}.${String(property)}`
-          : String(property);
+        const currentPath = parentPath ? `${parentPath}.${String(property)}` : String(property);
         notifyPath(currentPath);
         notifyAll();
       }
