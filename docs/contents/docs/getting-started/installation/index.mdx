@@ -1,0 +1,104 @@
+---
+title: Installation
+description: Learn how to install Mesa in your React project.
+---
+
+Getting started with Mesa is simple! Mesa requires [Node.js](https://nodejs.org/) version 16 or higher and React 18 or higher for optimal performance.
+
+## Package Manager Installation
+
+Mesa is available as an npm package. Choose your preferred package manager:
+
+<Stepper>
+  <StepperItem title="Step 1: Install Mesa">
+    Install Mesa using your preferred package manager:
+
+    ```bash
+    # npm
+    npm install mesa
+
+    # yarn
+    yarn add mesa
+
+    # pnpm
+    pnpm add mesa
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 2: Import Mesa in Your Project">
+    Import the required functions in your React components:
+
+    ```javascript
+    import { proxy, useStore } from "mesa";
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 3: Create Your First State">
+    Create a proxy state object:
+
+    ```javascript
+    const state = proxy({
+      count: 0,
+      user: { name: "John", age: 25 }
+    });
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 4: Use State in Components">
+    Subscribe to specific parts of your state:
+
+    ```javascript
+    function Counter() {
+      const count = useStore(state, (s) => s.count);
+      return (
+        <button onClick={() => state.count++}>
+          Count: {count}
+        </button>
+      );
+    }
+    ```
+  </StepperItem>
+</Stepper>
+
+## Requirements
+
+<Note title="Compatibility">
+Mesa is compatible with React 18+ and requires the following peer dependencies to be installed in your project.
+</Note>
+
+| Package | Version | Required |
+|---------|---------|----------|
+| React   | ^18.0.0 \| ^19.0.0 | Yes |
+| React DOM | ^18.0.0 \| ^19.0.0 | Yes |
+
+## TypeScript Support
+
+Mesa comes with built-in TypeScript support. No additional type definitions are needed:
+
+```typescript
+interface AppState {
+  count: number;
+  user: {
+    name: string;
+    age: number;
+  };
+}
+
+const state = proxy<AppState>({
+  count: 0,
+  user: { name: "John", age: 25 }
+});
+
+// Type-safe selector
+const count: number = useStore(state, (s) => s.count);
+```
+
+## Bundle Size
+
+Mesa is designed to be lightweight:
+
+- **Minified**: ~2KB
+- **Minified + Gzipped**: ~1KB
+- **Zero Dependencies**: No external dependencies
+
+Ready to start building? Check out our [Quick Start Guide](/docs/getting-started/quick-start-guide) for your first Mesa application!

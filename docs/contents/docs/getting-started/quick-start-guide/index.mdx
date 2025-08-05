@@ -1,0 +1,147 @@
+---
+title: Quick Start Guide
+description: Get up and running with Mesa in 5 minutes.
+---
+
+This guide will help you build your first Mesa application in just a few minutes. We'll create a simple counter app that demonstrates Mesa's fine-grained reactivity.
+
+<Note type="info">
+Make sure you've completed the [Installation](/docs/getting-started/installation) before proceeding.
+</Note>
+
+## Your First Mesa App
+
+Let's build a counter application that showcases Mesa's core features:
+
+<Stepper>
+  <StepperItem title="Step 1: Create the State">
+    First, create a proxy state object that will hold our application data:
+
+    ```javascript
+    import { proxy } from "mesa";
+
+    // Create a global state
+    const appState = proxy({
+      count: 0,
+      user: {
+        name: "Guest",
+        isLoggedIn: false
+      }
+    });
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 2: Create Components">
+    Now, create components that subscribe to specific parts of the state:
+
+    ```jsx
+    import { useStore } from "mesa";
+
+    function Counter() {
+      // Only re-renders when count changes
+      const count = useStore(appState, (state) => state.count);
+      
+      return (
+        <div>
+          <h2>Count: {count}</h2>
+          <button onClick={() => appState.count++}>
+            Increment
+          </button>
+          <button onClick={() => appState.count--}>
+            Decrement
+          </button>
+          <button onClick={() => appState.count = 0}>
+            Reset
+          </button>
+        </div>
+      );
+    }
+
+    function UserProfile() {
+      // Only re-renders when user data changes
+      const user = useStore(appState, (state) => state.user);
+      
+      return (
+        <div>
+          <h3>User: {user.name}</h3>
+          <p>Status: {user.isLoggedIn ? "Logged In" : "Guest"}</p>
+        </div>
+      );
+    }
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 3: Compose Your App">
+    Combine the components to create your complete application:
+
+    ```jsx
+    function App() {
+      return (
+        <div>
+          <h1>Mesa Counter App</h1>
+          <Counter />
+          <UserProfile />
+          
+          {/* This button only affects UserProfile, not Counter */}
+          <button 
+            onClick={() => {
+              appState.user.name = "John";
+              appState.user.isLoggedIn = true;
+            }}
+          >
+            Login as John
+          </button>
+        </div>
+      );
+    }
+
+    export default App;
+    ```
+  </StepperItem>
+
+  <StepperItem title="Step 4: Run Your App">
+    Start your development server and see Mesa in action:
+
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    # or
+    pnpm dev
+    ```
+
+    Try clicking the buttons and notice how only the relevant components re-render!
+  </StepperItem>
+</Stepper>
+
+## Key Concepts Demonstrated
+
+This simple example showcases Mesa's core benefits:
+
+### 🎯 **Fine-Grained Updates**
+- Clicking "Increment" only re-renders the `Counter` component
+- Clicking "Login as John" only re-renders the `UserProfile` component
+- Neither affects the other, even though they share the same state object
+
+### 🚀 **Simple API**
+- `proxy()` creates reactive state
+- `useStore()` subscribes to specific data
+- Direct mutations trigger updates automatically
+
+### 🔥 **Performance**
+- Zero unnecessary re-renders
+- Automatic dependency tracking
+- Efficient path-based subscriptions
+
+## What's Next?
+
+Now that you've built your first Mesa app, explore these topics:
+
+- **[API Reference](/docs/api/proxy)** - Deep dive into `proxy()` and `useStore()`
+- **[Fine-Grained Reactivity](/docs/guides/fine-grained)** - Understanding how Mesa tracks dependencies
+- **[Performance Guide](/docs/guides/performance)** - Optimizing your Mesa applications
+- **[Examples](/docs/examples/counter)** - More practical examples and patterns
+
+<Note type="success">
+🎉 Congratulations! You've successfully created your first Mesa application with fine-grained reactivity.
+</Note>

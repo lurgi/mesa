@@ -1,0 +1,401 @@
+---
+title: Fine-Grained Reactivity
+description: Deep dive into Mesa's path-based dependency tracking system.
+---
+
+Mesa's fine-grained reactivity is what sets it apart from other state management solutions. Instead of re-rendering entire components when any part of the state changes, Mesa tracks exactly which properties each component uses and only triggers updates when those specific properties change.
+
+## How It Works
+
+### Traditional State Management Problem
+
+In traditional React state management, components re-render whenever the state object changes:
+
+```jsx
+// Traditional approach - ALL components re-render
+const [state, setState] = useState({
+  count: 0,
+  user: { name: "John", age: 25 },
+  todos: []
+});
+
+function Counter() {
+  return <div>{state.count}</div>; // Re-renders even when user changes
+}
+
+function UserName() {
+  return <div>{state.user.name}</div>; // Re-renders even when count changes
+}
+```
+
+### Mesa's Solution: Path-Based Tracking
+
+Mesa tracks dependencies at the property path level:
+
+```jsx
+const state = proxy({
+  count: 0,
+  user: { name: "John", age: 25 },
+  todos: []
+});
+
+function Counter() {
+  // Only subscribes to "count" path
+  const count = useStore(state, s => s.count);
+  return <div>{count}</div>; // Only re-renders when count changes
+}
+
+function UserName() {
+  // Only subscribes to "user.name" path
+  const name = useStore(state, s => s.user.name);
+  return <div>{name}</div>; // Only re-renders when user.name changes
+}
+```
+
+## Dependency Tracking Process
+
+Mesa's dependency tracking works in three phases:
+
+### 1. Access Tracking Phase
+
+When `useStore` runs its selector, Mesa tracks which properties are accessed:
+
+```jsx
+const user = useStore(state, s => {
+  // Mesa tracks: "user.name", "user.age"
+  return {
+    name: s.user.name,
+    age: s.user.age
+  };
+});
+```
+
+### 2. Subscription Phase
+
+Mesa creates subscriptions only for the accessed paths:
+
+```jsx
+// Component subscribes to:
+// - "user.name" 
+// - "user.age"
+// NOT to "count" or "todos"
+```
+
+### 3. Update Phase
+
+When state changes, only components subscribed to changed paths re-render:
+
+```jsx
+state.count++; // Only components using "count" re-render
+state.user.name = "Jane"; // Only components using "user.name" re-render
+state.user.profile = {}; // Components using "user" (entire object) re-render
+```
+
+## Path Resolution Examples
+
+### Simple Properties
+
+```jsx
+const state = proxy({
+  count: 0,
+  name: "John"
+});
+
+// Tracks path: "count"
+const count = useStore(state, s => s.count);
+
+// Tracks path: "name"
+const name = useStore(state, s => s.name);
+```
+
+### Nested Objects
+
+```jsx
+const state = proxy({
+  user: {
+    profile: {
+      name: "John",
+      age: 25
+    },
+    settings: {
+      theme: "dark"
+    }
+  }
+});
+
+// Tracks path: "user.profile.name"
+const name = useStore(state, s => s.user.profile.name);
+
+// Tracks path: "user.settings.theme"
+const theme = useStore(state, s => s.user.settings.theme);
+
+// Tracks path: "user.profile" (entire object)
+const profile = useStore(state, s => s.user.profile);
+```
+
+### Array Access
+
+```jsx
+const state = proxy({
+  items: [1, 2, 3],
+  todos: [
+    { id: 1, text: "Task 1", done: false },
+    { id: 2, text: "Task 2", done: true }
+  ]
+});
+
+// Tracks path: "items.length"
+const count = useStore(state, s => s.items.length);
+
+// Tracks path: "items.0" (first element)
+const first = useStore(state, s => s.items[0]);
+
+// Tracks path: "todos.0.done"
+const firstTodoDone = useStore(state, s => s.todos[0]?.done);
+
+// Tracks path: "todos" (entire array)
+const allTodos = useStore(state, s => s.todos);
+```
+
+## Advanced Tracking Scenarios
+
+### Conditional Access
+
+```jsx
+const state = proxy({
+  user: { isLoggedIn: false, profile: null }
+});
+
+function UserProfile() {
+  const data = useStore(state, s => {
+    // Tracks: "user.isLoggedIn"
+    if (s.user.isLoggedIn) {
+      // Also tracks: "user.profile.name" (when logged in)
+      return s.user.profile?.name;
+    }
+    return null;
+  });
+  
+  return <div>{data}</div>;
+}
+
+// This component only re-renders when:
+// 1. user.isLoggedIn changes
+// 2. user.profile.name changes (if logged in)
+```
+
+### Computed Dependencies
+
+```jsx
+function TodoStats() {
+  const stats = useStore(state, s => {
+    // Tracks entire "todos" array
+    const total = s.todos.length;
+    const completed = s.todos.filter(t => t.done).length;
+    
+    return {
+      total,
+      completed,
+      remaining: total - completed
+    };
+  });
+  
+  return (
+    <div>
+      <div>Total: {stats.total}</div>
+      <div>Completed: {stats.completed}</div>
+      <div>Remaining: {stats.remaining}</div>
+    </div>
+  );
+}
+
+// Re-renders when any todo is added, removed, or its 'done' status changes
+```
+
+### Dynamic Path Access
+
+```jsx
+function DynamicAccess({ userId }) {
+  const userName = useStore(state, s => {
+    // Tracks different paths based on userId
+    return s.users[userId]?.name;
+  });
+  
+  return <div>{userName}</div>;
+}
+
+// Subscription updates when userId changes
+```
+
+## Performance Benefits
+
+### Render Reduction
+
+```jsx
+// Without Mesa - all components re-render
+const [state, setState] = useState({ count: 0, user: { name: "John" } });
+
+// With Mesa - only affected components re-render
+const state = proxy({ count: 0, user: { name: "John" } });
+
+state.count++; // Only Counter components re-render
+state.user.name = "Jane"; // Only UserName components re-render
+```
+
+### Memory Efficiency
+
+Mesa's path-based system is memory efficient:
+
+- Only stores subscriptions for accessed paths
+- Automatically cleans up unused subscriptions
+- No unnecessary re-computations
+
+### Scalability
+
+As your app grows, Mesa's benefits compound:
+
+```jsx
+const state = proxy({
+  ui: { /* 20 properties */ },
+  data: { /* 50 properties */ },
+  cache: { /* 100 properties */ }
+});
+
+// Component only subscribes to what it uses
+function SmallComponent() {
+  const loading = useStore(state, s => s.ui.loading);
+  return loading ? <Spinner /> : <Content />;
+}
+```
+
+## Debugging Dependency Tracking
+
+### Tracking Current Dependencies
+
+You can debug which paths a component tracks:
+
+```jsx
+function DebugComponent() {
+  const data = useStore(state, s => {
+    console.log('Selector running'); // Logs when dependencies change
+    return {
+      count: s.count,
+      name: s.user.name
+    };
+  });
+  
+  console.log('Component rendering'); // Logs when component re-renders
+  return <div>{data.count} - {data.name}</div>;
+}
+```
+
+### Understanding Re-render Causes
+
+```jsx
+// This will re-render when ANY property of user changes
+const user = useStore(state, s => s.user);
+
+// This will only re-render when user.name changes
+const name = useStore(state, s => s.user.name);
+
+// This will re-render when user.name OR user.age changes
+const info = useStore(state, s => ({
+  name: s.user.name,
+  age: s.user.age
+}));
+```
+
+## Best Practices for Fine-Grained Updates
+
+### ✅ Select Specific Properties
+
+```jsx
+// Good - specific selection
+const name = useStore(state, s => s.user.name);
+const age = useStore(state, s => s.user.age);
+
+// Avoid - overly broad selection
+const user = useStore(state, s => s.user); // Re-renders for any user change
+```
+
+### ✅ Use Multiple Subscriptions
+
+```jsx
+// Good - separate concerns
+function UserCard() {
+  const name = useStore(state, s => s.user.name);
+  const avatar = useStore(state, s => s.user.avatar);
+  const isOnline = useStore(state, s => s.user.isOnline);
+  
+  // Each property can update independently
+  return <div>{name} - {isOnline ? "Online" : "Offline"}</div>;
+}
+```
+
+### ✅ Optimize Computed Values
+
+```jsx
+// Good - memoize expensive computations
+const expensiveValue = useMemo(() => {
+  return useStore(state, s => 
+    s.largeList.filter(item => item.isActive).length
+  );
+}, []);
+
+// Or use a separate computed state
+const computedState = proxy({
+  get activeCount() {
+    return state.largeList.filter(item => item.isActive).length;
+  }
+});
+```
+
+## Common Patterns
+
+### Parent-Child Communication
+
+```jsx
+function TodoApp() {
+  // Parent only re-renders when todos array structure changes
+  const todos = useStore(state, s => s.todos);
+  
+  return (
+    <div>
+      {todos.map(todo => (
+        <TodoItem key={todo.id} todoId={todo.id} />
+      ))}
+    </div>
+  );
+}
+
+function TodoItem({ todoId }) {
+  // Child only re-renders when this specific todo changes
+  const todo = useStore(state, s => 
+    s.todos.find(t => t.id === todoId)
+  );
+  
+  return <div>{todo?.text}</div>;
+}
+```
+
+### Conditional Rendering
+
+```jsx
+function ConditionalContent() {
+  const isLoading = useStore(state, s => s.ui.isLoading);
+  const error = useStore(state, s => s.ui.error);
+  const data = useStore(state, s => s.data);
+  
+  if (isLoading) return <Loading />; // Only re-renders when isLoading changes
+  if (error) return <Error />; // Only re-renders when error changes  
+  return <Content data={data} />; // Only re-renders when data changes
+}
+```
+
+Mesa's fine-grained reactivity system ensures your React applications remain performant as they scale, eliminating unnecessary re-renders and providing predictable update behavior.
+
+## See Also
+
+- **[Performance Guide](/docs/guides/performance)** - Optimizing Mesa applications
+- **[useStore()](/docs/api/useStore)** - React hook for subscribing to state
+- **[Examples](/docs/examples/counter)** - Practical examples of fine-grained updates

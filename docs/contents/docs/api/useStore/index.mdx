@@ -1,0 +1,359 @@
+---
+title: useStore()
+description: React hook for subscribing to reactive proxy state with fine-grained updates.
+---
+
+The `useStore()` hook is Mesa's React integration that allows components to subscribe to specific parts of proxy state. It ensures components only re-render when their selected data actually changes.
+
+## Syntax
+
+```typescript
+function useStore<T extends object, R>(
+  store: T, 
+  selector: (state: T) => R
+): R
+```
+
+### Parameters
+
+- **`store`** - A proxy object created with `proxy()`
+- **`selector`** - A function that extracts the data your component needs
+
+### Returns
+
+Returns the selected data from the store. The component will re-render only when this data changes.
+
+## Basic Usage
+
+### Simple Property Selection
+
+```jsx
+import { proxy, useStore } from "mesa";
+
+const state = proxy({
+  count: 0,
+  name: "John"
+});
+
+function Counter() {
+  // Only re-renders when count changes
+  const count = useStore(state, (s) => s.count);
+  
+  return (
+    <div>
+      <span>Count: {count}</span>
+      <button onClick={() => state.count++}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+### Nested Property Selection
+
+```jsx
+const state = proxy({
+  user: {
+    name: "John",
+    profile: {
+      age: 25,
+      email: "john@example.com"
+    }
+  }
+});
+
+function UserProfile() {
+  // Only re-renders when user.name changes
+  const name = useStore(state, (s) => s.user.name);
+  
+  // Only re-renders when user.profile.age changes  
+  const age = useStore(state, (s) => s.user.profile.age);
+  
+  return (
+    <div>
+      <h2>{name}</h2>
+      <p>Age: {age}</p>
+    </div>
+  );
+}
+```
+
+## Advanced Selection Patterns
+
+### Object Selection
+
+```jsx
+function UserCard() {
+  // Re-renders when any property of user changes
+  const user = useStore(state, (s) => s.user);
+  
+  return (
+    <div>
+      <h3>{user.name}</h3>
+      <p>{user.profile.email}</p>
+    </div>
+  );
+}
+```
+
+### Array Selection
+
+```jsx
+const state = proxy({
+  todos: [
+    { id: 1, text: "Learn Mesa", done: false },
+    { id: 2, text: "Build app", done: false }
+  ]
+});
+
+function TodoList() {
+  // Re-renders when todos array changes
+  const todos = useStore(state, (s) => s.todos);
+  
+  return (
+    <ul>
+      {todos.map(todo => (
+        <li key={todo.id}>
+          {todo.text} - {todo.done ? "Done" : "Pending"}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function TodoCount() {
+  // Only re-renders when array length changes
+  const count = useStore(state, (s) => s.todos.length);
+  
+  return <div>Total: {count}</div>;
+}
+```
+
+### Computed Values
+
+```jsx
+function TodoStats() {
+  // Re-renders when relevant todo properties change
+  const stats = useStore(state, (s) => ({
+    total: s.todos.length,
+    completed: s.todos.filter(t => t.done).length,
+    pending: s.todos.filter(t => !t.done).length
+  }));
+  
+  return (
+    <div>
+      <p>Total: {stats.total}</p>
+      <p>Completed: {stats.completed}</p>
+      <p>Pending: {stats.pending}</p>
+    </div>
+  );
+}
+```
+
+## TypeScript Support
+
+Mesa provides full type safety with TypeScript:
+
+```typescript
+interface AppState {
+  count: number;
+  user: {
+    name: string;
+    age: number;
+  };
+  items: string[];
+}
+
+const state = proxy<AppState>({
+  count: 0,
+  user: { name: "John", age: 25 },
+  items: ["a", "b", "c"]
+});
+
+function TypedComponent() {
+  // TypeScript infers return type as number
+  const count = useStore(state, (s) => s.count);
+  
+  // TypeScript infers return type as string
+  const name = useStore(state, (s) => s.user.name);
+  
+  // TypeScript infers return type as string[]
+  const items = useStore(state, (s) => s.items);
+  
+  return <div>{count} - {name} - {items.length}</div>;
+}
+```
+
+## Performance Optimization
+
+### Selector Stability
+
+The selector function should be stable to avoid unnecessary subscriptions:
+
+```jsx
+// ✅ Good - selector is stable
+function Component() {
+  const name = useStore(state, (s) => s.user.name);
+  return <div>{name}</div>;
+}
+
+// ❌ Avoid - creates new selector each render
+function Component() {
+  const user = useStore(state, (s) => ({ 
+    name: s.user.name,
+    age: s.user.age 
+  }));
+  return <div>{user.name}</div>;
+}
+
+// ✅ Better - use useCallback for complex selectors
+function Component() {
+  const selector = useCallback((s) => ({
+    name: s.user.name,
+    age: s.user.age
+  }), []);
+  
+  const user = useStore(state, selector);
+  return <div>{user.name}</div>;
+}
+```
+
+### Fine-Grained Subscriptions
+
+Mesa automatically tracks which properties your selector accesses:
+
+```jsx
+function OptimalComponent() {
+  // Only subscribes to count changes
+  const count = useStore(state, (s) => s.count);
+  
+  // Only subscribes to user.name changes  
+  const name = useStore(state, (s) => s.user.name);
+  
+  // This component won't re-render when user.age changes
+  return <div>{count} - {name}</div>;
+}
+```
+
+## Common Patterns
+
+### Multiple Subscriptions
+
+```jsx
+function Dashboard() {
+  const user = useStore(state, (s) => s.user);
+  const stats = useStore(state, (s) => s.stats);
+  const notifications = useStore(state, (s) => s.notifications);
+  
+  return (
+    <div>
+      <UserSection user={user} />
+      <StatsSection stats={stats} />
+      <NotificationSection notifications={notifications} />
+    </div>
+  );
+}
+```
+
+### Conditional Selection
+
+```jsx
+function ConditionalComponent() {
+  const isLoggedIn = useStore(state, (s) => s.user.isLoggedIn);
+  
+  // Only access user data if logged in
+  const userData = useStore(state, (s) => 
+    s.user.isLoggedIn ? s.user.profile : null
+  );
+  
+  if (!isLoggedIn) {
+    return <LoginForm />;
+  }
+  
+  return <UserProfile user={userData} />;
+}
+```
+
+### Array Item Selection
+
+```jsx
+function TodoItem({ todoId }) {
+  // Only re-renders when this specific todo changes
+  const todo = useStore(state, (s) => 
+    s.todos.find(t => t.id === todoId)
+  );
+  
+  if (!todo) return null;
+  
+  return (
+    <div>
+      <span>{todo.text}</span>
+      <button onClick={() => todo.done = !todo.done}>
+        Toggle
+      </button>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### ✅ Do
+
+```jsx
+// Use specific selectors
+const name = useStore(state, (s) => s.user.name);
+
+// Group related data
+const userInfo = useStore(state, (s) => ({
+  name: s.user.name,
+  email: s.user.email
+}));
+
+// Use multiple specific subscriptions
+const count = useStore(state, (s) => s.count);
+const status = useStore(state, (s) => s.status);
+```
+
+### ❌ Don't
+
+```jsx
+// Don't select entire state
+const state = useStore(store, (s) => s); // ❌
+
+// Don't create new objects unnecessarily
+const data = useStore(state, (s) => ({
+  ...s.user,
+  computed: s.other.value * 2
+})); // ❌ Creates new object each time
+
+// Don't use complex computations in selectors without memoization
+const expensive = useStore(state, (s) => 
+  s.items.map(item => expensiveTransform(item))
+); // ❌ Runs on every render
+```
+
+## Integration with React DevTools
+
+Mesa integrates with React DevTools for debugging:
+
+```jsx
+// Components show their Mesa dependencies
+function DebugComponent() {
+  const count = useStore(state, (s) => s.count);
+  const name = useStore(state, (s) => s.user.name);
+  
+  // React DevTools will show:
+  // - Component re-renders
+  // - Mesa state subscriptions
+  return <div>{count} - {name}</div>;
+}
+```
+
+## See Also
+
+- **[proxy()](/docs/api/proxy)** - Creating reactive state objects
+- **[Fine-Grained Reactivity](/docs/guides/fine-grained)** - Understanding dependency tracking
+- **[Performance Guide](/docs/guides/performance)** - Optimizing component updates
+- **[Examples](/docs/examples/counter)** - Practical usage examples

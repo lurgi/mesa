@@ -1,0 +1,252 @@
+---
+title: proxy()
+description: Create reactive proxy objects that automatically track state changes.
+---
+
+The `proxy()` function is the core of Mesa's reactivity system. It creates a proxy wrapper around your state objects that automatically tracks property access and mutations.
+
+## Syntax
+
+```typescript
+function proxy<T extends object>(target: T): T
+```
+
+### Parameters
+
+- **`target`** - The object to make reactive. Can be any JavaScript object including nested objects and arrays.
+
+### Returns
+
+Returns a proxy object that behaves identically to the original object but with reactive capabilities.
+
+## Basic Usage
+
+### Simple Object
+
+```javascript
+import { proxy } from "mesa";
+
+const state = proxy({
+  count: 0,
+  name: "John"
+});
+
+// Direct mutations are tracked
+state.count = 5;
+state.name = "Jane";
+```
+
+### Nested Objects
+
+```javascript
+const state = proxy({
+  user: {
+    name: "John",
+    profile: {
+      age: 25,
+      email: "john@example.com"
+    }
+  },
+  settings: {
+    theme: "dark",
+    notifications: true
+  }
+});
+
+// All nested mutations are tracked
+state.user.name = "Jane";
+state.user.profile.age = 26;
+state.settings.theme = "light";
+```
+
+### Arrays
+
+```javascript
+const state = proxy({
+  items: [1, 2, 3],
+  todos: [
+    { id: 1, text: "Learn Mesa", done: false },
+    { id: 2, text: "Build app", done: false }
+  ]
+});
+
+// Array mutations are tracked
+state.items.push(4);
+state.items[0] = 10;
+
+// Array methods are supported
+state.todos.push({ id: 3, text: "Deploy", done: false });
+state.todos[0].done = true;
+```
+
+## Advanced Features
+
+### Property Addition and Deletion
+
+```javascript
+const state = proxy({
+  user: { name: "John" }
+});
+
+// Adding new properties
+state.user.age = 25;
+state.newProperty = "value";
+
+// Deleting properties
+delete state.user.age;
+```
+
+### Array Methods
+
+All standard array methods are supported and tracked:
+
+```javascript
+const state = proxy({
+  list: [1, 2, 3]
+});
+
+// These operations trigger updates
+state.list.push(4);           // Add element
+state.list.pop();             // Remove last
+state.list.shift();           // Remove first
+state.list.unshift(0);        // Add to beginning
+state.list.splice(1, 1, 5);   // Replace element
+state.list.sort();            // Sort array
+state.list.reverse();         // Reverse array
+```
+
+## TypeScript Support
+
+Mesa provides full TypeScript support with type preservation:
+
+```typescript
+interface AppState {
+  count: number;
+  user: {
+    name: string;
+    age?: number;
+  };
+  items: string[];
+}
+
+const state = proxy<AppState>({
+  count: 0,
+  user: { name: "John" },
+  items: []
+});
+
+// TypeScript will enforce types
+state.count = 5;        // ✓ Valid
+state.count = "hello";  // ✗ Type error
+state.user.name = "Jane"; // ✓ Valid
+state.items.push("new"); // ✓ Valid
+```
+
+## Performance Characteristics
+
+### Efficient Tracking
+
+Mesa's proxy implementation is optimized for performance:
+
+- **Path-based tracking**: Only tracks accessed properties
+- **Lazy proxying**: Nested objects are proxied on first access
+- **Minimal overhead**: Direct property access has near-zero performance impact
+
+### Memory Management
+
+```javascript
+const state = proxy({
+  data: { /* large object */ }
+});
+
+// Only creates proxies for accessed paths
+const name = state.data.user.name; // Creates proxies for 'data' and 'user'
+const count = state.count;         // No additional proxy creation
+```
+
+## Best Practices
+
+### ✅ Do
+
+```javascript
+// Create proxy at the top level
+const state = proxy({
+  user: { name: "John" },
+  settings: { theme: "dark" }
+});
+
+// Use direct mutations
+state.user.name = "Jane";
+
+// Group related state
+const appState = proxy({
+  ui: { loading: false, error: null },
+  data: { users: [], posts: [] }
+});
+```
+
+### ❌ Don't
+
+```javascript
+// Don't proxy primitives
+const state = proxy(42);        // ❌ Won't work
+const state = proxy("string");  // ❌ Won't work
+
+// Don't create proxies inside components
+function Component() {
+  const state = proxy({ count: 0 }); // ❌ Creates new proxy each render
+  // ...
+}
+
+// Don't proxy React elements or functions
+const state = proxy({
+  component: <div />,           // ❌ Avoid
+  callback: () => {},           // ❌ Avoid
+  data: { count: 0 }           // ✅ Good
+});
+```
+
+## Common Patterns
+
+### State Factory
+
+```javascript
+function createAppState() {
+  return proxy({
+    user: null,
+    isAuthenticated: false,
+    preferences: {
+      theme: "light",
+      language: "en"
+    }
+  });
+}
+
+const appState = createAppState();
+```
+
+### Modular State
+
+```javascript
+const userState = proxy({
+  currentUser: null,
+  isLoading: false
+});
+
+const uiState = proxy({
+  modal: { isOpen: false, type: null },
+  toast: { message: "", type: "info" }
+});
+
+// Combine in app
+const appState = proxy({
+  user: userState,
+  ui: uiState
+});
+```
+
+## See Also
+
+- **[useStore()](/docs/api/useStore)** - Subscribe to proxy state in React components
+- **[Fine-Grained Reactivity](/docs/guides/fine-grained)** - Understanding how dependency tracking works
+- **[Performance Guide](/docs/guides/performance)** - Optimizing your proxy usage
