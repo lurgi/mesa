@@ -1,5 +1,5 @@
 import { ModeToggle } from "@/components/theme-toggle";
-import { GithubIcon, TwitterIcon, CommandIcon } from "lucide-react";
+import { GithubIcon } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "./ui/button";
 import Anchor from "./anchor";
@@ -61,10 +61,7 @@ export function Navbar() {
 export function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2.5">
-      <div className="w-6 h-6 bg-primary rounded text-primary-foreground flex items-center justify-center text-sm font-bold">
-        M
-      </div>
-      <h2 className="text-md font-bold">Mesa</h2>
+      <h2 className="text-md font-bold">MESA</h2>
     </Link>
   );
 }
