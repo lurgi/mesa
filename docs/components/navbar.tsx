@@ -1,3 +1,5 @@
+"use client";
+
 import { ModeToggle } from "@/components/theme-toggle";
 import { GithubIcon } from "lucide-react";
 import Link from "next/link";
@@ -6,6 +8,8 @@ import Anchor from "./anchor";
 import { SheetLeftbar } from "./leftbar";
 import { page_routes } from "@/lib/routes-config";
 import { SheetClose } from "@/components/ui/sheet";
+import { usePathname } from "next/navigation";
+
 export const NAVLINKS = [
   {
     title: "Documentation",
@@ -22,6 +26,9 @@ export const NAVLINKS = [
 ];
 
 export function Navbar() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
   return (
     <nav className="w-full border-b h-16 sticky top-0 z-50 bg-background">
       <div className="sm:container mx-auto w-[95vw] h-full flex items-center sm:justify-between md:gap-2">
@@ -49,7 +56,7 @@ export function Navbar() {
               >
                 <GithubIcon className="h-[1.1rem] w-[1.1rem]" />
               </Link>
-              <ModeToggle />
+              {isHome || <ModeToggle />}
             </div>
           </div>
         </div>
