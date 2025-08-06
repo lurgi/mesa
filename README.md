@@ -23,7 +23,7 @@ Just two functions: `proxy()` and `useStore()`. No complex selectors, no manual 
 ### Installation
 
 ```bash
-npm install mesa
+npm install mesa-react
 ```
 
 ### Basic Usage
