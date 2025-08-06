@@ -24,14 +24,6 @@ export default function Home() {
 
       <div className="mx-[10%] flex sm:min-h-[87.5vh] min-h-[82vh] flex-col sm:items-center justify-center text-center sm:py-8 py-14">
         <div className="flex flex-col items-center justify-center">
-          <div className="mb-5 sm:text-lg flex items-center gap-2 sm:-mt-12">
-            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-              ⚡ Fine-Grained Reactivity
-            </span>
-            <span className="px-3 py-1 bg-green-500/10 text-green-600 rounded-full text-sm font-medium">
-              🪶 Lightweight
-            </span>
-          </div>
           <h1 className="text-[1.80rem] leading-8 sm:px-8 md:leading-[4.5rem] font-bold mb-4 sm:text-6xl text-left sm:text-center">
             High-performance React state management with <span className="text-primary">fine-grained reactivity</span>
           </h1>
@@ -61,19 +53,16 @@ export default function Home() {
         </div>
 
         {/* Feature highlights */}
-        <div className="hidden sm:grid grid-cols-3 gap-8 mt-16 max-w-4xl">
+        <div className="hidden sm:grid grid-cols-3 gap-8 mt-24 max-w-4xl">
           <div className="text-center">
-            <div className="text-2xl mb-2">🎯</div>
             <h3 className="font-semibold mb-2">Fine-Grained Updates</h3>
             <p className="text-sm text-muted-foreground">Only re-render components that use changed data</p>
           </div>
           <div className="text-center">
-            <div className="text-2xl mb-2">🚀</div>
             <h3 className="font-semibold mb-2">Simple API</h3>
             <p className="text-sm text-muted-foreground">Just two functions: proxy() and useStore()</p>
           </div>
           <div className="text-center">
-            <div className="text-2xl mb-2">⚡</div>
             <h3 className="font-semibold mb-2">Zero Dependencies</h3>
             <p className="text-sm text-muted-foreground">~1KB gzipped with no external dependencies</p>
           </div>
