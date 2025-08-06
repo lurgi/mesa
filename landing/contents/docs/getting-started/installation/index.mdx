@@ -15,7 +15,7 @@ Mesa is available as an npm package. Choose your preferred package manager:
 
     ```bash
     # npm
-    npm install mesa
+    npm install mesa-react
 
     # yarn
     yarn add mesa
@@ -23,6 +23,7 @@ Mesa is available as an npm package. Choose your preferred package manager:
     # pnpm
     pnpm add mesa
     ```
+
   </StepperItem>
 
   <StepperItem title="Step 2: Import Mesa in Your Project">
@@ -31,6 +32,7 @@ Mesa is available as an npm package. Choose your preferred package manager:
     ```javascript
     import { proxy, useStore } from "mesa";
     ```
+
   </StepperItem>
 
   <StepperItem title="Step 3: Create Your First State">
@@ -42,6 +44,7 @@ Mesa is available as an npm package. Choose your preferred package manager:
       user: { name: "John", age: 25 }
     });
     ```
+
   </StepperItem>
 
   <StepperItem title="Step 4: Use State in Components">
@@ -57,19 +60,20 @@ Mesa is available as an npm package. Choose your preferred package manager:
       );
     }
     ```
+
   </StepperItem>
 </Stepper>
 
 ## Requirements
 
 <Note title="Compatibility">
-Mesa is compatible with React 18+ and requires the following peer dependencies to be installed in your project.
+  Mesa is compatible with React 18+ and requires the following peer dependencies to be installed in your project.
 </Note>
 
-| Package | Version | Required |
-|---------|---------|----------|
-| React   | ^18.0.0 \| ^19.0.0 | Yes |
-| React DOM | ^18.0.0 \| ^19.0.0 | Yes |
+| Package   | Version            | Required |
+| --------- | ------------------ | -------- |
+| React     | ^18.0.0 \| ^19.0.0 | Yes      |
+| React DOM | ^18.0.0 \| ^19.0.0 | Yes      |
 
 ## TypeScript Support
 
@@ -86,7 +90,7 @@ interface AppState {
 
 const state = proxy<AppState>({
   count: 0,
-  user: { name: "John", age: 25 }
+  user: { name: "John", age: 25 },
 });
 
 // Type-safe selector
