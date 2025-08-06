@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { proxy, useStore } from "mesa";
+import { proxy, useStore } from "mesa-react";
 
 // Create reactive state
 const todoState = proxy({
@@ -20,7 +20,7 @@ const todoState = proxy({
 });
 
 // Visual render indicator component
-function RenderIndicator({ componentName, color = "#3b82f6" }) {
+function RenderIndicator({ componentName, color = "#3b82f6" }: { componentName: string; color?: string }) {
   const [renderCount, setRenderCount] = useState(0);
   const [isFlashing, setIsFlashing] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -114,7 +114,10 @@ function TodoItem({ todo }: { todo: { id: number } }) {
         opacity: todoData.completed ? 0.7 : 1,
       }}
     >
-      <RenderIndicator componentName={`Item-${todo.id}`} color={priorityColors[todoData.priority]} />
+      <RenderIndicator
+        componentName={`Item-${todo.id}`}
+        color={priorityColors[todoData.priority as keyof typeof priorityColors]}
+      />
 
       <input type="checkbox" checked={todoData.completed} onChange={toggleComplete} style={{ cursor: "pointer" }} />
 
@@ -138,7 +141,7 @@ function TodoItem({ todo }: { todo: { id: number } }) {
           padding: "4px 8px",
           borderRadius: "4px",
           border: "1px solid #d1d5db",
-          background: priorityColors[todoData.priority],
+          background: priorityColors[todoData.priority as keyof typeof priorityColors],
           color: "white",
           fontSize: "12px",
         }}
@@ -499,11 +502,11 @@ export default function TodoListPlayPage() {
             Interactive demo showcasing Mesa's fine-grained reactivity
           </p>
         </div>
-        
+
         <TodoApp />
-        
+
         <div style={{ textAlign: "center", marginTop: "32px" }}>
-          <a 
+          <a
             href="/docs/examples/todo-list"
             style={{
               display: "inline-block",
@@ -519,7 +522,7 @@ export default function TodoListPlayPage() {
           </a>
         </div>
       </div>
-      
+
       <style jsx>{`
         .render-indicator.flashing {
           animation: flash 0.3s ease-in-out;
