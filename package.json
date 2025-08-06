@@ -21,7 +21,10 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "dev": "cd landing && npm run dev"
+    "dev": "cd landing && npm run dev",
+    "patch": "npm version patch && npm publish",
+    "minor": "npm version minor && npm publish",
+    "major": "npm version major && npm publish"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.4",
