@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/mesa.umd.cjs",
   "module": "./dist/mesa.js",
-  "types": "./dist/main.d.ts",
+  "types": "./dist/src/main.d.ts",
   "exports": {
     ".": {
       "import": "./dist/mesa.js",
@@ -16,7 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build",
+    "build": "tsc --emitDeclarationOnly && vite build",
+    "build:types": "tsc --emitDeclarationOnly",
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
