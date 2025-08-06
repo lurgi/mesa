@@ -156,6 +156,18 @@ async function fetchData() {
     store.loading = false;
   }
 }
+
+function DataComponent() {
+  const data = useStore(store, (s) => s.data);
+  const loading = useStore(store, (s) => s.loading);
+  const error = useStore(store, (s) => s.error);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!data) return <div>No data</div>;
+
+  return <div>{JSON.stringify(data)}</div>;
+}
 ```
 
 ### Local Component State
@@ -171,42 +183,49 @@ function LocalCounter() {
 
 ## Performance Benefits
 
-### Automatic Memoization
+### Fine-Grained Subscriptions
 
-Mesa automatically memoizes expensive computations:
-
-```tsx
-const store = proxy({
-  items: [],
-  get filteredItems() {
-    // This is automatically memoized
-    return this.items.filter((item) => item.active);
-  },
-});
-```
-
-### Selective Re-renders
-
-Only components that actually use changed data will re-render:
+Mesa tracks only the specific paths your components access:
 
 ```tsx
 function Header() {
   const userName = useStore(store, (s) => s.user.name);
-  // Only re-renders when user.name changes
+  // Only subscribes to 'user.name' path
   return <header>Welcome, {userName}!</header>;
 }
 
 function Sidebar() {
   const sidebarContent = useStore(store, (s) => s.sidebar.content);
-  // Only re-renders when sidebar.content changes
+  // Only subscribes to 'sidebar.content' path
   return <aside>{sidebarContent}</aside>;
 }
 
 function Main() {
   const content = useStore(store, (s) => s.content);
-  // Only re-renders when content changes
+  // Only subscribes to 'content' path
   return <main>{content}</main>;
 }
+```
+
+### Optimized Re-renders
+
+Only components that actually use changed data will re-render:
+
+```tsx
+function CountComponent() {
+  const count = useStore(store, (s) => s.count);
+  // Only re-renders when count changes
+  return <div>Count: {count}</div>;
+}
+
+function NameComponent() {
+  const name = useStore(store, (s) => s.name);
+  // Only re-renders when name changes
+  return <div>Name: {name}</div>;
+}
+
+// When store.count changes, only CountComponent re-renders
+// When store.name changes, only NameComponent re-renders
 ```
 
 ## API Reference
@@ -268,17 +287,6 @@ const { state, dispatch } = useContext(MyContext);
 // After (Mesa)
 const count = useStore(store, (s) => s.count);
 ```
-
-## Browser Support
-
-- Chrome 49+
-- Firefox 18+
-- Safari 10+
-- Edge 12+
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## License
 
