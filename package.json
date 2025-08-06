@@ -9,7 +9,8 @@
   "exports": {
     ".": {
       "import": "./dist/mesa.js",
-      "require": "./dist/mesa.umd.cjs"
+      "require": "./dist/mesa.umd.cjs",
+      "types": "./dist/src/main.d.ts"
     }
   },
   "files": [
