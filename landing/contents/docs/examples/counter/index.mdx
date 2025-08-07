@@ -5,13 +5,50 @@ description: A comprehensive counter example showcasing Mesa's fine-grained reac
 
 This example demonstrates Mesa's core concepts through a simple counter application that showcases fine-grained updates, multiple component subscriptions, and performance benefits.
 
+## 🚀 Live Interactive Playground
+
+Experience Mesa's fine-grained reactivity with our interactive counter playground:
+
+<div style={{ textAlign: "center", margin: "32px 0" }}>
+  <a
+    href="/examples/play/counter"
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "12px",
+      background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+      color: "white",
+      padding: "16px 32px",
+      borderRadius: "12px",
+      textDecoration: "none",
+      fontWeight: "600",
+      fontSize: "16px",
+      boxShadow: "0 8px 25px rgba(59, 130, 246, 0.3)",
+      transition: "all 0.3s ease",
+    }}
+    className="playground-button"
+  >
+    <span style={{ fontSize: "24px" }}>🎮</span>
+    Open Interactive Counter →
+  </a>
+</div>
+
+The playground features:
+
+- **Visual render tracking** with console logs
+- **Independent component updates** demonstration
+- **Performance monitoring** in real-time
+- **Interactive controls** for step size and actions
+- **Action history** with timestamps
+- **Statistics dashboard** showing operation counts
+
 ## Live Example
 
 Here's a complete counter application built with Mesa:
 
 ```jsx
-import React from 'react';
-import { proxy, useStore } from 'mesa';
+import React from "react";
+import { proxy, useStore } from "mesa";
 
 // Create reactive state
 const counterState = proxy({
@@ -21,17 +58,17 @@ const counterState = proxy({
   stats: {
     increments: 0,
     decrements: 0,
-    resets: 0
-  }
+    resets: 0,
+  },
 });
 
 // Counter display component
 function CounterDisplay() {
   // Only re-renders when count changes
   const count = useStore(counterState, (s) => s.count);
-  
-  console.log('CounterDisplay rendered');
-  
+
+  console.log("CounterDisplay rendered");
+
   return (
     <div className="counter-display">
       <h2>Count: {count}</h2>
@@ -43,50 +80,44 @@ function CounterDisplay() {
 function CounterControls() {
   // Only re-renders when step changes
   const step = useStore(counterState, (s) => s.step);
-  
-  console.log('CounterControls rendered');
-  
+
+  console.log("CounterControls rendered");
+
   const increment = () => {
     counterState.count += step;
     counterState.stats.increments++;
     counterState.history.push({
-      action: 'increment',
+      action: "increment",
       value: step,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   };
-  
+
   const decrement = () => {
     counterState.count -= step;
     counterState.stats.decrements++;
     counterState.history.push({
-      action: 'decrement', 
+      action: "decrement",
       value: step,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   };
-  
+
   const reset = () => {
     counterState.count = 0;
     counterState.stats.resets++;
     counterState.history.push({
-      action: 'reset',
+      action: "reset",
       value: 0,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   };
-  
+
   return (
     <div className="counter-controls">
-      <button onClick={increment}>
-        +{step}
-      </button>
-      <button onClick={decrement}>
-        -{step}
-      </button>
-      <button onClick={reset}>
-        Reset
-      </button>
+      <button onClick={increment}>+{step}</button>
+      <button onClick={decrement}>-{step}</button>
+      <button onClick={reset}>Reset</button>
     </div>
   );
 }
@@ -95,17 +126,14 @@ function CounterControls() {
 function StepSelector() {
   // Only re-renders when step changes
   const step = useStore(counterState, (s) => s.step);
-  
-  console.log('StepSelector rendered');
-  
+
+  console.log("StepSelector rendered");
+
   return (
     <div className="step-selector">
       <label>
-        Step size: 
-        <select 
-          value={step} 
-          onChange={(e) => counterState.step = Number(e.target.value)}
-        >
+        Step size:
+        <select value={step} onChange={(e) => (counterState.step = Number(e.target.value))}>
           <option value={1}>1</option>
           <option value={5}>5</option>
           <option value={10}>10</option>
@@ -120,11 +148,11 @@ function StepSelector() {
 function CounterStats() {
   // Only re-renders when stats change
   const stats = useStore(counterState, (s) => s.stats);
-  
-  console.log('CounterStats rendered');
-  
+
+  console.log("CounterStats rendered");
+
   const total = stats.increments + stats.decrements + stats.resets;
-  
+
   return (
     <div className="counter-stats">
       <h3>Statistics</h3>
@@ -140,11 +168,11 @@ function CounterStats() {
 function CounterHistory() {
   // Only re-renders when history changes
   const history = useStore(counterState, (s) => s.history);
-  
-  console.log('CounterHistory rendered');
-  
+
+  console.log("CounterHistory rendered");
+
   const recentHistory = history.slice(-5); // Show last 5 actions
-  
+
   return (
     <div className="counter-history">
       <h3>Recent History</h3>
@@ -165,8 +193,8 @@ function CounterHistory() {
 
 // Main app component
 function CounterApp() {
-  console.log('CounterApp rendered');
-  
+  console.log("CounterApp rendered");
+
   return (
     <div className="counter-app">
       <h1>Mesa Counter Example</h1>
@@ -191,7 +219,7 @@ export default CounterApp;
 Each component only re-renders when its specific data changes:
 
 - **CounterDisplay**: Only when `count` changes
-- **CounterControls**: Only when `step` changes  
+- **CounterControls**: Only when `step` changes
 - **StepSelector**: Only when `step` changes
 - **CounterStats**: Only when `stats` object changes
 - **CounterHistory**: Only when `history` array changes
@@ -211,7 +239,7 @@ counterState.step = 5;
 counterState.stats.increments++;
 
 // Only CounterHistory re-renders
-counterState.history.push({ action: 'test', value: 0, timestamp: Date.now() });
+counterState.history.push({ action: "test", value: 0, timestamp: Date.now() });
 ```
 
 ### 3. Nested Object Updates
@@ -232,10 +260,10 @@ History tracking demonstrates array reactivity:
 
 ```jsx
 // All of these only trigger CounterHistory re-renders
-counterState.history.push(newAction);      // Add item
-counterState.history.pop();                // Remove last item
-counterState.history[0] = updatedAction;   // Update item
-counterState.history.splice(1, 1);         // Remove item
+counterState.history.push(newAction); // Add item
+counterState.history.pop(); // Remove last item
+counterState.history[0] = updatedAction; // Update item
+counterState.history.splice(1, 1); // Remove item
 ```
 
 ## Performance Comparison
@@ -248,11 +276,11 @@ const [state, setState] = useState({
   count: 0,
   step: 1,
   history: [],
-  stats: { increments: 0, decrements: 0, resets: 0 }
+  stats: { increments: 0, decrements: 0, resets: 0 },
 });
 
 // Changing count triggers ALL component re-renders
-setState(prev => ({ ...prev, count: prev.count + 1 }));
+setState((prev) => ({ ...prev, count: prev.count + 1 }));
 ```
 
 ### With Mesa
@@ -261,9 +289,9 @@ setState(prev => ({ ...prev, count: prev.count + 1 }));
 // Only relevant components re-render
 const state = proxy({
   count: 0,
-  step: 1, 
+  step: 1,
   history: [],
-  stats: { increments: 0, decrements: 0, resets: 0 }
+  stats: { increments: 0, decrements: 0, resets: 0 },
 });
 
 // Only CounterDisplay re-renders
@@ -280,11 +308,9 @@ function ComputedStats() {
   const computedData = useStore(counterState, (s) => ({
     count: s.count,
     total: s.stats.increments + s.stats.decrements + s.stats.resets,
-    average: s.history.length > 0 
-      ? s.history.reduce((sum, action) => sum + action.value, 0) / s.history.length 
-      : 0
+    average: s.history.length > 0 ? s.history.reduce((sum, action) => sum + action.value, 0) / s.history.length : 0,
   }));
-  
+
   return (
     <div>
       <div>Current: {computedData.count}</div>
@@ -300,21 +326,11 @@ function ComputedStats() {
 ```jsx
 function ConditionalDisplay() {
   const hasHistory = useStore(counterState, (s) => s.history.length > 0);
-  
+
   // Only subscribes to history when it has items
-  const lastAction = useStore(counterState, (s) => 
-    s.history.length > 0 ? s.history[s.history.length - 1] : null
-  );
-  
-  return (
-    <div>
-      {hasHistory ? (
-        <div>Last action: {lastAction?.action}</div>
-      ) : (
-        <div>No actions yet</div>
-      )}
-    </div>
-  );
+  const lastAction = useStore(counterState, (s) => (s.history.length > 0 ? s.history[s.history.length - 1] : null));
+
+  return <div>{hasHistory ? <div>Last action: {lastAction?.action}</div> : <div>No actions yet</div>}</div>;
 }
 ```
 
@@ -327,38 +343,38 @@ function useCounterActions() {
       counterState.count += step;
       counterState.stats.increments++;
       counterState.history.push({
-        action: 'increment',
+        action: "increment",
         value: step,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     },
-    
+
     decrement: (step = 1) => {
       counterState.count -= step;
-      counterState.stats.decrements++;  
+      counterState.stats.decrements++;
       counterState.history.push({
-        action: 'decrement',
+        action: "decrement",
         value: step,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     },
-    
+
     reset: () => {
       counterState.count = 0;
       counterState.stats.resets++;
       counterState.history.push({
-        action: 'reset',
+        action: "reset",
         value: 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
-    }
+    },
   };
 }
 
 function CounterWithHooks() {
   const count = useStore(counterState, (s) => s.count);
   const actions = useCounterActions();
-  
+
   return (
     <div>
       <div>Count: {count}</div>
@@ -373,73 +389,71 @@ function CounterWithHooks() {
 ## Testing
 
 ```jsx
-import { render, screen, fireEvent } from '@testing-library/react';
-import { proxy, useStore } from 'mesa';
+import { render, screen, fireEvent } from "@testing-library/react";
+import { proxy, useStore } from "mesa";
 
-describe('Counter with Mesa', () => {
+describe("Counter with Mesa", () => {
   let testState;
-  
+
   beforeEach(() => {
     testState = proxy({
       count: 0,
-      step: 1
+      step: 1,
     });
   });
-  
-  test('counter increments correctly', () => {
+
+  test("counter increments correctly", () => {
     function TestCounter() {
-      const count = useStore(testState, s => s.count);
+      const count = useStore(testState, (s) => s.count);
       return (
         <div>
           <div data-testid="count">{count}</div>
-          <button onClick={() => testState.count++}>
-            Increment
-          </button>
+          <button onClick={() => testState.count++}>Increment</button>
         </div>
       );
     }
-    
+
     render(<TestCounter />);
-    
-    expect(screen.getByTestId('count')).toHaveTextContent('0');
-    
-    fireEvent.click(screen.getByText('Increment'));
-    
-    expect(screen.getByTestId('count')).toHaveTextContent('1');
+
+    expect(screen.getByTestId("count")).toHaveTextContent("0");
+
+    fireEvent.click(screen.getByText("Increment"));
+
+    expect(screen.getByTestId("count")).toHaveTextContent("1");
   });
-  
-  test('independent updates work correctly', () => {
+
+  test("independent updates work correctly", () => {
     let countRenders = 0;
     let stepRenders = 0;
-    
+
     function CountDisplay() {
-      const count = useStore(testState, s => s.count);
+      const count = useStore(testState, (s) => s.count);
       countRenders++;
       return <div data-testid="count">{count}</div>;
     }
-    
+
     function StepDisplay() {
-      const step = useStore(testState, s => s.step);
+      const step = useStore(testState, (s) => s.step);
       stepRenders++;
       return <div data-testid="step">{step}</div>;
     }
-    
+
     render(
       <div>
         <CountDisplay />
         <StepDisplay />
       </div>
     );
-    
+
     // Initial renders
     expect(countRenders).toBe(1);
     expect(stepRenders).toBe(1);
-    
+
     // Update count - only CountDisplay should re-render
     testState.count = 5;
     expect(countRenders).toBe(2);
     expect(stepRenders).toBe(1);
-    
+
     // Update step - only StepDisplay should re-render
     testState.step = 10;
     expect(countRenders).toBe(2);

@@ -34,9 +34,9 @@ export const ROUTES: EachRoute[] = [
     noLink: true,
     items: [
       { title: "Fine-Grained Reactivity", href: "/fine-grained" },
-      { title: "Performance Optimization", href: "/performance" },
-      { title: "TypeScript Usage", href: "/typescript" },
-      { title: "Advanced Patterns", href: "/advanced" },
+      // { title: "Performance Optimization", href: "/performance" },
+      // { title: "TypeScript Usage", href: "/typescript" },
+      // { title: "Advanced Patterns", href: "/advanced" },
     ],
   },
   {
@@ -46,8 +46,8 @@ export const ROUTES: EachRoute[] = [
     items: [
       { title: "Counter Example", href: "/counter" },
       { title: "Todo List", href: "/todo-list" },
-      { title: "User Management", href: "/user-management" },
-      { title: "Shopping Cart", href: "/shopping-cart" },
+      // { title: "User Management", href: "/user-management" },
+      // { title: "Shopping Cart", href: "/shopping-cart" },
     ],
   },
 ];

@@ -11,7 +11,7 @@ Experience the full power of Mesa's reactivity with our feature-rich todo dashbo
 
 <div style={{ textAlign: "center", margin: "32px 0" }}>
   <a
-    href="/examples/todo-list/play"
+    href="/examples/play/todo-list"
     style={{
       display: "inline-flex",
       alignItems: "center",
@@ -34,6 +34,7 @@ Experience the full power of Mesa's reactivity with our feature-rich todo dashbo
 </div>
 
 The playground features a complete task management system with:
+
 - **Priority-based organization** (High/Medium/Low)
 - **Category management** with filtering
 - **Real-time search** across tasks and categories
@@ -44,7 +45,7 @@ The playground features a complete task management system with:
 
 ## Key Features Demonstrated
 
-### 🎯 Priority Management System
+### Priority Management System
 
 ```jsx
 interface Todo {
@@ -64,7 +65,7 @@ const PRIORITY_CONFIG = {
     icon: Star,
   },
   medium: {
-    color: "text-yellow-500 bg-yellow-50 border-yellow-200", 
+    color: "text-yellow-500 bg-yellow-50 border-yellow-200",
     icon: Clock,
   },
   low: {
@@ -74,21 +75,16 @@ const PRIORITY_CONFIG = {
 };
 ```
 
-### 🏷️ Category Organization
+### Category Organization
 
 ```jsx
-const CATEGORIES = [
-  "General", "Learning", "Development", 
-  "Review", "Documentation", "Meeting"
-];
+const CATEGORIES = ["General", "Learning", "Development", "Review", "Documentation", "Meeting"];
 
 // Category-based filtering
-const filteredTodos = todos.filter(todo => 
-  categoryFilter === "all" || todo.category === categoryFilter
-);
+const filteredTodos = todos.filter((todo) => categoryFilter === "all" || todo.category === categoryFilter);
 ```
 
-### 🔍 Real-time Search & Filtering
+### Real-time Search & Filtering
 
 ```jsx
 const todoState = proxy({
@@ -101,44 +97,39 @@ const todoState = proxy({
 // Multi-dimensional filtering
 const filteredTodos = useMemo(() => {
   return todos.filter((todo) => {
-    const matchesStatus = 
-      filter === "all" || 
-      (filter === "active" && !todo.completed) || 
-      (filter === "completed" && todo.completed);
-    
-    const matchesPriority = 
-      priorityFilter === "all" || todo.priority === priorityFilter;
-    
-    const matchesCategory = 
-      categoryFilter === "all" || todo.category === categoryFilter;
-    
-    const matchesSearch = 
-      searchQuery === "" || 
+    const matchesStatus =
+      filter === "all" || (filter === "active" && !todo.completed) || (filter === "completed" && todo.completed);
+
+    const matchesPriority = priorityFilter === "all" || todo.priority === priorityFilter;
+
+    const matchesCategory = categoryFilter === "all" || todo.category === categoryFilter;
+
+    const matchesSearch =
+      searchQuery === "" ||
       todo.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
       todo.category.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesStatus && matchesPriority && 
-           matchesCategory && matchesSearch;
+    return matchesStatus && matchesPriority && matchesCategory && matchesSearch;
   });
 }, [todos, filter, priorityFilter, categoryFilter, searchQuery]);
 ```
 
-### 📊 Analytics Dashboard
+### Analytics Dashboard
 
 ```jsx
 function AnalyticsPanel() {
   const todos = useStore(todoState, (s) => s.todos);
-  
+
   const analytics = useMemo(() => {
     const total = todos.length;
-    const completed = todos.filter(t => t.completed).length;
-    
+    const completed = todos.filter((t) => t.completed).length;
+
     // Category distribution
     const categories = todos.reduce((acc, todo) => {
       acc[todo.category] = (acc[todo.category] || 0) + 1;
       return acc;
     }, {});
-    
+
     // Active tasks by priority
     const priorities = todos.reduce((acc, todo) => {
       if (!todo.completed) {
@@ -150,15 +141,11 @@ function AnalyticsPanel() {
     return { total, completed, categories, priorities };
   }, [todos]);
 
-  return (
-    <div className="analytics-panel">
-      {/* Progress tracking, priority breakdown, category stats */}
-    </div>
-  );
+  return <div className="analytics-panel">{/* Progress tracking, priority breakdown, category stats */}</div>;
 }
 ```
 
-### ✏️ Inline Editing System
+### Inline Editing System
 
 ```jsx
 function TodoItem({ todo }) {
@@ -166,7 +153,7 @@ function TodoItem({ todo }) {
   const [editText, setEditText] = useState(todo.text);
 
   const saveEdit = () => {
-    const index = todoState.todos.findIndex(t => t.id === todo.id);
+    const index = todoState.todos.findIndex((t) => t.id === todo.id);
     if (index !== -1 && editText.trim()) {
       todoState.todos[index].text = editText.trim();
       setIsEditing(false);
@@ -184,16 +171,9 @@ function TodoItem({ todo }) {
   return (
     <div className="todo-item">
       {isEditing ? (
-        <input
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          autoFocus
-        />
+        <input value={editText} onChange={(e) => setEditText(e.target.value)} onKeyDown={handleKeyDown} autoFocus />
       ) : (
-        <p onClick={() => setIsEditing(true)}>
-          {todo.text}
-        </p>
+        <p onClick={() => setIsEditing(true)}>{todo.text}</p>
       )}
     </div>
   );
@@ -202,29 +182,33 @@ function TodoItem({ todo }) {
 
 ## Mesa's Fine-Grained Reactivity in Action
 
-### 🎯 Surgical Updates
+### Surgical Updates
 
 Watch how Mesa updates only the specific components affected by each change:
 
 1. **Toggle Todo Completion**
+
    ```jsx
    // Only the specific TodoItem re-renders
    todoState.todos[index].completed = !todoState.todos[index].completed;
    ```
 
 2. **Update Search Query**
+
    ```jsx
    // Only TodoList re-renders to show filtered results
    todoState.searchQuery = "new search";
    ```
 
 3. **Change Priority Filter**
+
    ```jsx
    // Only filter controls and TodoList re-render
    todoState.priorityFilter = "high";
    ```
 
 4. **Edit Todo Text**
+
    ```jsx
    // Only the specific TodoItem being edited re-renders
    todoState.todos[0].text = "Updated text";
@@ -236,12 +220,12 @@ Watch how Mesa updates only the specific components affected by each change:
    todoState.todos.push(newTodo);
    ```
 
-### 🏎️ Performance Benefits
+### Performance Benefits
 
 The dashboard handles complex state with multiple interconnected components:
 
 - **12+ reactive components** working independently
-- **Multi-dimensional filtering** without performance loss  
+- **Multi-dimensional filtering** without performance loss
 - **Real-time analytics** that update only when needed
 - **Instant search** across hundreds of todos
 - **Complex nested state** with surgical updates
@@ -257,56 +241,56 @@ import { proxy, useStore } from "mesa-react";
 // Professional todo state
 const todoState = proxy({
   todos: [
-    { 
-      id: 1, 
-      text: "Master Mesa's fine-grained reactivity", 
-      completed: false, 
+    {
+      id: 1,
+      text: "Master Mesa's fine-grained reactivity",
+      completed: false,
       priority: "high",
-      category: "Learning" 
+      category: "Learning",
     },
-    { 
-      id: 2, 
-      text: "Build production-ready dashboard", 
-      completed: false, 
+    {
+      id: 2,
+      text: "Build production-ready dashboard",
+      completed: false,
       priority: "medium",
-      category: "Development" 
+      category: "Development",
     },
-    { 
-      id: 3, 
-      text: "Write comprehensive documentation", 
-      completed: true, 
+    {
+      id: 3,
+      text: "Write comprehensive documentation",
+      completed: true,
       priority: "low",
-      category: "Documentation" 
+      category: "Documentation",
     },
   ],
   searchQuery: "",
   filter: "all",
-  priorityFilter: "all"
+  priorityFilter: "all",
 });
 
 // Priority configuration
 const PRIORITY_CONFIG = {
   high: { color: "#ef4444", label: "🔥 High" },
   medium: { color: "#f59e0b", label: "⚡ Medium" },
-  low: { color: "#10b981", label: "🎯 Low" }
+  low: { color: "#10b981", label: "🎯 Low" },
 };
 
 function SearchBar() {
-  const searchQuery = useStore(todoState, s => s.searchQuery);
-  
+  const searchQuery = useStore(todoState, (s) => s.searchQuery);
+
   return (
     <div style={{ marginBottom: "16px" }}>
       <input
         type="text"
         placeholder="🔍 Search todos..."
         value={searchQuery}
-        onChange={(e) => todoState.searchQuery = e.target.value}
+        onChange={(e) => (todoState.searchQuery = e.target.value)}
         style={{
           width: "100%",
           padding: "12px 16px",
           border: "2px solid #e5e7eb",
           borderRadius: "8px",
-          fontSize: "14px"
+          fontSize: "14px",
         }}
       />
     </div>
@@ -314,21 +298,23 @@ function SearchBar() {
 }
 
 function FilterControls() {
-  const filter = useStore(todoState, s => s.filter);
-  const priorityFilter = useStore(todoState, s => s.priorityFilter);
-  
+  const filter = useStore(todoState, (s) => s.filter);
+  const priorityFilter = useStore(todoState, (s) => s.priorityFilter);
+
   return (
-    <div style={{ 
-      display: "flex", 
-      gap: "12px", 
-      marginBottom: "20px",
-      flexWrap: "wrap"
-    }}>
+    <div
+      style={{
+        display: "flex",
+        gap: "12px",
+        marginBottom: "20px",
+        flexWrap: "wrap",
+      }}
+    >
       <div style={{ display: "flex", gap: "4px" }}>
-        {["all", "active", "completed"].map(f => (
+        {["all", "active", "completed"].map((f) => (
           <button
             key={f}
-            onClick={() => todoState.filter = f}
+            onClick={() => (todoState.filter = f)}
             style={{
               padding: "6px 12px",
               border: "1px solid #d1d5db",
@@ -336,19 +322,19 @@ function FilterControls() {
               background: filter === f ? "#3b82f6" : "white",
               color: filter === f ? "white" : "#374151",
               fontSize: "12px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
       </div>
-      
+
       <div style={{ display: "flex", gap: "4px" }}>
-        {["all", "high", "medium", "low"].map(p => (
+        {["all", "high", "medium", "low"].map((p) => (
           <button
             key={p}
-            onClick={() => todoState.priorityFilter = p}
+            onClick={() => (todoState.priorityFilter = p)}
             style={{
               padding: "6px 12px",
               border: "1px solid #d1d5db",
@@ -356,7 +342,7 @@ function FilterControls() {
               background: priorityFilter === p ? "#8b5cf6" : "white",
               color: priorityFilter === p ? "white" : "#374151",
               fontSize: "12px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             {p === "all" ? "All Priority" : PRIORITY_CONFIG[p]?.label || p}
@@ -368,48 +354,42 @@ function FilterControls() {
 }
 
 function TodoStats() {
-  const todos = useStore(todoState, s => s.todos);
-  
+  const todos = useStore(todoState, (s) => s.todos);
+
   const stats = React.useMemo(() => {
     const total = todos.length;
-    const completed = todos.filter(t => t.completed).length;
+    const completed = todos.filter((t) => t.completed).length;
     const active = total - completed;
     const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
-    
+
     return { total, completed, active, progress };
   }, [todos]);
-  
+
   return (
-    <div style={{
-      display: "flex",
-      gap: "16px",
-      padding: "16px",
-      background: "#f8fafc",
-      borderRadius: "8px",
-      marginBottom: "20px"
-    }}>
+    <div
+      style={{
+        display: "flex",
+        gap: "16px",
+        padding: "16px",
+        background: "#f8fafc",
+        borderRadius: "8px",
+        marginBottom: "20px",
+      }}
+    >
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1f2937" }}>
-          {stats.total}
-        </div>
+        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1f2937" }}>{stats.total}</div>
         <div style={{ fontSize: "12px", color: "#6b7280" }}>Total</div>
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#3b82f6" }}>
-          {stats.active}
-        </div>
+        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#3b82f6" }}>{stats.active}</div>
         <div style={{ fontSize: "12px", color: "#6b7280" }}>Active</div>
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#10b981" }}>
-          {stats.completed}
-        </div>
+        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#10b981" }}>{stats.completed}</div>
         <div style={{ fontSize: "12px", color: "#6b7280" }}>Done</div>
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#8b5cf6" }}>
-          {stats.progress}%
-        </div>
+        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#8b5cf6" }}>{stats.progress}%</div>
         <div style={{ fontSize: "12px", color: "#6b7280" }}>Progress</div>
       </div>
     </div>
@@ -419,47 +399,44 @@ function TodoStats() {
 function TodoItem({ todo }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
-  
+
   const toggleComplete = () => {
-    const index = todoState.todos.findIndex(t => t.id === todo.id);
+    const index = todoState.todos.findIndex((t) => t.id === todo.id);
     if (index !== -1) {
       todoState.todos[index].completed = !todoState.todos[index].completed;
     }
   };
-  
+
   const saveEdit = () => {
-    const index = todoState.todos.findIndex(t => t.id === todo.id);
+    const index = todoState.todos.findIndex((t) => t.id === todo.id);
     if (index !== -1 && editText.trim()) {
       todoState.todos[index].text = editText.trim();
       setIsEditing(false);
     }
   };
-  
+
   const deleteTodo = () => {
-    todoState.todos = todoState.todos.filter(t => t.id !== todo.id);
+    todoState.todos = todoState.todos.filter((t) => t.id !== todo.id);
   };
-  
+
   const priorityConfig = PRIORITY_CONFIG[todo.priority];
-  
+
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-      padding: "16px",
-      border: "1px solid #e5e7eb",
-      borderRadius: "8px",
-      marginBottom: "8px",
-      background: todo.completed ? "#f9fafb" : "white",
-      opacity: todo.completed ? 0.7 : 1
-    }}>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={toggleComplete}
-        style={{ cursor: "pointer" }}
-      />
-      
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "16px",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        marginBottom: "8px",
+        background: todo.completed ? "#f9fafb" : "white",
+        opacity: todo.completed ? 0.7 : 1,
+      }}
+    >
+      <input type="checkbox" checked={todo.completed} onChange={toggleComplete} style={{ cursor: "pointer" }} />
+
       {isEditing ? (
         <input
           type="text"
@@ -478,7 +455,7 @@ function TodoItem({ todo }) {
             flex: 1,
             padding: "4px 8px",
             border: "1px solid #3b82f6",
-            borderRadius: "4px"
+            borderRadius: "4px",
           }}
         />
       ) : (
@@ -488,34 +465,38 @@ function TodoItem({ todo }) {
             flex: 1,
             cursor: "pointer",
             textDecoration: todo.completed ? "line-through" : "none",
-            color: todo.completed ? "#9ca3af" : "#1f2937"
+            color: todo.completed ? "#9ca3af" : "#1f2937",
           }}
         >
           {todo.text}
         </span>
       )}
-      
-      <span style={{
-        padding: "4px 8px",
-        borderRadius: "12px",
-        background: priorityConfig.color,
-        color: "white",
-        fontSize: "11px",
-        fontWeight: "bold"
-      }}>
+
+      <span
+        style={{
+          padding: "4px 8px",
+          borderRadius: "12px",
+          background: priorityConfig.color,
+          color: "white",
+          fontSize: "11px",
+          fontWeight: "bold",
+        }}
+      >
         {priorityConfig.label}
       </span>
-      
-      <span style={{
-        padding: "2px 6px",
-        background: "#e5e7eb",
-        color: "#6b7280",
-        borderRadius: "4px",
-        fontSize: "10px"
-      }}>
+
+      <span
+        style={{
+          padding: "2px 6px",
+          background: "#e5e7eb",
+          color: "#6b7280",
+          borderRadius: "4px",
+          fontSize: "10px",
+        }}
+      >
         {todo.category}
       </span>
-      
+
       <button
         onClick={deleteTodo}
         style={{
@@ -525,7 +506,7 @@ function TodoItem({ todo }) {
           borderRadius: "4px",
           padding: "4px 8px",
           cursor: "pointer",
-          fontSize: "12px"
+          fontSize: "12px",
         }}
       >
         ✕
@@ -535,45 +516,42 @@ function TodoItem({ todo }) {
 }
 
 function TodoList() {
-  const todos = useStore(todoState, s => s.todos);
-  const filter = useStore(todoState, s => s.filter);
-  const priorityFilter = useStore(todoState, s => s.priorityFilter);
-  const searchQuery = useStore(todoState, s => s.searchQuery);
-  
+  const todos = useStore(todoState, (s) => s.todos);
+  const filter = useStore(todoState, (s) => s.filter);
+  const priorityFilter = useStore(todoState, (s) => s.priorityFilter);
+  const searchQuery = useStore(todoState, (s) => s.searchQuery);
+
   const filteredTodos = React.useMemo(() => {
-    return todos.filter(todo => {
-      const matchesStatus = 
-        filter === "all" || 
-        (filter === "active" && !todo.completed) || 
-        (filter === "completed" && todo.completed);
-      
-      const matchesPriority = 
-        priorityFilter === "all" || todo.priority === priorityFilter;
-      
-      const matchesSearch = 
-        searchQuery === "" || 
+    return todos.filter((todo) => {
+      const matchesStatus =
+        filter === "all" || (filter === "active" && !todo.completed) || (filter === "completed" && todo.completed);
+
+      const matchesPriority = priorityFilter === "all" || todo.priority === priorityFilter;
+
+      const matchesSearch =
+        searchQuery === "" ||
         todo.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
         todo.category.toLowerCase().includes(searchQuery.toLowerCase());
 
       return matchesStatus && matchesPriority && matchesSearch;
     });
   }, [todos, filter, priorityFilter, searchQuery]);
-  
+
   return (
     <div>
       {filteredTodos.length === 0 ? (
-        <div style={{
-          textAlign: "center",
-          padding: "40px",
-          color: "#6b7280",
-          fontSize: "14px"
-        }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "40px",
+            color: "#6b7280",
+            fontSize: "14px",
+          }}
+        >
           {searchQuery ? "No todos match your search" : "No todos found"}
         </div>
       ) : (
-        filteredTodos.map(todo => (
-          <TodoItem key={todo.id} todo={todo} />
-        ))
+        filteredTodos.map((todo) => <TodoItem key={todo.id} todo={todo} />)
       )}
     </div>
   );
@@ -583,7 +561,7 @@ function AddTodo() {
   const [newTodo, setNewTodo] = useState("");
   const [priority, setPriority] = useState("medium");
   const [category, setCategory] = useState("General");
-  
+
   const addTodo = () => {
     if (newTodo.trim()) {
       todoState.todos.push({
@@ -591,21 +569,23 @@ function AddTodo() {
         text: newTodo.trim(),
         completed: false,
         priority,
-        category
+        category,
       });
       setNewTodo("");
     }
   };
-  
+
   return (
-    <div style={{
-      display: "flex",
-      gap: "8px",
-      marginBottom: "20px",
-      padding: "16px",
-      background: "#f8fafc",
-      borderRadius: "8px"
-    }}>
+    <div
+      style={{
+        display: "flex",
+        gap: "8px",
+        marginBottom: "20px",
+        padding: "16px",
+        background: "#f8fafc",
+        borderRadius: "8px",
+      }}
+    >
       <input
         type="text"
         value={newTodo}
@@ -616,38 +596,40 @@ function AddTodo() {
           flex: 1,
           padding: "8px 12px",
           border: "1px solid #d1d5db",
-          borderRadius: "6px"
+          borderRadius: "6px",
         }}
       />
-      
+
       <select
         value={priority}
         onChange={(e) => setPriority(e.target.value)}
         style={{
           padding: "8px 12px",
           border: "1px solid #d1d5db",
-          borderRadius: "6px"
+          borderRadius: "6px",
         }}
       >
         <option value="low">Low Priority</option>
         <option value="medium">Medium Priority</option>
         <option value="high">High Priority</option>
       </select>
-      
+
       <select
         value={category}
         onChange={(e) => setCategory(e.target.value)}
         style={{
           padding: "8px 12px",
           border: "1px solid #d1d5db",
-          borderRadius: "6px"
+          borderRadius: "6px",
         }}
       >
-        {["General", "Learning", "Development", "Review", "Documentation"].map(cat => (
-          <option key={cat} value={cat}>{cat}</option>
+        {["General", "Learning", "Development", "Review", "Documentation"].map((cat) => (
+          <option key={cat} value={cat}>
+            {cat}
+          </option>
         ))}
       </select>
-      
+
       <button
         onClick={addTodo}
         disabled={!newTodo.trim()}
@@ -657,7 +639,7 @@ function AddTodo() {
           color: "white",
           border: "none",
           borderRadius: "6px",
-          cursor: newTodo.trim() ? "pointer" : "not-allowed"
+          cursor: newTodo.trim() ? "pointer" : "not-allowed",
         }}
       >
         Add Todo
@@ -669,28 +651,28 @@ function AddTodo() {
 // Main app
 function TodoApp() {
   return (
-    <div style={{ 
-      maxWidth: "800px", 
-      margin: "0 auto", 
-      padding: "20px",
-      fontFamily: "system-ui, sans-serif"
-    }}>
-      <div style={{
-        textAlign: "center",
-        marginBottom: "24px",
-        padding: "24px",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        color: "white",
-        borderRadius: "12px"
-      }}>
-        <h1 style={{ margin: "0 0 8px 0", fontSize: "28px" }}>
-          Mesa Professional Todo Dashboard
-        </h1>
-        <p style={{ margin: 0, opacity: 0.9 }}>
-          Experience fine-grained reactivity with advanced task management
-        </p>
+    <div
+      style={{
+        maxWidth: "800px",
+        margin: "0 auto",
+        padding: "20px",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: "24px",
+          padding: "24px",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "white",
+          borderRadius: "12px",
+        }}
+      >
+        <h1 style={{ margin: "0 0 8px 0", fontSize: "28px" }}>Mesa Professional Todo Dashboard</h1>
+        <p style={{ margin: 0, opacity: 0.9 }}>Experience fine-grained reactivity with advanced task management</p>
       </div>
-      
+
       <TodoStats />
       <SearchBar />
       <FilterControls />
@@ -705,7 +687,7 @@ export default TodoApp;
 
 ## Architecture Highlights
 
-### 🏗️ Component Structure
+### Component Structure
 
 ```
 TodoDashboard
@@ -719,7 +701,7 @@ TodoDashboard
         └── TodoItem[] (inline editing, actions)
 ```
 
-### 🎨 UI/UX Features
+### UI/UX Features
 
 - **Responsive design** that works on mobile and desktop
 - **Dark/light theme** support with system preference detection
@@ -729,7 +711,7 @@ TodoDashboard
 - **Priority color coding** throughout the interface
 - **Accessible** with proper ARIA labels and semantic HTML
 
-### ⚡ Performance Optimizations
+### Performance Optimizations
 
 - **Fine-grained subscriptions** - components only re-render when their specific data changes
 - **Computed selectors** - analytics update only when underlying todos change
@@ -745,30 +727,30 @@ TodoDashboard
 const todoState = proxy({
   // Data layer
   todos: [],
-  
-  // UI state layer  
+
+  // UI state layer
   filters: {
     status: "all",
-    priority: "all", 
+    priority: "all",
     category: "all",
-    search: ""
+    search: "",
   },
-  
+
   // Form state layer
   forms: {
     newTodo: {
       text: "",
       priority: "medium",
-      category: "General"
-    }
+      category: "General",
+    },
   },
-  
+
   // UI preferences
   ui: {
     viewMode: "list", // or "grid"
     sortBy: "createdAt",
-    sortOrder: "desc"
-  }
+    sortOrder: "desc",
+  },
 });
 ```
 
@@ -776,19 +758,17 @@ const todoState = proxy({
 
 ```jsx
 function TodoAnalytics() {
-  const todos = useStore(todoState, s => s.todos);
-  
+  const todos = useStore(todoState, (s) => s.todos);
+
   // This only recalculates when todos array changes
   const analytics = useMemo(() => {
     const now = new Date();
     const total = todos.length;
-    const completed = todos.filter(t => t.completed).length;
-    
+    const completed = todos.filter((t) => t.completed).length;
+
     // Complex calculations...
-    const overdue = todos.filter(t => 
-      t.dueDate && new Date(t.dueDate) < now && !t.completed
-    ).length;
-    
+    const overdue = todos.filter((t) => t.dueDate && new Date(t.dueDate) < now && !t.completed).length;
+
     const categoryStats = todos.reduce((acc, todo) => {
       const cat = todo.category;
       acc[cat] = acc[cat] || { total: 0, completed: 0 };
@@ -796,14 +776,17 @@ function TodoAnalytics() {
       if (todo.completed) acc[cat].completed++;
       return acc;
     }, {});
-    
+
     return {
-      total, completed, active: total - completed, overdue,
+      total,
+      completed,
+      active: total - completed,
+      overdue,
       completionRate: total ? Math.round((completed / total) * 100) : 0,
-      categoryStats
+      categoryStats,
     };
   }, [todos]);
-  
+
   return <AnalyticsDashboard data={analytics} />;
 }
 ```
@@ -812,34 +795,33 @@ function TodoAnalytics() {
 
 ```jsx
 function useTodoFilters() {
-  const todos = useStore(todoState, s => s.todos);
-  const filters = useStore(todoState, s => s.filters);
-  
+  const todos = useStore(todoState, (s) => s.todos);
+  const filters = useStore(todoState, (s) => s.filters);
+
   return useMemo(() => {
-    return todos.filter(todo => {
+    return todos.filter((todo) => {
       // Status filter
       if (filters.status !== "all") {
         if (filters.status === "active" && todo.completed) return false;
         if (filters.status === "completed" && !todo.completed) return false;
       }
-      
+
       // Priority filter
       if (filters.priority !== "all" && todo.priority !== filters.priority) {
         return false;
       }
-      
+
       // Category filter
       if (filters.category !== "all" && todo.category !== filters.category) {
         return false;
       }
-      
+
       // Search filter
       if (filters.search) {
         const query = filters.search.toLowerCase();
-        return todo.text.toLowerCase().includes(query) ||
-               todo.category.toLowerCase().includes(query);
+        return todo.text.toLowerCase().includes(query) || todo.category.toLowerCase().includes(query);
       }
-      
+
       return true;
     });
   }, [todos, filters]);
@@ -856,39 +838,39 @@ import { proxy } from "mesa-react";
 
 describe("Professional Todo Dashboard", () => {
   let testState;
-  
+
   beforeEach(() => {
     testState = proxy({
       todos: [
-        { 
-          id: 1, 
-          text: "Test todo", 
-          completed: false, 
+        {
+          id: 1,
+          text: "Test todo",
+          completed: false,
           priority: "high",
-          category: "Testing" 
-        }
+          category: "Testing",
+        },
       ],
-      filters: { status: "all", priority: "all", category: "all", search: "" }
+      filters: { status: "all", priority: "all", category: "all", search: "" },
     });
   });
-  
+
   test("filters todos by priority", () => {
     testState.filters.priority = "high";
-    
+
     // Test that only high priority todos are shown
     expect(getFilteredTodos(testState)).toHaveLength(1);
-    
+
     testState.filters.priority = "low";
     expect(getFilteredTodos(testState)).toHaveLength(0);
   });
-  
+
   test("search works across text and categories", () => {
     testState.filters.search = "test";
     expect(getFilteredTodos(testState)).toHaveLength(1);
-    
+
     testState.filters.search = "Testing";
     expect(getFilteredTodos(testState)).toHaveLength(1);
-    
+
     testState.filters.search = "nonexistent";
     expect(getFilteredTodos(testState)).toHaveLength(0);
   });

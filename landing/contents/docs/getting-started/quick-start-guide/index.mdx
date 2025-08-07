@@ -6,7 +6,7 @@ description: Get up and running with Mesa in 5 minutes.
 This guide will help you build your first Mesa application in just a few minutes. We'll create a simple counter app that demonstrates Mesa's fine-grained reactivity.
 
 <Note type="info">
-Make sure you've completed the [Installation](/docs/getting-started/installation) before proceeding.
+  Make sure you've completed the [Installation](/docs/getting-started/installation) before proceeding.
 </Note>
 
 ## Your First Mesa App
@@ -29,6 +29,7 @@ Let's build a counter application that showcases Mesa's core features:
       }
     });
     ```
+
   </StepperItem>
 
   <StepperItem title="Step 2: Create Components">
@@ -40,7 +41,7 @@ Let's build a counter application that showcases Mesa's core features:
     function Counter() {
       // Only re-renders when count changes
       const count = useStore(appState, (state) => state.count);
-      
+
       return (
         <div>
           <h2>Count: {count}</h2>
@@ -60,7 +61,7 @@ Let's build a counter application that showcases Mesa's core features:
     function UserProfile() {
       // Only re-renders when user data changes
       const user = useStore(appState, (state) => state.user);
-      
+
       return (
         <div>
           <h3>User: {user.name}</h3>
@@ -69,6 +70,7 @@ Let's build a counter application that showcases Mesa's core features:
       );
     }
     ```
+
   </StepperItem>
 
   <StepperItem title="Step 3: Compose Your App">
@@ -81,9 +83,9 @@ Let's build a counter application that showcases Mesa's core features:
           <h1>Mesa Counter App</h1>
           <Counter />
           <UserProfile />
-          
+
           {/* This button only affects UserProfile, not Counter */}
-          <button 
+          <button
             onClick={() => {
               appState.user.name = "John";
               appState.user.isLoggedIn = true;
@@ -97,6 +99,7 @@ Let's build a counter application that showcases Mesa's core features:
 
     export default App;
     ```
+
   </StepperItem>
 
   <StepperItem title="Step 4: Run Your App">
@@ -111,6 +114,7 @@ Let's build a counter application that showcases Mesa's core features:
     ```
 
     Try clicking the buttons and notice how only the relevant components re-render!
+
   </StepperItem>
 </Stepper>
 
@@ -118,17 +122,20 @@ Let's build a counter application that showcases Mesa's core features:
 
 This simple example showcases Mesa's core benefits:
 
-### 🎯 **Fine-Grained Updates**
+### Fine-Grained Updates
+
 - Clicking "Increment" only re-renders the `Counter` component
 - Clicking "Login as John" only re-renders the `UserProfile` component
 - Neither affects the other, even though they share the same state object
 
-### 🚀 **Simple API**
+### Simple API
+
 - `proxy()` creates reactive state
 - `useStore()` subscribes to specific data
 - Direct mutations trigger updates automatically
 
-### 🔥 **Performance**
+### Performance
+
 - Zero unnecessary re-renders
 - Automatic dependency tracking
 - Efficient path-based subscriptions
@@ -143,5 +150,5 @@ Now that you've built your first Mesa app, explore these topics:
 - **[Examples](/docs/examples/counter)** - More practical examples and patterns
 
 <Note type="success">
-🎉 Congratulations! You've successfully created your first Mesa application with fine-grained reactivity.
+  🎉 Congratulations! You've successfully created your first Mesa application with fine-grained reactivity.
 </Note>

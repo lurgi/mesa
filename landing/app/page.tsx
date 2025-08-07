@@ -4,18 +4,17 @@ import { buttonVariants } from "@/components/ui/button";
 import { page_routes } from "@/lib/routes-config";
 import { TerminalSquareIcon } from "lucide-react";
 import Link from "next/link";
-import { useTheme } from "next-themes";
-import { useLayoutEffect } from "react";
+import { ThemeProvider } from "@/components/contexts/theme-provider";
 
 export default function Home() {
-  const { theme, setTheme } = useTheme();
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+      <Main />
+    </ThemeProvider>
+  );
+}
 
-  useLayoutEffect(() => {
-    if (theme === "light") {
-      setTheme("dark");
-    }
-  }, [setTheme, theme]);
-
+function Main() {
   return (
     <div className="w-full h-full relative">
       <div className="w-full h-full absolute top-0 left-0 z-[-1] ">
