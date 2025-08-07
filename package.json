@@ -17,8 +17,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc --emitDeclarationOnly && vite build",
-    "build:types": "tsc --emitDeclarationOnly",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -35,9 +34,10 @@
     "@types/jest": "^30.0.0",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
+    "ts-jest": "^29.4.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
-    "ts-jest": "^29.4.0"
+    "vite-plugin-dts": "^4.5.4"
   },
   "peerDependencies": {
     "@types/react": ">=16.8.0",
