@@ -36,11 +36,11 @@
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
     "typescript": "~5.8.3",
-    "vite": "^7.0.4"
-  },
-  "dependencies": {
-    "@types/react": "^19.1.9",
-    "react": "^19.1.1",
+    "vite": "^7.0.4",
     "ts-jest": "^29.4.0"
+  },
+  "peerDependencies": {
+    "@types/react": ">=16.8.0",
+    "react": ">=16.8.0"
   }
 }

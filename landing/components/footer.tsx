@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { buttonVariants } from "./ui/button";
-import { CommandIcon, HeartIcon, TriangleIcon } from "lucide-react";
 
 export function Footer() {
   return (
@@ -11,7 +10,8 @@ export function Footer() {
             M
           </div>
           <p className="text-center">
-            © 2024 Mesa. High-performance React state management with fine-grained reactivity.
+            © 2025 Mesa. High-performance React state management with
+            fine-grained reactivity.
           </p>
         </div>
 
