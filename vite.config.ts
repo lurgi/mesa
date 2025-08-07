@@ -10,9 +10,12 @@ export default defineConfig({
       fileName: "mesa",
     },
     rollupOptions: {
-      external: [],
+      external: ["react", "react-dom"],
       output: {
-        globals: {},
+        globals: {
+          react: "React",
+          "react-dom": "ReactDOM",
+        },
       },
     },
   },

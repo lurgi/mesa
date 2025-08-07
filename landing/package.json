@@ -23,7 +23,7 @@
     "gray-matter": "^4.0.3",
     "gsap": "^3.13.0",
     "lucide-react": "^0.435.0",
-    "mesa-react": "^0.0.4",
+    "mesa-react": "file:..",
     "next": "15.0.4",
     "next-mdx-remote": "^5.0.0",
     "next-themes": "^0.4.0",

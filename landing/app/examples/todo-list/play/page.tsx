@@ -20,7 +20,13 @@ const todoState = proxy({
 });
 
 // Visual render indicator component
-function RenderIndicator({ componentName, color = "#3b82f6" }: { componentName: string; color?: string }) {
+function RenderIndicator({
+  componentName,
+  color = "#3b82f6",
+}: {
+  componentName: string;
+  color?: string;
+}) {
   const [renderCount, setRenderCount] = useState(0);
   const [isFlashing, setIsFlashing] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -35,7 +41,7 @@ function RenderIndicator({ componentName, color = "#3b82f6" }: { componentName: 
     }, 300);
 
     return () => clearTimeout(timeoutRef.current);
-  });
+  }, []);
 
   return (
     <div
@@ -61,14 +67,17 @@ function RenderIndicator({ componentName, color = "#3b82f6" }: { componentName: 
 
 // Todo item component
 function TodoItem({ todo }: { todo: { id: number } }) {
-  const todoData = useStore(todoState, (s) => s.todos.find((t) => t.id === todo.id));
+  const todoData = useStore(todoState, (s) =>
+    s.todos.find((t) => t.id === todo.id)
+  );
 
   if (!todoData) return null;
 
   const toggleComplete = () => {
     const todoIndex = todoState.todos.findIndex((t) => t.id === todo.id);
     if (todoIndex !== -1) {
-      todoState.todos[todoIndex].completed = !todoState.todos[todoIndex].completed;
+      todoState.todos[todoIndex].completed =
+        !todoState.todos[todoIndex].completed;
       updateStats();
     }
   };
@@ -88,7 +97,10 @@ function TodoItem({ todo }: { todo: { id: number } }) {
   const updatePriority = (newPriority: string) => {
     const todoIndex = todoState.todos.findIndex((t) => t.id === todo.id);
     if (todoIndex !== -1) {
-      todoState.todos[todoIndex].priority = newPriority as "high" | "medium" | "low";
+      todoState.todos[todoIndex].priority = newPriority as
+        | "high"
+        | "medium"
+        | "low";
     }
   };
 
@@ -119,7 +131,12 @@ function TodoItem({ todo }: { todo: { id: number } }) {
         color={priorityColors[todoData.priority as keyof typeof priorityColors]}
       />
 
-      <input type="checkbox" checked={todoData.completed} onChange={toggleComplete} style={{ cursor: "pointer" }} />
+      <input
+        type="checkbox"
+        checked={todoData.completed}
+        onChange={toggleComplete}
+        style={{ cursor: "pointer" }}
+      />
 
       <input
         type="text"
@@ -141,7 +158,8 @@ function TodoItem({ todo }: { todo: { id: number } }) {
           padding: "4px 8px",
           borderRadius: "4px",
           border: "1px solid #d1d5db",
-          background: priorityColors[todoData.priority as keyof typeof priorityColors],
+          background:
+            priorityColors[todoData.priority as keyof typeof priorityColors],
           color: "white",
           fontSize: "12px",
         }}
@@ -287,7 +305,9 @@ function FilterControls() {
         {filters.map((f) => (
           <button
             key={f.value}
-            onClick={() => (todoState.filter = f.value as "all" | "active" | "completed")}
+            onClick={() =>
+              (todoState.filter = f.value as "all" | "active" | "completed")
+            }
             style={{
               padding: "6px 12px",
               background: filter === f.value ? "#3b82f6" : "transparent",
@@ -325,15 +345,21 @@ function TodoStats() {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontWeight: "bold", color: "#374151" }}>{stats.total}</div>
+          <div style={{ fontWeight: "bold", color: "#374151" }}>
+            {stats.total}
+          </div>
           <div style={{ color: "#6b7280" }}>Total</div>
         </div>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontWeight: "bold", color: "#059669" }}>{stats.active}</div>
+          <div style={{ fontWeight: "bold", color: "#059669" }}>
+            {stats.active}
+          </div>
           <div style={{ color: "#6b7280" }}>Active</div>
         </div>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontWeight: "bold", color: "#dc2626" }}>{stats.completed}</div>
+          <div style={{ fontWeight: "bold", color: "#dc2626" }}>
+            {stats.completed}
+          </div>
           <div style={{ color: "#6b7280" }}>Completed</div>
         </div>
       </div>
@@ -446,7 +472,7 @@ function TodoApp() {
         >
           <h1 style={{ margin: 0, fontSize: "24px" }}>Mesa Todo List</h1>
           <p style={{ margin: "8px 0 0 0", opacity: 0.9, fontSize: "14px" }}>
-            Watch the render indicators to see Mesa's fine-grained updates!
+            Watch the render indicators to see Mesa&apos;s fine-grained updates!
           </p>
         </div>
 
@@ -467,13 +493,17 @@ function TodoApp() {
           color: "#6b7280",
         }}
       >
-        <h3 style={{ margin: "0 0 8px 0", color: "#374151" }}>🎯 Render Tracking Guide</h3>
+        <h3 style={{ margin: "0 0 8px 0", color: "#374151" }}>
+          🎯 Render Tracking Guide
+        </h3>
         <ul style={{ margin: 0, paddingLeft: "20px" }}>
           <li>
-            <strong>Colored badges</strong> show component names and render counts
+            <strong>Colored badges</strong> show component names and render
+            counts
           </li>
           <li>
-            <strong>Flashing effect</strong> indicates when a component re-renders
+            <strong>Flashing effect</strong> indicates when a component
+            re-renders
           </li>
           <li>
             <strong>Try these actions</strong> to see fine-grained updates:
@@ -495,11 +525,18 @@ export default function TodoListPlayPage() {
     <div style={{ padding: "20px", minHeight: "100vh", background: "#f8fafc" }}>
       <div style={{ maxWidth: "800px", margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "#1f2937", margin: "0 0 8px 0" }}>
+          <h1
+            style={{
+              fontSize: "32px",
+              fontWeight: "bold",
+              color: "#1f2937",
+              margin: "0 0 8px 0",
+            }}
+          >
             Mesa Todo List Playground
           </h1>
           <p style={{ color: "#6b7280", fontSize: "16px", margin: 0 }}>
-            Interactive demo showcasing Mesa's fine-grained reactivity
+            Interactive demo showcasing Mesa&apos;s fine-grained reactivity
           </p>
         </div>
 
