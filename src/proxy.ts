@@ -31,6 +31,17 @@ function notifyPath(path: string) {
     listeners.forEach((callback) => callback());
   }
 
+  // Handle array item property changes: todos.0.completed -> notify "todos"
+  const arrayItemPattern = /^(.+)\.(\d+)(?:\.(.+))?$/;
+  const match = path.match(arrayItemPattern);
+  if (match) {
+    const [, arrayPath] = match;
+    const arrayListeners = pathListeners.get(arrayPath);
+    if (arrayListeners) {
+      arrayListeners.forEach((callback) => callback());
+    }
+  }
+
   let parentPath = path;
   while (parentPath.includes(".")) {
     parentPath = parentPath.substring(0, parentPath.lastIndexOf("."));

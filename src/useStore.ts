@@ -25,6 +25,10 @@ export function useStore<T extends object, R>(store: T, selector: (state: T) => 
         if (!Object.is(lastValueRef.current, newValue)) {
           lastValueRef.current = newValue;
           callback();
+        } else if (Array.isArray(newValue)) {
+          // For arrays, create a shallow copy to force re-render on item changes
+          lastValueRef.current = [...newValue] as R;
+          callback();
         }
       });
       unsubscribersRef.current.push(unsubscriber);
@@ -41,6 +45,7 @@ export function useStore<T extends object, R>(store: T, selector: (state: T) => 
     if (lastValueRef.current === undefined) {
       lastValueRef.current = selectorRef.current(store);
     }
+    // Include force update count to ensure different snapshots for array item changes
     return lastValueRef.current;
   };
 
