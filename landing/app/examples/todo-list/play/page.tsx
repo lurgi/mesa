@@ -329,11 +329,11 @@ function AddTodo() {
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full">
           <select
             value={selectedCategory}
             onChange={(e) => (todoState.selectedCategory = e.target.value)}
-            className="flex-1 h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 min-w-0 h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
@@ -350,7 +350,7 @@ function AddTodo() {
                 | "medium"
                 | "high")
             }
-            className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-ring"
+            className="flex-1 min-w-0 h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-ring"
           >
             <option value="low">Low Priority</option>
             <option value="medium">Medium Priority</option>
@@ -481,7 +481,10 @@ function TodoItem({ todo }: { todo: Todo }) {
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
               <span>
-                Due {isMounted ? new Date(todo.dueDate).toLocaleDateString('en-US') : todo.dueDate}
+                Due{" "}
+                {isMounted
+                  ? new Date(todo.dueDate).toLocaleDateString("en-US")
+                  : todo.dueDate}
               </span>
             </div>
           )}
