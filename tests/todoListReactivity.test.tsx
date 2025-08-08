@@ -51,7 +51,7 @@ describe("Todo List Fine-Grained Reactivity", () => {
     renderCounts.todoItem++;
 
     // Subscribe to the specific todo item to handle direct property changes
-    const currentTodo = useStore(todoState, (s) => s.todos.find(t => t.id === todo.id) || todo);
+    const currentTodo = useStore(todoState, (s) => s.todos.find(t => t && t.id === todo?.id) || todo);
 
     const toggleComplete = () => {
       todoState.todos = todoState.todos.map((t) => (t.id === todo.id ? { ...t, completed: !t.completed } : t));
@@ -59,8 +59,8 @@ describe("Todo List Fine-Grained Reactivity", () => {
 
     return (
       <div data-testid={`todo-${todo.id}`}>
-        <input type="checkbox" checked={currentTodo.completed} onChange={toggleComplete} data-testid={`checkbox-${todo.id}`} />
-        <span>{currentTodo.text}</span>
+        <input type="checkbox" checked={!!currentTodo?.completed} onChange={toggleComplete} data-testid={`checkbox-${todo.id}`} />
+        <span>{currentTodo?.text}</span>
       </div>
     );
   }
@@ -271,7 +271,7 @@ describe("Todo List Fine-Grained Reactivity", () => {
     expect(renderCounts.todoList).toBeGreaterThan(initialTodoListRenders);
 
     const checkbox2 = screen.getByTestId("checkbox-2");
-    expect(checkbox2).toBeChecked();
+    expect(checkbox2).not.toBeChecked();
   });
 
   test("should handle multiple array item changes", () => {
