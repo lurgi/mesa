@@ -22,13 +22,22 @@ export function useStore<T extends object, R>(store: T, selector: (state: T) => 
       const unsubscriber = subscribeToPath(path, () => {
         const newValue = selectorRef.current(store);
 
-        if (!Object.is(lastValueRef.current, newValue)) {
-          lastValueRef.current = newValue;
-          callback();
-        } else if (Array.isArray(newValue)) {
-          // For arrays, create a shallow copy to force re-render on item changes
+        // Always trigger callback for arrays to ensure proper reactivity
+        if (Array.isArray(newValue)) {
           lastValueRef.current = [...newValue] as R;
           callback();
+        } else if (!Object.is(lastValueRef.current, newValue)) {
+          lastValueRef.current = newValue;
+          callback();
+        } else if (typeof newValue === 'object' && newValue !== null && lastValueRef.current !== null) {
+          // For objects, do a shallow comparison to detect property changes
+          const oldValue = lastValueRef.current as any;
+          const hasChanges = Object.keys(newValue).some(key => !Object.is(oldValue[key], (newValue as any)[key])) ||
+                            Object.keys(oldValue).some(key => !Object.is(oldValue[key], (newValue as any)[key]));
+          if (hasChanges) {
+            lastValueRef.current = { ...newValue } as R;
+            callback();
+          }
         }
       });
       unsubscribersRef.current.push(unsubscriber);

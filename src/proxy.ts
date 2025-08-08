@@ -31,7 +31,6 @@ function notifyPath(path: string) {
     listeners.forEach((callback) => callback());
   }
 
-  // Handle array item property changes: todos.0.completed -> notify "todos"
   const arrayItemPattern = /^(.+)\.(\d+)(?:\.(.+))?$/;
   const match = path.match(arrayItemPattern);
   if (match) {
@@ -89,22 +88,39 @@ export function proxy<T extends object>(target: T, parentPath: string = ""): T {
 
   const proxied = new Proxy(target, {
     get(target, property, receiver) {
-      const currentPath = parentPath ? `${parentPath}.${String(property)}` : String(property);
+      const currentPath = parentPath
+        ? `${parentPath}.${String(property)}`
+        : String(property);
       trackAccess(currentPath);
 
       const value = Reflect.get(target, property, receiver);
 
       if (Array.isArray(target) && typeof value === "function") {
-        const arrayMethods = ["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill"];
+        const arrayMethods = [
+          "push",
+          "pop",
+          "shift",
+          "unshift",
+          "splice",
+          "sort",
+          "reverse",
+          "fill",
+        ];
         if (arrayMethods.includes(String(property))) {
           return function (this: any, ...args: any[]) {
+            const originalLength = this.length;
             const result = value.apply(this, args);
             const arrayPath = parentPath || "root";
+
             notifyPath(arrayPath);
             notifyPath(`${arrayPath}.length`);
-            for (let i = 0; i < this.length; i++) {
+
+            const newLength = this.length;
+            const maxLength = Math.max(originalLength, newLength);
+            for (let i = 0; i < maxLength; i++) {
               notifyPath(`${arrayPath}.${i}`);
             }
+
             notifyAll();
             return result;
           };
@@ -120,16 +136,29 @@ export function proxy<T extends object>(target: T, parentPath: string = ""): T {
 
     set(target, property, value, receiver) {
       const oldValue = Reflect.get(target, property, receiver);
+
+      // Proxy the new value if it's an object
+      if (value !== null && typeof value === "object") {
+        const currentPath = parentPath
+          ? `${parentPath}.${String(property)}`
+          : String(property);
+        value = proxy(value, currentPath);
+      }
+
       const result = Reflect.set(target, property, value, receiver);
 
       if (result && !Object.is(oldValue, value)) {
-        const currentPath = parentPath ? `${parentPath}.${String(property)}` : String(property);
+        const currentPath = parentPath
+          ? `${parentPath}.${String(property)}`
+          : String(property);
         notifyPath(currentPath);
 
+        // Handle array changes
         if (Array.isArray(target)) {
           if (property === "length" || !isNaN(Number(property))) {
-            notifyPath(parentPath);
-            notifyPath(`${parentPath}.length`);
+            // Notify the array path itself for any index or length changes
+            notifyPath(parentPath || "root");
+            notifyPath(`${parentPath || "root"}.length`);
           }
         }
 
@@ -143,7 +172,9 @@ export function proxy<T extends object>(target: T, parentPath: string = ""): T {
       const result = Reflect.deleteProperty(target, property);
 
       if (result) {
-        const currentPath = parentPath ? `${parentPath}.${String(property)}` : String(property);
+        const currentPath = parentPath
+          ? `${parentPath}.${String(property)}`
+          : String(property);
         notifyPath(currentPath);
         notifyAll();
       }
