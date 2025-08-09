@@ -20,6 +20,8 @@ const monoFont = Space_Mono({
 
 export const metadata: Metadata = {
   title: "Mesa - High-performance React state management",
+  metadataBase: new URL("https://mesa-react.vercel.app"),
+
   description:
     "Mesa provides fine-grained reactivity for React applications with automatic dependency tracking and path-based subscriptions. Zero dependencies, minimal bundle size, maximum performance.",
   keywords: ["React", "state management", "fine-grained reactivity", "performance", "TypeScript"],
@@ -27,6 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Mesa - High-performance React state management",
     description: "Fine-grained reactivity for React with automatic dependency tracking",
+    url: "https://mesa-react.vercel.app",
     type: "website",
     images: [
       {
