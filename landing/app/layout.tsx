@@ -29,11 +29,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Mesa - High-performance React state management",
     description: "Fine-grained reactivity for React with automatic dependency tracking",
+    siteName: "Mesa",
     url: "https://mesa-react.vercel.app",
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.webp",
         width: 1200,
         height: 630,
       },
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
     description: "Fine-grained reactivity for React with automatic dependency tracking",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.webp",
         width: 1200,
         height: 630,
       },
