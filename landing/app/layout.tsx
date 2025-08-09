@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/contexts/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { Space_Mono, Space_Grotesk } from "next/font/google";
 import "@/styles/globals.css";
+import { Footer } from "@/components/footer";
 
 const sansFont = Space_Grotesk({
   subsets: ["latin"],
@@ -74,7 +75,8 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Navbar />
-          <main className="mx-auto h-auto scroll-smooth">{children}</main>
+          <main className="mx-auto min-h-screen scroll-smooth">{children}</main>
+          <Footer />
         </ThemeProvider>
       </body>
     </html>

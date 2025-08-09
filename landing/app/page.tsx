@@ -3,18 +3,16 @@ import DarkVeil from "@/components/ogl/dark-veil";
 import { buttonVariants } from "@/components/ui/button";
 import { page_routes } from "@/lib/routes-config";
 import { TerminalSquareIcon } from "lucide-react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
-import { ThemeProvider } from "@/components/contexts/theme-provider";
+import { useLayoutEffect } from "react";
 
 export default function Home() {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
-      <Main />
-    </ThemeProvider>
-  );
-}
+  const { setTheme } = useTheme();
+  useLayoutEffect(() => {
+    setTheme("dark");
+  }, [setTheme]);
 
-function Main() {
   return (
     <div className="w-full h-full relative">
       <div className="w-full h-full absolute top-0 left-0 z-[-1] ">
