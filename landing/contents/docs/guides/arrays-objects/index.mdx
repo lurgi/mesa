@@ -12,24 +12,20 @@ Mesa uses a coarse-grained approach for arrays, meaning when you subscribe to an
 ### Basic Array Operations
 
 ```jsx
-import { proxy, useStore } from "mesa";
+import { proxy, useStore } from "mesa-react";
 
 const state = proxy({
-  items: ["apple", "banana", "cherry"]
+  items: ["apple", "banana", "cherry"],
 });
 
 function ItemsList() {
   const items = useStore(state, (s) => s.items);
-  
+
   return (
     <div>
       <p>Items: {items.join(", ")}</p>
-      <button onClick={() => state.items.push("date")}>
-        Add Item
-      </button>
-      <button onClick={() => state.items.pop()}>
-        Remove Last
-      </button>
+      <button onClick={() => state.items.push("date")}>Add Item</button>
+      <button onClick={() => state.items.pop()}>Remove Last</button>
     </div>
   );
 }
@@ -41,27 +37,19 @@ All array methods trigger reactivity when subscribed to the array:
 
 ```jsx
 const state = proxy({
-  numbers: [3, 1, 4, 1, 5]
+  numbers: [3, 1, 4, 1, 5],
 });
 
 function NumberList() {
   const numbers = useStore(state, (s) => s.numbers);
-  
+
   return (
     <div>
       <p>Numbers: {numbers.join(",")}</p>
-      <button onClick={() => state.numbers.push(Math.floor(Math.random() * 10))}>
-        Add Random
-      </button>
-      <button onClick={() => state.numbers.sort((a, b) => a - b)}>
-        Sort
-      </button>
-      <button onClick={() => state.numbers.reverse()}>
-        Reverse
-      </button>
-      <button onClick={() => state.numbers.splice(1, 2, 99, 88)}>
-        Splice (replace index 1-2 with 99,88)
-      </button>
+      <button onClick={() => state.numbers.push(Math.floor(Math.random() * 10))}>Add Random</button>
+      <button onClick={() => state.numbers.sort((a, b) => a - b)}>Sort</button>
+      <button onClick={() => state.numbers.reverse()}>Reverse</button>
+      <button onClick={() => state.numbers.splice(1, 2, 99, 88)}>Splice (replace index 1-2 with 99,88)</button>
     </div>
   );
 }
@@ -76,30 +64,32 @@ const todoState = proxy({
   todos: [
     { id: 1, text: "Learn Mesa", completed: false, priority: "high", category: "Learning" },
     { id: 2, text: "Build app", completed: false, priority: "medium", category: "Development" },
-  ]
+  ],
 });
 
 function TodoList() {
   const todos = useStore(todoState, (s) => s.todos);
-  
+
   return (
     <ul>
-      {todos.map(todo => (
+      {todos.map((todo) => (
         <li key={todo.id}>
           <input
             type="checkbox"
             checked={todo.completed}
             onChange={() => {
               // Direct property mutation triggers reactivity
-              const index = todoState.todos.findIndex(t => t.id === todo.id);
+              const index = todoState.todos.findIndex((t) => t.id === todo.id);
               if (index !== -1) {
                 todoState.todos[index].completed = !todoState.todos[index].completed;
               }
             }}
           />
-          <span style={{ 
-            textDecoration: todo.completed ? 'line-through' : 'none' 
-          }}>
+          <span
+            style={{
+              textDecoration: todo.completed ? "line-through" : "none",
+            }}
+          >
             {todo.text} ({todo.priority})
           </span>
         </li>
@@ -110,15 +100,11 @@ function TodoList() {
 
 function AddTodoForm() {
   const [newTodo, setNewTodo] = useState("");
-  
+
   return (
     <div>
-      <input
-        value={newTodo}
-        onChange={(e) => setNewTodo(e.target.value)}
-        placeholder="Enter new todo..."
-      />
-      <button 
+      <input value={newTodo} onChange={(e) => setNewTodo(e.target.value)} placeholder="Enter new todo..." />
+      <button
         onClick={() => {
           if (newTodo.trim()) {
             todoState.todos.push({
@@ -126,7 +112,7 @@ function AddTodoForm() {
               text: newTodo.trim(),
               completed: false,
               priority: "medium",
-              category: "General"
+              category: "General",
             });
             setNewTodo("");
           }
@@ -151,7 +137,7 @@ const TodoItem = React.memo(({ todo }) => {
         type="checkbox"
         checked={todo.completed}
         onChange={() => {
-          const index = todoState.todos.findIndex(t => t.id === todo.id);
+          const index = todoState.todos.findIndex((t) => t.id === todo.id);
           if (index !== -1) {
             todoState.todos[index].completed = !todoState.todos[index].completed;
           }
@@ -164,10 +150,10 @@ const TodoItem = React.memo(({ todo }) => {
 
 function OptimizedTodoList() {
   const todos = useStore(todoState, (s) => s.todos);
-  
+
   return (
     <ul>
-      {todos.map(todo => (
+      {todos.map((todo) => (
         <TodoItem key={todo.id} todo={todo} />
       ))}
     </ul>
@@ -183,24 +169,24 @@ Use `useMemo` for expensive computations on arrays:
 function FilteredTodoList() {
   const todos = useStore(todoState, (s) => s.todos);
   const [filter, setFilter] = useState("all"); // "all" | "active" | "completed"
-  
+
   const filteredTodos = useMemo(() => {
-    return todos.filter(todo => {
+    return todos.filter((todo) => {
       if (filter === "active") return !todo.completed;
       if (filter === "completed") return todo.completed;
       return true;
     });
   }, [todos, filter]);
-  
+
   const stats = useMemo(() => {
     const total = todos.length;
-    const completed = todos.filter(t => t.completed).length;
+    const completed = todos.filter((t) => t.completed).length;
     const active = total - completed;
-    const highPriority = todos.filter(t => !t.completed && t.priority === "high").length;
-    
+    const highPriority = todos.filter((t) => !t.completed && t.priority === "high").length;
+
     return { total, completed, active, highPriority };
   }, [todos]);
-  
+
   return (
     <div>
       <div>
@@ -209,9 +195,9 @@ function FilteredTodoList() {
         <button onClick={() => setFilter("completed")}>Completed ({stats.completed})</button>
         <span>High Priority: {stats.highPriority}</span>
       </div>
-      
+
       <ul>
-        {filteredTodos.map(todo => (
+        {filteredTodos.map((todo) => (
           <TodoItem key={todo.id} todo={todo} />
         ))}
       </ul>
@@ -237,20 +223,24 @@ const userState = proxy({
       notifications: {
         email: true,
         push: false,
-        sms: true
-      }
-    }
-  }
+        sms: true,
+      },
+    },
+  },
 });
 
 // This component only re-renders when user.name changes
 function UserName() {
   const name = useStore(userState, (s) => s.user.name);
-  
+
   return (
     <div>
       <h2>{name}</h2>
-      <button onClick={() => { userState.user.name = "Jane Doe"; }}>
+      <button
+        onClick={() => {
+          userState.user.name = "Jane Doe";
+        }}
+      >
         Change Name
       </button>
     </div>
@@ -260,11 +250,11 @@ function UserName() {
 // This component only re-renders when user.preferences.theme changes
 function ThemeToggle() {
   const theme = useStore(userState, (s) => s.user.preferences.theme);
-  
+
   return (
-    <button 
-      onClick={() => { 
-        userState.user.preferences.theme = theme === "light" ? "dark" : "light"; 
+    <button
+      onClick={() => {
+        userState.user.preferences.theme = theme === "light" ? "dark" : "light";
       }}
     >
       Current Theme: {theme}
@@ -275,7 +265,7 @@ function ThemeToggle() {
 // This component only re-renders when notification settings change
 function NotificationSettings() {
   const notifications = useStore(userState, (s) => s.user.preferences.notifications);
-  
+
   return (
     <div>
       <label>
@@ -288,10 +278,10 @@ function NotificationSettings() {
         />
         Email Notifications: {notifications.email ? "On" : "Off"}
       </label>
-      
+
       <label>
         <input
-          type="checkbox" 
+          type="checkbox"
           checked={notifications.push}
           onChange={() => {
             userState.user.preferences.notifications.push = !notifications.push;
@@ -312,42 +302,34 @@ Mesa handles dynamic property addition and deletion:
 const dynamicState = proxy({
   config: {
     apiUrl: "https://api.example.com",
-    timeout: 5000
-  }
+    timeout: 5000,
+  },
 });
 
 function DynamicConfig() {
   const config = useStore(dynamicState, (s) => s.config);
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
-  
+
   return (
     <div>
       <h3>Current Config:</h3>
       {Object.entries(config).map(([key, value]) => (
         <div key={key}>
           <strong>{key}:</strong> {String(value)}
-          <button 
-            onClick={() => { 
-              delete dynamicState.config[key]; 
+          <button
+            onClick={() => {
+              delete dynamicState.config[key];
             }}
           >
             Delete
           </button>
         </div>
       ))}
-      
+
       <div>
-        <input
-          placeholder="Property name"
-          value={newKey}
-          onChange={(e) => setNewKey(e.target.value)}
-        />
-        <input
-          placeholder="Property value"
-          value={newValue}
-          onChange={(e) => setNewValue(e.target.value)}
-        />
+        <input placeholder="Property name" value={newKey} onChange={(e) => setNewKey(e.target.value)} />
+        <input placeholder="Property value" value={newValue} onChange={(e) => setNewValue(e.target.value)} />
         <button
           onClick={() => {
             if (newKey && newValue) {
@@ -378,30 +360,34 @@ const appState = proxy({
       settings: {
         privacy: {
           showEmail: false,
-          showPhone: true
+          showPhone: true,
         },
         display: {
           theme: "auto",
-          fontSize: "medium"
-        }
-      }
+          fontSize: "medium",
+        },
+      },
     },
-    permissions: ["read", "write"]
-  }
+    permissions: ["read", "write"],
+  },
 });
 
 // Fine-grained component - only re-renders when firstName or lastName changes
 function UserDisplayName() {
   const firstName = useStore(appState, (s) => s.currentUser.profile.firstName);
   const lastName = useStore(appState, (s) => s.currentUser.profile.lastName);
-  
-  return <h1>{firstName} {lastName}</h1>;
+
+  return (
+    <h1>
+      {firstName} {lastName}
+    </h1>
+  );
 }
 
 // This component only re-renders when privacy settings change
 function PrivacySettings() {
   const privacy = useStore(appState, (s) => s.currentUser.profile.settings.privacy);
-  
+
   return (
     <div>
       <label>
@@ -414,7 +400,7 @@ function PrivacySettings() {
         />
         Show Email Publicly
       </label>
-      
+
       <label>
         <input
           type="checkbox"
@@ -440,31 +426,33 @@ const conditionalState = proxy({
   user: null, // Will be populated when logged in
   guestPreferences: {
     theme: "light",
-    language: "en"
-  }
+    language: "en",
+  },
 });
 
 function ConditionalUserData() {
   const isLoggedIn = useStore(conditionalState, (s) => s.isLoggedIn);
-  
+
   // Safe conditional selection - only accesses user data when logged in
-  const userData = useStore(conditionalState, (s) => 
-    s.isLoggedIn && s.user ? {
-      name: s.user.name,
-      email: s.user.email
-    } : null
+  const userData = useStore(conditionalState, (s) =>
+    s.isLoggedIn && s.user
+      ? {
+          name: s.user.name,
+          email: s.user.email,
+        }
+      : null
   );
-  
-  const preferences = useStore(conditionalState, (s) => 
+
+  const preferences = useStore(conditionalState, (s) =>
     s.isLoggedIn && s.user ? s.user.preferences : s.guestPreferences
   );
-  
+
   if (!isLoggedIn) {
     return (
       <div>
         <p>Please log in to access user features</p>
         <p>Current theme: {preferences.theme}</p>
-        <button 
+        <button
           onClick={() => {
             // Simulate login
             conditionalState.isLoggedIn = true;
@@ -473,8 +461,8 @@ function ConditionalUserData() {
               email: "john@example.com",
               preferences: {
                 theme: "dark",
-                language: "en"
-              }
+                language: "en",
+              },
             };
           }}
         >
@@ -483,7 +471,7 @@ function ConditionalUserData() {
       </div>
     );
   }
-  
+
   return (
     <div>
       <h2>Welcome, {userData.name}!</h2>
@@ -523,22 +511,21 @@ const todos = useStore(state, (s) => s.todos);
 const TodoItem = React.memo(({ todo }) => <li>{todo.text}</li>);
 
 // ✅ Good: Computed values with useMemo
-const completedTodos = useMemo(() => 
-  todos.filter(t => t.completed).length, [todos]
-);
+const completedTodos = useMemo(() => todos.filter((t) => t.completed).length, [todos]);
 
 // ⚠️ Consider: Selecting entire objects
 const user = useStore(state, (s) => s.user); // Re-renders on any user property change
 
 // ❌ Avoid: Complex computations in selectors
-const expensiveData = useStore(state, (s) => 
-  s.items.map(item => heavyComputation(item)) // Runs on every render
+const expensiveData = useStore(
+  state,
+  (s) => s.items.map((item) => heavyComputation(item)) // Runs on every render
 );
 ```
 
 ## See Also
 
 - **[useStore()](/docs/api/useStore)** - Complete useStore API reference
-- **[proxy()](/docs/api/proxy)** - Creating reactive state objects  
+- **[proxy()](/docs/api/proxy)** - Creating reactive state objects
 - **[Fine-Grained Reactivity](/docs/guides/fine-grained)** - Understanding dependency tracking
 - **[Todo List Example](/docs/examples/todo-list)** - Complete example with arrays and objects

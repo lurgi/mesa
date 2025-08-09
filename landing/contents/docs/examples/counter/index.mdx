@@ -48,7 +48,7 @@ Here's a complete counter application built with Mesa:
 
 ```jsx
 import React from "react";
-import { proxy, useStore } from "mesa";
+import { proxy, useStore } from "mesa-react";
 
 // Create reactive state
 const counterState = proxy({
@@ -390,7 +390,7 @@ function CounterWithHooks() {
 
 ```jsx
 import { render, screen, fireEvent } from "@testing-library/react";
-import { proxy, useStore } from "mesa";
+import { proxy, useStore } from "mesa-react";
 
 describe("Counter with Mesa", () => {
   let testState;

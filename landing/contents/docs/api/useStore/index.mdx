@@ -8,16 +8,13 @@ The `useStore()` hook is Mesa's React integration that allows components to subs
 ## Syntax
 
 ```typescript
-function useStore<T extends object, R = T>(
-  store: T, 
-  selector?: (state: T) => R
-): R
+function useStore<T extends object, R = T>(store: T, selector?: (state: T) => R): R;
 ```
 
 ### Parameters
 
 - **`store`** - A proxy object created with `proxy()`
-- **`selector`** *(optional)* - A function that extracts the data your component needs. If omitted, returns the entire store.
+- **`selector`** _(optional)_ - A function that extracts the data your component needs. If omitted, returns the entire store.
 
 ### Returns
 
@@ -28,24 +25,22 @@ Returns the selected data from the store. The component will re-render only when
 ### Entire Store Subscription
 
 ```jsx
-import { proxy, useStore } from "mesa";
+import { proxy, useStore } from "mesa-react";
 
 const state = proxy({
   count: 0,
-  name: "John"
+  name: "John",
 });
 
 function AppComponent() {
   // Subscribe to entire store - re-renders when any property changes
   const store = useStore(state);
-  
+
   return (
     <div>
       <span>Count: {store.count}</span>
       <span>Name: {store.name}</span>
-      <button onClick={() => store.count++}>
-        Increment
-      </button>
+      <button onClick={() => store.count++}>Increment</button>
     </div>
   );
 }
@@ -63,13 +58,11 @@ function AppComponentExplicit() {
 function Counter() {
   // Only re-renders when count changes
   const count = useStore(state, (s) => s.count);
-  
+
   return (
     <div>
       <span>Count: {count}</span>
-      <button onClick={() => state.count++}>
-        Increment
-      </button>
+      <button onClick={() => state.count++}>Increment</button>
     </div>
   );
 }
@@ -83,18 +76,18 @@ const state = proxy({
     name: "John",
     profile: {
       age: 25,
-      email: "john@example.com"
-    }
-  }
+      email: "john@example.com",
+    },
+  },
 });
 
 function UserProfile() {
   // Only re-renders when user.name changes
   const name = useStore(state, (s) => s.user.name);
-  
-  // Only re-renders when user.profile.age changes  
+
+  // Only re-renders when user.profile.age changes
   const age = useStore(state, (s) => s.user.profile.age);
-  
+
   return (
     <div>
       <h2>{name}</h2>
@@ -112,7 +105,7 @@ function UserProfile() {
 function UserCard() {
   // Re-renders when any property of user changes
   const user = useStore(state, (s) => s.user);
-  
+
   return (
     <div>
       <h3>{user.name}</h3>
@@ -128,17 +121,17 @@ function UserCard() {
 const state = proxy({
   todos: [
     { id: 1, text: "Learn Mesa", done: false },
-    { id: 2, text: "Build app", done: false }
-  ]
+    { id: 2, text: "Build app", done: false },
+  ],
 });
 
 function TodoList() {
   // Re-renders when todos array changes
   const todos = useStore(state, (s) => s.todos);
-  
+
   return (
     <ul>
-      {todos.map(todo => (
+      {todos.map((todo) => (
         <li key={todo.id}>
           {todo.text} - {todo.done ? "Done" : "Pending"}
         </li>
@@ -150,7 +143,7 @@ function TodoList() {
 function TodoCount() {
   // Only re-renders when array length changes
   const count = useStore(state, (s) => s.todos.length);
-  
+
   return <div>Total: {count}</div>;
 }
 ```
@@ -162,10 +155,10 @@ function TodoStats() {
   // Re-renders when relevant todo properties change
   const stats = useStore(state, (s) => ({
     total: s.todos.length,
-    completed: s.todos.filter(t => t.done).length,
-    pending: s.todos.filter(t => !t.done).length
+    completed: s.todos.filter((t) => t.done).length,
+    pending: s.todos.filter((t) => !t.done).length,
   }));
-  
+
   return (
     <div>
       <p>Total: {stats.total}</p>
@@ -193,20 +186,24 @@ interface AppState {
 const state = proxy<AppState>({
   count: 0,
   user: { name: "John", age: 25 },
-  items: ["a", "b", "c"]
+  items: ["a", "b", "c"],
 });
 
 function TypedComponent() {
   // TypeScript infers return type as number
   const count = useStore(state, (s) => s.count);
-  
+
   // TypeScript infers return type as string
   const name = useStore(state, (s) => s.user.name);
-  
+
   // TypeScript infers return type as string[]
   const items = useStore(state, (s) => s.items);
-  
-  return <div>{count} - {name} - {items.length}</div>;
+
+  return (
+    <div>
+      {count} - {name} - {items.length}
+    </div>
+  );
 }
 ```
 
@@ -225,20 +222,23 @@ function Component() {
 
 // ❌ Avoid - creates new selector each render
 function Component() {
-  const user = useStore(state, (s) => ({ 
+  const user = useStore(state, (s) => ({
     name: s.user.name,
-    age: s.user.age 
+    age: s.user.age,
   }));
   return <div>{user.name}</div>;
 }
 
 // ✅ Better - use useCallback for complex selectors
 function Component() {
-  const selector = useCallback((s) => ({
-    name: s.user.name,
-    age: s.user.age
-  }), []);
-  
+  const selector = useCallback(
+    (s) => ({
+      name: s.user.name,
+      age: s.user.age,
+    }),
+    []
+  );
+
   const user = useStore(state, selector);
   return <div>{user.name}</div>;
 }
@@ -252,12 +252,16 @@ Mesa automatically tracks which properties your selector accesses:
 function OptimalComponent() {
   // Only subscribes to count changes
   const count = useStore(state, (s) => s.count);
-  
-  // Only subscribes to user.name changes  
+
+  // Only subscribes to user.name changes
   const name = useStore(state, (s) => s.user.name);
-  
+
   // This component won't re-render when user.age changes
-  return <div>{count} - {name}</div>;
+  return (
+    <div>
+      {count} - {name}
+    </div>
+  );
 }
 ```
 
@@ -270,7 +274,7 @@ function Dashboard() {
   const user = useStore(state, (s) => s.user);
   const stats = useStore(state, (s) => s.stats);
   const notifications = useStore(state, (s) => s.notifications);
-  
+
   return (
     <div>
       <UserSection user={user} />
@@ -286,16 +290,14 @@ function Dashboard() {
 ```jsx
 function ConditionalComponent() {
   const isLoggedIn = useStore(state, (s) => s.user.isLoggedIn);
-  
+
   // Only access user data if logged in
-  const userData = useStore(state, (s) => 
-    s.user.isLoggedIn ? s.user.profile : null
-  );
-  
+  const userData = useStore(state, (s) => (s.user.isLoggedIn ? s.user.profile : null));
+
   if (!isLoggedIn) {
     return <LoginForm />;
   }
-  
+
   return <UserProfile user={userData} />;
 }
 ```
@@ -305,18 +307,14 @@ function ConditionalComponent() {
 ```jsx
 function TodoItem({ todoId }) {
   // Only re-renders when this specific todo changes
-  const todo = useStore(state, (s) => 
-    s.todos.find(t => t.id === todoId)
-  );
-  
+  const todo = useStore(state, (s) => s.todos.find((t) => t.id === todoId));
+
   if (!todo) return null;
-  
+
   return (
     <div>
       <span>{todo.text}</span>
-      <button onClick={() => todo.done = !todo.done}>
-        Toggle
-      </button>
+      <button onClick={() => (todo.done = !todo.done)}>Toggle</button>
     </div>
   );
 }
@@ -333,7 +331,7 @@ const name = useStore(state, (s) => s.user.name);
 // Group related data
 const userInfo = useStore(state, (s) => ({
   name: s.user.name,
-  email: s.user.email
+  email: s.user.email,
 }));
 
 // Use multiple specific subscriptions
@@ -347,18 +345,14 @@ const status = useStore(state, (s) => s.status);
 // Don't create new objects unnecessarily in selectors
 const data = useStore(state, (s) => ({
   ...s.user,
-  computed: s.other.value * 2
+  computed: s.other.value * 2,
 })); // ❌ Creates new object each time
 
 // Don't use complex computations in selectors without memoization
-const expensive = useStore(state, (s) => 
-  s.items.map(item => expensiveTransform(item))
-); // ❌ Runs on every render
+const expensive = useStore(state, (s) => s.items.map((item) => expensiveTransform(item))); // ❌ Runs on every render
 
 // Instead, use useMemo for expensive computations
-const expensive = useMemo(() => 
-  items.map(item => expensiveTransform(item)), [items]
-);
+const expensive = useMemo(() => items.map((item) => expensiveTransform(item)), [items]);
 ```
 
 ## Integration with React DevTools
@@ -370,11 +364,15 @@ Mesa integrates with React DevTools for debugging:
 function DebugComponent() {
   const count = useStore(state, (s) => s.count);
   const name = useStore(state, (s) => s.user.name);
-  
+
   // React DevTools will show:
   // - Component re-renders
   // - Mesa state subscriptions
-  return <div>{count} - {name}</div>;
+  return (
+    <div>
+      {count} - {name}
+    </div>
+  );
 }
 ```
 

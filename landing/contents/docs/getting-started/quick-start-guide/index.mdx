@@ -18,7 +18,7 @@ Let's build a counter application that showcases Mesa's core features:
     First, create a proxy state object that will hold our application data:
 
     ```javascript
-    import { proxy } from "mesa";
+    import { proxy } from "mesa-react";
 
     // Create a global state
     const appState = proxy({
@@ -36,7 +36,7 @@ Let's build a counter application that showcases Mesa's core features:
     Now, create components that subscribe to specific parts of the state:
 
     ```jsx
-    import { useStore } from "mesa";
+    import { useStore } from "mesa-react";
 
     function Counter() {
       // Only re-renders when count changes

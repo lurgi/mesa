@@ -8,7 +8,7 @@ The `proxy()` function is the core of Mesa's reactivity system. It creates a pro
 ## Syntax
 
 ```typescript
-function proxy<T extends object>(target: T): T
+function proxy<T extends object>(target: T): T;
 ```
 
 ### Parameters
@@ -24,11 +24,11 @@ Returns a proxy object that behaves identically to the original object but with 
 ### Simple Object
 
 ```javascript
-import { proxy } from "mesa";
+import { proxy } from "mesa-react";
 
 const state = proxy({
   count: 0,
-  name: "John"
+  name: "John",
 });
 
 // Direct mutations are tracked
@@ -44,13 +44,13 @@ const state = proxy({
     name: "John",
     profile: {
       age: 25,
-      email: "john@example.com"
-    }
+      email: "john@example.com",
+    },
   },
   settings: {
     theme: "dark",
-    notifications: true
-  }
+    notifications: true,
+  },
 });
 
 // All nested mutations are tracked
@@ -66,8 +66,8 @@ const state = proxy({
   items: [1, 2, 3],
   todos: [
     { id: 1, text: "Learn Mesa", done: false },
-    { id: 2, text: "Build app", done: false }
-  ]
+    { id: 2, text: "Build app", done: false },
+  ],
 });
 
 // Array mutations are tracked
@@ -85,7 +85,7 @@ state.todos[0].done = true;
 
 ```javascript
 const state = proxy({
-  user: { name: "John" }
+  user: { name: "John" },
 });
 
 // Adding new properties
@@ -102,17 +102,17 @@ All standard array methods are supported and tracked:
 
 ```javascript
 const state = proxy({
-  list: [1, 2, 3]
+  list: [1, 2, 3],
 });
 
 // These operations trigger updates
-state.list.push(4);           // Add element
-state.list.pop();             // Remove last
-state.list.shift();           // Remove first
-state.list.unshift(0);        // Add to beginning
-state.list.splice(1, 1, 5);   // Replace element
-state.list.sort();            // Sort array
-state.list.reverse();         // Reverse array
+state.list.push(4); // Add element
+state.list.pop(); // Remove last
+state.list.shift(); // Remove first
+state.list.unshift(0); // Add to beginning
+state.list.splice(1, 1, 5); // Replace element
+state.list.sort(); // Sort array
+state.list.reverse(); // Reverse array
 ```
 
 ## TypeScript Support
@@ -132,12 +132,12 @@ interface AppState {
 const state = proxy<AppState>({
   count: 0,
   user: { name: "John" },
-  items: []
+  items: [],
 });
 
 // TypeScript will enforce types
-state.count = 5;        // ✓ Valid
-state.count = "hello";  // ✗ Type error
+state.count = 5; // ✓ Valid
+state.count = "hello"; // ✗ Type error
 state.user.name = "Jane"; // ✓ Valid
 state.items.push("new"); // ✓ Valid
 ```
@@ -156,12 +156,14 @@ Mesa's proxy implementation is optimized for performance:
 
 ```javascript
 const state = proxy({
-  data: { /* large object */ }
+  data: {
+    /* large object */
+  },
 });
 
 // Only creates proxies for accessed paths
 const name = state.data.user.name; // Creates proxies for 'data' and 'user'
-const count = state.count;         // No additional proxy creation
+const count = state.count; // No additional proxy creation
 ```
 
 ## Best Practices
@@ -172,7 +174,7 @@ const count = state.count;         // No additional proxy creation
 // Create proxy at the top level
 const state = proxy({
   user: { name: "John" },
-  settings: { theme: "dark" }
+  settings: { theme: "dark" },
 });
 
 // Use direct mutations
@@ -181,7 +183,7 @@ state.user.name = "Jane";
 // Group related state
 const appState = proxy({
   ui: { loading: false, error: null },
-  data: { users: [], posts: [] }
+  data: { users: [], posts: [] },
 });
 ```
 
@@ -189,8 +191,8 @@ const appState = proxy({
 
 ```javascript
 // Don't proxy primitives
-const state = proxy(42);        // ❌ Won't work
-const state = proxy("string");  // ❌ Won't work
+const state = proxy(42); // ❌ Won't work
+const state = proxy("string"); // ❌ Won't work
 
 // Don't create proxies inside components
 function Component() {
@@ -200,9 +202,9 @@ function Component() {
 
 // Don't proxy React elements or functions
 const state = proxy({
-  component: <div />,           // ❌ Avoid
-  callback: () => {},           // ❌ Avoid
-  data: { count: 0 }           // ✅ Good
+  component: <div />, // ❌ Avoid
+  callback: () => {}, // ❌ Avoid
+  data: { count: 0 }, // ✅ Good
 });
 ```
 
@@ -217,8 +219,8 @@ function createAppState() {
     isAuthenticated: false,
     preferences: {
       theme: "light",
-      language: "en"
-    }
+      language: "en",
+    },
   });
 }
 
@@ -230,18 +232,18 @@ const appState = createAppState();
 ```javascript
 const userState = proxy({
   currentUser: null,
-  isLoading: false
+  isLoading: false,
 });
 
 const uiState = proxy({
   modal: { isOpen: false, type: null },
-  toast: { message: "", type: "info" }
+  toast: { message: "", type: "info" },
 });
 
 // Combine in app
 const appState = proxy({
   user: userState,
-  ui: uiState
+  ui: uiState,
 });
 ```
 

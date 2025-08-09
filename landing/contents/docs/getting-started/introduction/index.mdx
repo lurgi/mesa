@@ -9,8 +9,8 @@ Welcome to **Mesa**! A lightweight, high-performance React state management libr
 
 Traditional state management solutions often cause unnecessary re-renders, leading to performance bottlenecks. Mesa solves this by tracking exactly which parts of your state each component depends on, ensuring minimal updates and maximum performance.
 
-<Note title="Key Insight"> 
-Mesa only re-renders components that actually need updates, not every component that subscribes to the store.
+<Note title="Key Insight">
+  Mesa only re-renders components that actually need updates, not every component that subscribes to the store.
 </Note>
 
 ## Core Principles
@@ -23,34 +23,30 @@ Mesa only re-renders components that actually need updates, not every component 
 
 ### Key Features
 
-| **Feature**                   | **Description**                                          |
-|-------------------------------|----------------------------------------------------------|
-| Fine-Grained Updates          | Only re-render components that use changed data         |
-| Proxy-Based Tracking         | Efficient state change detection using JavaScript Proxy |
-| TypeScript Support           | Full type safety out of the box                         |
-| Nested Object Support        | Deep object tracking with path-based subscriptions      |
-| Minimal Bundle Size          | Zero dependencies, minimal footprint                    |
-| React 18+ Compatible         | Uses useSyncExternalStore for optimal React integration |
+| **Feature**           | **Description**                                         |
+| --------------------- | ------------------------------------------------------- |
+| Fine-Grained Updates  | Only re-render components that use changed data         |
+| Proxy-Based Tracking  | Efficient state change detection using JavaScript Proxy |
+| TypeScript Support    | Full type safety out of the box                         |
+| Nested Object Support | Deep object tracking with path-based subscriptions      |
+| Minimal Bundle Size   | Zero dependencies, minimal footprint                    |
+| React 18+ Compatible  | Uses useSyncExternalStore for optimal React integration |
 
 ## Basic Example
 
 ```javascript
-import { proxy, useStore } from "mesa";
+import { proxy, useStore } from "mesa-react";
 
 // Create a proxy state
-const state = proxy({ 
-  count: 0, 
-  user: { name: "John", age: 25 } 
+const state = proxy({
+  count: 0,
+  user: { name: "John", age: 25 },
 });
 
 function Counter() {
   // Only re-renders when count changes
   const count = useStore(state, (s) => s.count);
-  return (
-    <button onClick={() => state.count++}>
-      Count: {count}
-    </button>
-  );
+  return <button onClick={() => state.count++}>Count: {count}</button>;
 }
 
 function UserProfile() {

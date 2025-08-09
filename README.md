@@ -29,7 +29,7 @@ npm install mesa-react
 ### Basic Usage
 
 ```tsx
-import { proxy, useStore } from "mesa";
+import { proxy, useStore } from "mesa-react";
 
 // Create a reactive store
 const store = proxy({
