@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { proxy, useStore } from "mesa-react";
 import { Button } from "@/components/ui/button";
@@ -101,32 +101,22 @@ const todoState = proxy<TodoState>({
 });
 
 // Categories
-const CATEGORIES = [
-  "General",
-  "Learning",
-  "Development",
-  "Review",
-  "Documentation",
-  "Meeting",
-];
+const CATEGORIES = ["General", "Learning", "Development", "Review", "Documentation", "Meeting"];
 
 // Priority colors and icons
 const PRIORITY_CONFIG = {
   high: {
-    color:
-      "text-red-500 bg-red-50 border-red-200 dark:bg-red-950/50 dark:border-red-900",
+    color: "text-red-500 bg-red-50 border-red-200 dark:bg-red-950/50 dark:border-red-900",
     dot: "bg-red-500",
     icon: Star,
   },
   medium: {
-    color:
-      "text-yellow-500 bg-yellow-50 border-yellow-200 dark:bg-yellow-950/50 dark:border-yellow-900",
+    color: "text-yellow-500 bg-yellow-50 border-yellow-200 dark:bg-yellow-950/50 dark:border-yellow-900",
     dot: "bg-yellow-500",
     icon: Clock,
   },
   low: {
-    color:
-      "text-green-500 bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-900",
+    color: "text-green-500 bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-900",
     dot: "bg-green-500",
     icon: Target,
   },
@@ -140,9 +130,7 @@ function DashboardHeader() {
     const total = todos.length;
     const completed = todos.filter((t) => t.completed).length;
     const active = total - completed;
-    const highPriority = todos.filter(
-      (t) => !t.completed && t.priority === "high"
-    ).length;
+    const highPriority = todos.filter((t) => !t.completed && t.priority === "high").length;
     const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
 
     return { total, completed, active, highPriority, progress };
@@ -153,12 +141,9 @@ function DashboardHeader() {
       <div className="container mx-auto px-6 py-4">
         <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Todo Dashboard
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Todo Dashboard</h1>
             <p className="text-sm text-muted-foreground">
-              Manage your tasks efficiently with Mesa&apos;s fine-grained
-              reactivity
+              Manage your tasks efficiently with Mesa&apos;s fine-grained reactivity
             </p>
           </div>
 
@@ -184,10 +169,7 @@ function DashboardHeader() {
 
             {/* Progress Circle */}
             <div className="relative h-10 w-10">
-              <svg
-                className="h-10 w-10 transform -rotate-90"
-                viewBox="0 0 36 36"
-              >
+              <svg className="h-10 w-10 transform -rotate-90" viewBox="0 0 36 36">
                 <path
                   className="stroke-muted"
                   strokeWidth="3"
@@ -266,9 +248,7 @@ function SearchAndFilters() {
               onClick={() => (todoState.priorityFilter = p)}
               className="h-7 px-3 text-xs"
             >
-              {p === "all"
-                ? "All Priority"
-                : p.charAt(0).toUpperCase() + p.slice(1)}
+              {p === "all" ? "All Priority" : p.charAt(0).toUpperCase() + p.slice(1)}
             </Button>
           ))}
         </div>
@@ -344,12 +324,7 @@ function AddTodo() {
 
           <select
             value={selectedPriority}
-            onChange={(e) =>
-              (todoState.selectedPriority = e.target.value as
-                | "low"
-                | "medium"
-                | "high")
-            }
+            onChange={(e) => (todoState.selectedPriority = e.target.value as "low" | "medium" | "high")}
             className="flex-1 min-w-0 h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-ring"
           >
             <option value="low">Low Priority</option>
@@ -358,11 +333,7 @@ function AddTodo() {
           </select>
         </div>
 
-        <Button
-          onClick={addTodo}
-          disabled={!newTodoText.trim()}
-          className="w-full"
-        >
+        <Button onClick={addTodo} disabled={!newTodoText.trim()} className="w-full">
           <Plus className="mr-2 h-4 w-4" />
           Add Task
         </Button>
@@ -371,15 +342,9 @@ function AddTodo() {
   );
 }
 
-// Todo Item Component
 function TodoItem({ todo }: { todo: Todo }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const toggleComplete = () => {
     const index = todoState.todos.findIndex((t) => t.id === todo.id);
@@ -428,13 +393,9 @@ function TodoItem({ todo }: { todo: Todo }) {
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <PriorityIcon className="h-3 w-3" />
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {todo.category}
-            </span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{todo.category}</span>
             <div className={cn("h-1 w-1 rounded-full", priorityConfig.dot)} />
-            <span className="text-xs text-muted-foreground">
-              {todo.priority}
-            </span>
+            <span className="text-xs text-muted-foreground">{todo.priority}</span>
           </div>
 
           {isEditing ? (
@@ -457,35 +418,19 @@ function TodoItem({ todo }: { todo: Todo }) {
                 <Button size="sm" onClick={saveEdit}>
                   Save
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                >
+                <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
                   Cancel
                 </Button>
               </div>
             </div>
           ) : (
-            <p
-              className={cn(
-                "text-sm font-medium leading-relaxed",
-                todo.completed && "line-through"
-              )}
-            >
-              {todo.text}
-            </p>
+            <p className={cn("text-sm font-medium leading-relaxed", todo.completed && "line-through")}>{todo.text}</p>
           )}
 
           {todo.dueDate && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
-              <span>
-                Due{" "}
-                {isMounted
-                  ? new Date(todo.dueDate).toLocaleDateString("en-US")
-                  : todo.dueDate}
-              </span>
+              <span>Due {new Date(todo.dueDate).toLocaleDateString("en-US")}</span>
             </div>
           )}
         </div>
@@ -524,24 +469,18 @@ function TodoList() {
   const filteredTodos = useMemo(() => {
     return todos.filter((todo) => {
       const matchesStatus =
-        filter === "all" ||
-        (filter === "active" && !todo.completed) ||
-        (filter === "completed" && todo.completed);
+        filter === "all" || (filter === "active" && !todo.completed) || (filter === "completed" && todo.completed);
 
-      const matchesPriority =
-        priorityFilter === "all" || todo.priority === priorityFilter;
+      const matchesPriority = priorityFilter === "all" || todo.priority === priorityFilter;
 
-      const matchesCategory =
-        categoryFilter === "all" || todo.category === categoryFilter;
+      const matchesCategory = categoryFilter === "all" || todo.category === categoryFilter;
 
       const matchesSearch =
         searchQuery === "" ||
         todo.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
         todo.category.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return (
-        matchesStatus && matchesPriority && matchesCategory && matchesSearch
-      );
+      return matchesStatus && matchesPriority && matchesCategory && matchesSearch;
     });
   }, [todos, filter, priorityFilter, categoryFilter, searchQuery]);
 
@@ -553,9 +492,7 @@ function TodoList() {
         </div>
         <h3 className="mb-2 font-medium">No tasks found</h3>
         <p className="text-sm text-muted-foreground">
-          {searchQuery
-            ? "Try adjusting your search terms"
-            : "Create your first task to get started"}
+          {searchQuery ? "Try adjusting your search terms" : "Create your first task to get started"}
         </p>
       </div>
     );
@@ -605,21 +542,14 @@ function AnalyticsPanel() {
             <div className="mb-2 flex items-center justify-between text-sm">
               <span>Overall Progress</span>
               <span className="font-medium">
-                {analytics.total === 0
-                  ? 0
-                  : Math.round((analytics.completed / analytics.total) * 100)}
-                %
+                {analytics.total === 0 ? 0 : Math.round((analytics.completed / analytics.total) * 100)}%
               </span>
             </div>
             <div className="h-2 rounded-full bg-muted">
               <div
                 className="h-2 rounded-full bg-primary transition-all"
                 style={{
-                  width: `${
-                    analytics.total === 0
-                      ? 0
-                      : (analytics.completed / analytics.total) * 100
-                  }%`,
+                  width: `${analytics.total === 0 ? 0 : (analytics.completed / analytics.total) * 100}%`,
                 }}
               />
             </div>
@@ -629,17 +559,12 @@ function AnalyticsPanel() {
             <h4 className="mb-2 text-sm font-medium">Active by Priority</h4>
             <div className="space-y-2">
               {Object.entries(analytics.priorities).map(([priority, count]) => (
-                <div
-                  key={priority}
-                  className="flex items-center justify-between text-sm"
-                >
+                <div key={priority} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <div
                       className={cn(
                         "h-2 w-2 rounded-full",
-                        PRIORITY_CONFIG[
-                          priority as keyof typeof PRIORITY_CONFIG
-                        ].dot
+                        PRIORITY_CONFIG[priority as keyof typeof PRIORITY_CONFIG].dot
                       )}
                     />
                     <span className="capitalize">{priority}</span>
@@ -656,10 +581,7 @@ function AnalyticsPanel() {
               {Object.entries(analytics.categories)
                 .slice(0, 3)
                 .map(([category, count]) => (
-                  <div
-                    key={category}
-                    className="flex items-center justify-between text-sm"
-                  >
+                  <div key={category} className="flex items-center justify-between text-sm">
                     <span>{category}</span>
                     <span className="font-medium">{count}</span>
                   </div>
@@ -717,9 +639,8 @@ export default function TodoListPlayPage() {
             Professional <span className="text-primary">Todo Dashboard</span>
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            A complete task management solution built with Mesa&apos;s
-            fine-grained reactivity. Experience lightning-fast updates and
-            smooth interactions.
+            A complete task management solution built with Mesa&apos;s fine-grained reactivity. Experience
+            lightning-fast updates and smooth interactions.
           </p>
         </div>
 
