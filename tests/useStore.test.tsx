@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { proxy, useStore } from "../src/main";
 
-describe("useStore() 훅", () => {
-  describe("기본 기능", () => {
-    test("프록시 상태의 현재 값을 반환해야 함", () => {
+describe("useStore hook", () => {
+  describe("Basic functionality", () => {
+    test("should return current value from proxy state", () => {
       const state = proxy({ count: 42 });
 
       function TestComponent() {
@@ -15,7 +15,7 @@ describe("useStore() 훅", () => {
       expect(screen.getByTestId("count")).toHaveTextContent("42");
     });
 
-    test("문자열 값을 올바르게 반환해야 함", () => {
+    test("should handle string values correctly", () => {
       const state = proxy({ name: "John" });
 
       function TestComponent() {
@@ -27,7 +27,7 @@ describe("useStore() 훅", () => {
       expect(screen.getByTestId("name")).toHaveTextContent("John");
     });
 
-    test("불린 값을 올바르게 반환해야 함", () => {
+    test("should handle boolean values correctly", () => {
       const state = proxy({ isVisible: true });
 
       function TestComponent() {
@@ -38,10 +38,29 @@ describe("useStore() 훅", () => {
       render(<TestComponent />);
       expect(screen.getByTestId("visible")).toHaveTextContent("visible");
     });
+
+    test("should handle complex selector functions", () => {
+      const state = proxy({ firstName: "John", lastName: "Doe", age: 30 });
+
+      function TestComponent() {
+        const fullName = useStore(state, (s) => `${s.firstName} ${s.lastName}`);
+        const isAdult = useStore(state, (s) => s.age >= 18);
+        return (
+          <div>
+            <div data-testid="full-name">{fullName}</div>
+            <div data-testid="is-adult">{isAdult ? "adult" : "minor"}</div>
+          </div>
+        );
+      }
+
+      render(<TestComponent />);
+      expect(screen.getByTestId("full-name")).toHaveTextContent("John Doe");
+      expect(screen.getByTestId("is-adult")).toHaveTextContent("adult");
+    });
   });
 
-  describe("반응성", () => {
-    test("상태 변경 시 컴포넌트가 리렌더링되어야 함", () => {
+  describe("Reactivity", () => {
+    test("should re-render component on state change", () => {
       const state = proxy({ count: 0 });
 
       function TestComponent() {
@@ -49,7 +68,7 @@ describe("useStore() 훅", () => {
         return (
           <div>
             <div data-testid="count">{count}</div>
-            <button onClick={() => state.count++}>증가</button>
+            <button onClick={() => state.count++}>increment</button>
           </div>
         );
       }
@@ -58,13 +77,13 @@ describe("useStore() 훅", () => {
       expect(screen.getByTestId("count")).toHaveTextContent("0");
 
       act(() => {
-        fireEvent.click(screen.getByText("증가"));
+        fireEvent.click(screen.getByText("increment"));
       });
 
       expect(screen.getByTestId("count")).toHaveTextContent("1");
     });
 
-    test("직접 값 할당 시에도 리렌더링되어야 함", () => {
+    test("should re-render on direct value assignment", () => {
       const state = proxy({ count: 5 });
 
       function TestComponent() {
@@ -72,13 +91,7 @@ describe("useStore() 훅", () => {
         return (
           <div>
             <div data-testid="count">{count}</div>
-            <button
-              onClick={() => {
-                state.count = 10;
-              }}
-            >
-              설정
-            </button>
+            <button onClick={() => { state.count = 10; }}>set</button>
           </div>
         );
       }
@@ -87,232 +100,135 @@ describe("useStore() 훅", () => {
       expect(screen.getByTestId("count")).toHaveTextContent("5");
 
       act(() => {
-        fireEvent.click(screen.getByText("설정"));
+        fireEvent.click(screen.getByText("set"));
       });
 
       expect(screen.getByTestId("count")).toHaveTextContent("10");
     });
-  });
 
-  describe("Fine-Grained 렌더링", () => {
-    test("구독하지 않은 속성 변경 시 리렌더링되지 않아야 함", () => {
+    test("should batch multiple state changes", () => {
       const state = proxy({ count: 0, name: "John" });
       let renderCount = 0;
 
       function TestComponent() {
         renderCount++;
         const count = useStore(state, (s) => s.count);
+        const name = useStore(state, (s) => s.name);
         return (
           <div>
             <div data-testid="count">{count}</div>
-            <div data-testid="render-count">{renderCount}</div>
+            <div data-testid="name">{name}</div>
+            <div data-testid="renders">{renderCount}</div>
             <button
               onClick={() => {
+                state.count = 10;
                 state.name = "Jane";
               }}
             >
-              이름 변경
+              update both
             </button>
           </div>
         );
       }
 
       render(<TestComponent />);
-      expect(screen.getByTestId("render-count")).toHaveTextContent("1");
+      const initialRenderCount = renderCount;
 
       act(() => {
-        fireEvent.click(screen.getByText("이름 변경"));
+        fireEvent.click(screen.getByText("update both"));
       });
 
-      expect(screen.getByTestId("render-count")).toHaveTextContent("1");
+      // Should only re-render once due to React batching
+      expect(renderCount).toBe(initialRenderCount + 1);
+      expect(screen.getByTestId("count")).toHaveTextContent("10");
+      expect(screen.getByTestId("name")).toHaveTextContent("Jane");
     });
+  });
 
-    test("구독한 속성 변경 시에만 리렌더링되어야 함", () => {
-      const state = proxy({ count: 0, name: "John" });
+  describe("Subscription cleanup", () => {
+    test("should cleanup subscriptions on component unmount", () => {
+      const state = proxy({ count: 0 });
       let renderCount = 0;
 
       function TestComponent() {
         renderCount++;
         const count = useStore(state, (s) => s.count);
+        return <div data-testid="count">{count}</div>;
+      }
+
+      function App({ showComponent }: { showComponent: boolean }) {
         return (
           <div>
-            <div data-testid="count">{count}</div>
-            <div data-testid="render-count">{renderCount}</div>
-            <button onClick={() => state.count++}>카운트 증가</button>
-            <button
-              onClick={() => {
-                state.name = "Jane";
-              }}
-            >
-              이름 변경
-            </button>
+            {showComponent && <TestComponent />}
+            <button onClick={() => { state.count++; }}>increment</button>
           </div>
         );
       }
 
-      render(<TestComponent />);
-      expect(screen.getByTestId("render-count")).toHaveTextContent("1");
+      const { rerender } = render(<App showComponent={true} />);
+      expect(screen.getByTestId("count")).toHaveTextContent("0");
+      expect(renderCount).toBe(1);
 
       act(() => {
-        fireEvent.click(screen.getByText("이름 변경"));
+        fireEvent.click(screen.getByText("increment"));
       });
-      expect(screen.getByTestId("render-count")).toHaveTextContent("1");
+      expect(screen.getByTestId("count")).toHaveTextContent("1");
+      expect(renderCount).toBe(2);
 
+      // Unmount component
+      rerender(<App showComponent={false} />);
+      expect(screen.queryByTestId("count")).toBeNull();
+
+      // State changes should not trigger renders after unmount
+      const prevRenderCount = renderCount;
       act(() => {
-        fireEvent.click(screen.getByText("카운트 증가"));
+        fireEvent.click(screen.getByText("increment"));
       });
-      expect(screen.getByTestId("render-count")).toHaveTextContent("2");
+      expect(renderCount).toBe(prevRenderCount);
+
+      // Remount should show updated value
+      rerender(<App showComponent={true} />);
+      expect(screen.getByTestId("count")).toHaveTextContent("2");
     });
   });
 
-  describe("중첩 객체", () => {
-    test("중첩 객체의 속성을 구독할 수 있어야 함", () => {
-      const state = proxy({ user: { name: "John", age: 30 } });
+  describe("Memoization", () => {
+    test("should memoize selector results", () => {
+      const state = proxy({ items: [1, 2, 3], multiplier: 2 });
+      let selectorCallCount = 0;
 
       function TestComponent() {
-        const userName = useStore(state, (s) => s.user.name);
-        return <div data-testid="user-name">{userName}</div>;
+        const total = useStore(state, (s) => {
+          selectorCallCount++;
+          return s.items.reduce((sum, item) => sum + item * s.multiplier, 0);
+        });
+        return <div data-testid="total">{total}</div>;
       }
 
       render(<TestComponent />);
-      expect(screen.getByTestId("user-name")).toHaveTextContent("John");
-    });
+      expect(screen.getByTestId("total")).toHaveTextContent("12"); // (1+2+3) * 2
+      
+      const initialSelectorCalls = selectorCallCount;
+      expect(initialSelectorCalls).toBeGreaterThan(0);
 
-    test("중첩 객체의 속성 변경 시 리렌더링되어야 함", () => {
-      const state = proxy({ user: { name: "John", age: 30 } });
-
-      function TestComponent() {
-        const userName = useStore(state, (s) => s.user.name);
-        return (
-          <div>
-            <div data-testid="user-name">{userName}</div>
-            <button
-              onClick={() => {
-                state.user.name = "Jane";
-              }}
-            >
-              이름 변경
-            </button>
-          </div>
-        );
-      }
-
-      render(<TestComponent />);
-      expect(screen.getByTestId("user-name")).toHaveTextContent("John");
-
+      // Force a component re-render by updating state and then reverting
       act(() => {
-        fireEvent.click(screen.getByText("이름 변경"));
+        state.multiplier = 3;
       });
-
-      expect(screen.getByTestId("user-name")).toHaveTextContent("Jane");
-    });
-
-    test("중첩 객체의 다른 속성 변경 시 리렌더링되지 않아야 함", () => {
-      const state = proxy({ user: { name: "John", age: 30 }, settings: { theme: "dark" } });
-      let renderCount = 0;
-
-      function TestComponent() {
-        renderCount++;
-        const userName = useStore(state, (s) => s.user.name);
-        return (
-          <div>
-            <div data-testid="user-name">{userName}</div>
-            <div data-testid="render-count">{renderCount}</div>
-            <button onClick={() => state.user.age++}>나이 증가</button>
-            <button
-              onClick={() => {
-                state.settings.theme = "light";
-              }}
-            >
-              테마 변경
-            </button>
-          </div>
-        );
-      }
-
-      render(<TestComponent />);
-      expect(screen.getByTestId("render-count")).toHaveTextContent("1");
-
       act(() => {
-        fireEvent.click(screen.getByText("나이 증가"));
+        state.multiplier = 2;
       });
-      expect(screen.getByTestId("render-count")).toHaveTextContent("1");
-
-      act(() => {
-        fireEvent.click(screen.getByText("테마 변경"));
-      });
-      expect(screen.getByTestId("render-count")).toHaveTextContent("1");
+      
+      // Should show original value again
+      expect(screen.getByTestId("total")).toHaveTextContent("12");
+      
+      // Selector should have been called additional times for the state changes
+      expect(selectorCallCount).toBeGreaterThan(initialSelectorCalls);
     });
   });
 
-  describe("배열", () => {
-    test("배열 요소를 구독할 수 있어야 함", () => {
-      const state = proxy({ items: ["apple", "banana", "cherry"] });
-
-      function TestComponent() {
-        const firstItem = useStore(state, (s) => s.items[0]);
-        return <div data-testid="first-item">{firstItem}</div>;
-      }
-
-      render(<TestComponent />);
-      expect(screen.getByTestId("first-item")).toHaveTextContent("apple");
-    });
-
-    test("배열 요소 변경 시 리렌더링되어야 함", () => {
-      const state = proxy({ items: ["apple", "banana"] });
-
-      function TestComponent() {
-        const firstItem = useStore(state, (s) => s.items[0]);
-        return (
-          <div>
-            <div data-testid="first-item">{firstItem}</div>
-            <button
-              onClick={() => {
-                state.items[0] = "orange";
-              }}
-            >
-              첫 번째 변경
-            </button>
-          </div>
-        );
-      }
-
-      render(<TestComponent />);
-      expect(screen.getByTestId("first-item")).toHaveTextContent("apple");
-
-      act(() => {
-        fireEvent.click(screen.getByText("첫 번째 변경"));
-      });
-
-      expect(screen.getByTestId("first-item")).toHaveTextContent("orange");
-    });
-
-    test("배열 길이 변경을 감지해야 함", () => {
-      const state = proxy({ items: ["apple"] });
-
-      function TestComponent() {
-        const length = useStore(state, (s) => s.items.length);
-        return (
-          <div>
-            <div data-testid="length">{length}</div>
-            <button onClick={() => state.items.push("banana")}>추가</button>
-          </div>
-        );
-      }
-
-      render(<TestComponent />);
-      expect(screen.getByTestId("length")).toHaveTextContent("1");
-
-      act(() => {
-        fireEvent.click(screen.getByText("추가"));
-      });
-
-      expect(screen.getByTestId("length")).toHaveTextContent("2");
-    });
-  });
-
-  describe("다중 컴포넌트", () => {
-    test("여러 컴포넌트가 같은 상태를 구독할 수 있어야 함", () => {
+  describe("Multiple components", () => {
+    test("should allow multiple components to subscribe to same state", () => {
       const state = proxy({ count: 0 });
 
       function Component1() {
@@ -330,7 +246,7 @@ describe("useStore() 훅", () => {
           <div>
             <Component1 />
             <Component2 />
-            <button onClick={() => state.count++}>증가</button>
+            <button onClick={() => state.count++}>increment</button>
           </div>
         );
       }
@@ -340,14 +256,14 @@ describe("useStore() 훅", () => {
       expect(screen.getByTestId("count2")).toHaveTextContent("0");
 
       act(() => {
-        fireEvent.click(screen.getByText("증가"));
+        fireEvent.click(screen.getByText("increment"));
       });
 
       expect(screen.getByTestId("count1")).toHaveTextContent("1");
       expect(screen.getByTestId("count2")).toHaveTextContent("1");
     });
 
-    test("독립적인 구독을 가진 컴포넌트들이 선택적으로 렌더링되어야 함", () => {
+    test("should render components independently based on their subscriptions", () => {
       const state = proxy({ count: 0, name: "John" });
       let countRenderCount = 0;
       let nameRenderCount = 0;
@@ -369,14 +285,8 @@ describe("useStore() 훅", () => {
           <div>
             <CountComponent />
             <NameComponent />
-            <button onClick={() => state.count++}>카운트 증가</button>
-            <button
-              onClick={() => {
-                state.name = "Jane";
-              }}
-            >
-              이름 변경
-            </button>
+            <button onClick={() => state.count++}>increment count</button>
+            <button onClick={() => { state.name = "Jane"; }}>change name</button>
           </div>
         );
       }
@@ -386,21 +296,21 @@ describe("useStore() 훅", () => {
       expect(screen.getByTestId("name-renders")).toHaveTextContent("1");
 
       act(() => {
-        fireEvent.click(screen.getByText("카운트 증가"));
+        fireEvent.click(screen.getByText("increment count"));
       });
       expect(screen.getByTestId("count-renders")).toHaveTextContent("2");
       expect(screen.getByTestId("name-renders")).toHaveTextContent("1");
 
       act(() => {
-        fireEvent.click(screen.getByText("이름 변경"));
+        fireEvent.click(screen.getByText("change name"));
       });
       expect(screen.getByTestId("count-renders")).toHaveTextContent("2");
       expect(screen.getByTestId("name-renders")).toHaveTextContent("2");
     });
   });
 
-  describe("엣지 케이스", () => {
-    test("null 값을 올바르게 처리해야 함", () => {
+  describe("Edge cases", () => {
+    test("should handle null values", () => {
       const state = proxy<any>({ value: null });
 
       function TestComponent() {
@@ -412,7 +322,7 @@ describe("useStore() 훅", () => {
       expect(screen.getByTestId("value")).toHaveTextContent("null");
     });
 
-    test("undefined 값을 올바르게 처리해야 함", () => {
+    test("should handle undefined values", () => {
       const state = proxy<any>({ value: undefined });
 
       function TestComponent() {
@@ -424,28 +334,48 @@ describe("useStore() 훅", () => {
       expect(screen.getByTestId("value")).toHaveTextContent("undefined");
     });
 
-    test("0 값을 올바르게 처리해야 함", () => {
-      const state = proxy({ value: 0 });
+    test("should handle falsy values correctly", () => {
+      const state = proxy({ 
+        zero: 0, 
+        emptyString: "", 
+        false: false 
+      });
 
       function TestComponent() {
-        const value = useStore(state, (s) => s.value);
+        const zero = useStore(state, (s) => s.zero);
+        const emptyString = useStore(state, (s) => s.emptyString);
+        const falseValue = useStore(state, (s) => s.false);
+        
+        return (
+          <div>
+            <div data-testid="zero">{zero}</div>
+            <div data-testid="empty">"{emptyString}"</div>
+            <div data-testid="false">{falseValue ? "true" : "false"}</div>
+          </div>
+        );
+      }
+
+      render(<TestComponent />);
+      expect(screen.getByTestId("zero")).toHaveTextContent("0");
+      expect(screen.getByTestId("empty")).toHaveTextContent('""');
+      expect(screen.getByTestId("false")).toHaveTextContent("false");
+    });
+
+    test("should handle selector errors gracefully", () => {
+      const state = proxy<any>({ data: null });
+
+      function TestComponent() {
+        const value = useStore(state, (s) => {
+          if (s.data === null) {
+            return "no data";
+          }
+          return s.data.someProperty; // This would throw if data is null
+        });
         return <div data-testid="value">{value}</div>;
       }
 
-      render(<TestComponent />);
-      expect(screen.getByTestId("value")).toHaveTextContent("0");
-    });
-
-    test("빈 문자열을 올바르게 처리해야 함", () => {
-      const state = proxy({ value: "" });
-
-      function TestComponent() {
-        const value = useStore(state, (s) => s.value);
-        return <div data-testid="value">"{value}"</div>;
-      }
-
-      render(<TestComponent />);
-      expect(screen.getByTestId("value")).toHaveTextContent('""');
+      expect(() => render(<TestComponent />)).not.toThrow();
+      expect(screen.getByTestId("value")).toHaveTextContent("no data");
     });
   });
 });

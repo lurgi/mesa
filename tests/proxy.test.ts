@@ -1,8 +1,8 @@
 import { proxy } from "../src/main";
 
-describe("proxy() 함수", () => {
-  describe("기본 기능", () => {
-    test("원본 값을 보존하는 프록시 객체를 생성해야 함", () => {
+describe("proxy function", () => {
+  describe("Basic functionality", () => {
+    test("should create proxy that preserves original values", () => {
       const originalState = { count: 0, name: "John" };
       const state = proxy(originalState);
 
@@ -10,7 +10,7 @@ describe("proxy() 함수", () => {
       expect(state.name).toBe("John");
     });
 
-    test("속성 변경을 허용해야 함", () => {
+    test("should allow property mutations", () => {
       const state = proxy({ count: 0 });
 
       state.count = 5;
@@ -20,7 +20,7 @@ describe("proxy() 함수", () => {
       expect(state.count).toBe(6);
     });
 
-    test("다양한 데이터 타입을 처리해야 함", () => {
+    test("should handle various data types", () => {
       const state = proxy({
         number: 42,
         string: "hello",
@@ -37,15 +37,15 @@ describe("proxy() 함수", () => {
     });
   });
 
-  describe("속성 연산", () => {
-    test("속성 추가를 지원해야 함", () => {
+  describe("Property operations", () => {
+    test("should support property addition", () => {
       const state = proxy<any>({ count: 0 });
 
       state.newProperty = "added";
       expect(state.newProperty).toBe("added");
     });
 
-    test("속성 삭제를 지원해야 함", () => {
+    test("should support property deletion", () => {
       const state = proxy<any>({ count: 0, temp: "delete me" });
 
       delete state.temp;
@@ -53,7 +53,7 @@ describe("proxy() 함수", () => {
       expect("temp" in state).toBe(false);
     });
 
-    test("Object.keys(), Object.values(), Object.entries()를 지원해야 함", () => {
+    test("should support Object static methods", () => {
       const state = proxy({ a: 1, b: 2, c: 3 });
 
       expect(Object.keys(state)).toEqual(["a", "b", "c"]);
@@ -66,8 +66,8 @@ describe("proxy() 함수", () => {
     });
   });
 
-  describe("중첩 객체", () => {
-    test("중첩 객체 접근을 처리해야 함", () => {
+  describe("Nested objects", () => {
+    test("should auto-proxy nested objects", () => {
       const state = proxy({
         user: { name: "John", age: 30 },
         settings: { theme: "dark", lang: "en" },
@@ -78,7 +78,7 @@ describe("proxy() 함수", () => {
       expect(state.settings.theme).toBe("dark");
     });
 
-    test("중첩 객체 변경을 처리해야 함", () => {
+    test("should handle nested object mutations", () => {
       const state = proxy({
         user: { name: "John", age: 30 },
       });
@@ -90,7 +90,7 @@ describe("proxy() 함수", () => {
       expect(state.user.age).toBe(25);
     });
 
-    test("깊게 중첩된 객체를 처리해야 함", () => {
+    test("should handle deeply nested objects", () => {
       const state = proxy({
         level1: {
           level2: {
@@ -106,10 +106,20 @@ describe("proxy() 함수", () => {
       state.level1.level2.level3.value = "updated";
       expect(state.level1.level2.level3.value).toBe("updated");
     });
+
+    test("should proxy new objects assigned to properties", () => {
+      const state = proxy<any>({ user: { name: "John" } });
+
+      state.user = { name: "Jane", age: 25 };
+      
+      // The new object should be automatically proxied
+      state.user.age = 30;
+      expect(state.user.age).toBe(30);
+    });
   });
 
-  describe("배열 연산", () => {
-    test("배열 접근과 변경을 처리해야 함", () => {
+  describe("Array operations", () => {
+    test("should handle array access and mutations", () => {
       const state = proxy({ items: [1, 2, 3] });
 
       expect(state.items[0]).toBe(1);
@@ -123,7 +133,7 @@ describe("proxy() 함수", () => {
       expect(state.items[0]).toBe(10);
     });
 
-    test("배열 메서드를 처리해야 함", () => {
+    test("should handle array methods", () => {
       const state = proxy({ items: [1, 2, 3] });
 
       const popped = state.items.pop();
@@ -134,10 +144,23 @@ describe("proxy() 함수", () => {
       expect(state.items[0]).toBe(0);
       expect(state.items.length).toBe(3);
     });
+
+    test("should handle complex array operations", () => {
+      const state = proxy({ items: [1, 2, 3, 4, 5] });
+
+      // Test splice
+      const removed = state.items.splice(1, 2, 10, 11);
+      expect(removed).toEqual([2, 3]);
+      expect(state.items).toEqual([1, 10, 11, 4, 5]);
+
+      // Test sort
+      state.items.sort((a, b) => b - a);
+      expect(state.items[0]).toBeGreaterThan(state.items[1]);
+    });
   });
 
-  describe("엣지 케이스", () => {
-    test("빈 객체를 처리해야 함", () => {
+  describe("Edge cases", () => {
+    test("should handle empty objects", () => {
       const state = proxy<any>({});
 
       expect(Object.keys(state)).toEqual([]);
@@ -146,7 +169,7 @@ describe("proxy() 함수", () => {
       expect(state.newProp).toBe("value");
     });
 
-    test("null과 undefined 값을 처리해야 함", () => {
+    test("should handle null and undefined values", () => {
       const state = proxy<any>({
         nullValue: null,
         undefinedValue: undefined,
@@ -156,16 +179,7 @@ describe("proxy() 함수", () => {
       expect(state.undefinedValue).toBeUndefined();
     });
 
-    test("변경되지 않은 객체의 참조 식별성을 보존해야 함", () => {
-      const original = { nested: { value: 1 } };
-      const state = proxy(original);
-
-      // 프록시는 참조 추적의 어떤 형태를 유지해야 함
-      expect(typeof state).toBe("object");
-      expect(state !== original).toBe(true); // 다른 참조여야 함
-    });
-
-    test("순환 참조를 우아하게 처리해야 함", () => {
+    test("should handle circular references gracefully", () => {
       const obj: any = { name: "test" };
       obj.self = obj;
 
@@ -175,10 +189,18 @@ describe("proxy() 함수", () => {
         expect(state.self.name).toBe("test");
       }).not.toThrow();
     });
+
+    test("should maintain reference identity for unchanged objects", () => {
+      const original = { nested: { value: 1 } };
+      const state = proxy(original);
+
+      expect(typeof state).toBe("object");
+      expect(state !== original).toBe(true);
+    });
   });
 
-  describe("타입 안전성", () => {
-    test("TypeScript 타입 정보를 유지해야 함", () => {
+  describe("Type safety", () => {
+    test("should maintain TypeScript type information", () => {
       interface User {
         name: string;
         age: number;
@@ -186,7 +208,6 @@ describe("proxy() 함수", () => {
 
       const state = proxy<User>({ name: "John", age: 30 });
 
-      // TypeScript 오류 없이 작동해야 함
       expect(state.name).toBe("John");
       expect(state.age).toBe(30);
 
