@@ -20,7 +20,6 @@ const monoFont = Space_Mono({
 
 export const metadata: Metadata = {
   title: "Mesa - High-performance React state management",
-  metadataBase: new URL("https://mesa-docs.vercel.app/"),
   description:
     "Mesa provides fine-grained reactivity for React applications with automatic dependency tracking and path-based subscriptions. Zero dependencies, minimal bundle size, maximum performance.",
   keywords: ["React", "state management", "fine-grained reactivity", "performance", "TypeScript"],
