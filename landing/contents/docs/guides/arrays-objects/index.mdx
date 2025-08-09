@@ -1,0 +1,544 @@
+---
+title: Working with Arrays and Objects
+description: Learn how to effectively use Mesa with arrays and objects for optimal reactivity.
+---
+
+Mesa provides sophisticated reactivity for both arrays and objects. This guide shows you how to work with complex data structures while maintaining optimal performance.
+
+## Array Reactivity
+
+Mesa uses a coarse-grained approach for arrays, meaning when you subscribe to an array, any change to the array will trigger re-renders. This works with React's memoization features for performance optimization.
+
+### Basic Array Operations
+
+```jsx
+import { proxy, useStore } from "mesa";
+
+const state = proxy({
+  items: ["apple", "banana", "cherry"]
+});
+
+function ItemsList() {
+  const items = useStore(state, (s) => s.items);
+  
+  return (
+    <div>
+      <p>Items: {items.join(", ")}</p>
+      <button onClick={() => state.items.push("date")}>
+        Add Item
+      </button>
+      <button onClick={() => state.items.pop()}>
+        Remove Last
+      </button>
+    </div>
+  );
+}
+```
+
+### Array Methods Reactivity
+
+All array methods trigger reactivity when subscribed to the array:
+
+```jsx
+const state = proxy({
+  numbers: [3, 1, 4, 1, 5]
+});
+
+function NumberList() {
+  const numbers = useStore(state, (s) => s.numbers);
+  
+  return (
+    <div>
+      <p>Numbers: {numbers.join(",")}</p>
+      <button onClick={() => state.numbers.push(Math.floor(Math.random() * 10))}>
+        Add Random
+      </button>
+      <button onClick={() => state.numbers.sort((a, b) => a - b)}>
+        Sort
+      </button>
+      <button onClick={() => state.numbers.reverse()}>
+        Reverse
+      </button>
+      <button onClick={() => state.numbers.splice(1, 2, 99, 88)}>
+        Splice (replace index 1-2 with 99,88)
+      </button>
+    </div>
+  );
+}
+```
+
+### Array of Objects
+
+When working with arrays of objects, Mesa uses coarse-grained reactivity - changing any object property in the array will trigger re-renders for all subscribers to that array:
+
+```jsx
+const todoState = proxy({
+  todos: [
+    { id: 1, text: "Learn Mesa", completed: false, priority: "high", category: "Learning" },
+    { id: 2, text: "Build app", completed: false, priority: "medium", category: "Development" },
+  ]
+});
+
+function TodoList() {
+  const todos = useStore(todoState, (s) => s.todos);
+  
+  return (
+    <ul>
+      {todos.map(todo => (
+        <li key={todo.id}>
+          <input
+            type="checkbox"
+            checked={todo.completed}
+            onChange={() => {
+              // Direct property mutation triggers reactivity
+              const index = todoState.todos.findIndex(t => t.id === todo.id);
+              if (index !== -1) {
+                todoState.todos[index].completed = !todoState.todos[index].completed;
+              }
+            }}
+          />
+          <span style={{ 
+            textDecoration: todo.completed ? 'line-through' : 'none' 
+          }}>
+            {todo.text} ({todo.priority})
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function AddTodoForm() {
+  const [newTodo, setNewTodo] = useState("");
+  
+  return (
+    <div>
+      <input
+        value={newTodo}
+        onChange={(e) => setNewTodo(e.target.value)}
+        placeholder="Enter new todo..."
+      />
+      <button 
+        onClick={() => {
+          if (newTodo.trim()) {
+            todoState.todos.push({
+              id: Date.now(),
+              text: newTodo.trim(),
+              completed: false,
+              priority: "medium",
+              category: "General"
+            });
+            setNewTodo("");
+          }
+        }}
+      >
+        Add Todo
+      </button>
+    </div>
+  );
+}
+```
+
+### Optimizing Array Performance with React.memo
+
+Since Mesa uses coarse-grained array reactivity, combine it with React's memoization features for optimal performance:
+
+```jsx
+const TodoItem = React.memo(({ todo }) => {
+  return (
+    <li>
+      <input
+        type="checkbox"
+        checked={todo.completed}
+        onChange={() => {
+          const index = todoState.todos.findIndex(t => t.id === todo.id);
+          if (index !== -1) {
+            todoState.todos[index].completed = !todoState.todos[index].completed;
+          }
+        }}
+      />
+      <span>{todo.text}</span>
+    </li>
+  );
+});
+
+function OptimizedTodoList() {
+  const todos = useStore(todoState, (s) => s.todos);
+  
+  return (
+    <ul>
+      {todos.map(todo => (
+        <TodoItem key={todo.id} todo={todo} />
+      ))}
+    </ul>
+  );
+}
+```
+
+### Array Filtering and Computed Values
+
+Use `useMemo` for expensive computations on arrays:
+
+```jsx
+function FilteredTodoList() {
+  const todos = useStore(todoState, (s) => s.todos);
+  const [filter, setFilter] = useState("all"); // "all" | "active" | "completed"
+  
+  const filteredTodos = useMemo(() => {
+    return todos.filter(todo => {
+      if (filter === "active") return !todo.completed;
+      if (filter === "completed") return todo.completed;
+      return true;
+    });
+  }, [todos, filter]);
+  
+  const stats = useMemo(() => {
+    const total = todos.length;
+    const completed = todos.filter(t => t.completed).length;
+    const active = total - completed;
+    const highPriority = todos.filter(t => !t.completed && t.priority === "high").length;
+    
+    return { total, completed, active, highPriority };
+  }, [todos]);
+  
+  return (
+    <div>
+      <div>
+        <button onClick={() => setFilter("all")}>All ({stats.total})</button>
+        <button onClick={() => setFilter("active")}>Active ({stats.active})</button>
+        <button onClick={() => setFilter("completed")}>Completed ({stats.completed})</button>
+        <span>High Priority: {stats.highPriority}</span>
+      </div>
+      
+      <ul>
+        {filteredTodos.map(todo => (
+          <TodoItem key={todo.id} todo={todo} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Object Reactivity
+
+Mesa provides fine-grained reactivity for objects, meaning components only re-render when the specific properties they access change.
+
+### Fine-Grained Object Updates
+
+```jsx
+const userState = proxy({
+  user: {
+    name: "John Doe",
+    email: "john@example.com",
+    preferences: {
+      theme: "light",
+      language: "en",
+      notifications: {
+        email: true,
+        push: false,
+        sms: true
+      }
+    }
+  }
+});
+
+// This component only re-renders when user.name changes
+function UserName() {
+  const name = useStore(userState, (s) => s.user.name);
+  
+  return (
+    <div>
+      <h2>{name}</h2>
+      <button onClick={() => { userState.user.name = "Jane Doe"; }}>
+        Change Name
+      </button>
+    </div>
+  );
+}
+
+// This component only re-renders when user.preferences.theme changes
+function ThemeToggle() {
+  const theme = useStore(userState, (s) => s.user.preferences.theme);
+  
+  return (
+    <button 
+      onClick={() => { 
+        userState.user.preferences.theme = theme === "light" ? "dark" : "light"; 
+      }}
+    >
+      Current Theme: {theme}
+    </button>
+  );
+}
+
+// This component only re-renders when notification settings change
+function NotificationSettings() {
+  const notifications = useStore(userState, (s) => s.user.preferences.notifications);
+  
+  return (
+    <div>
+      <label>
+        <input
+          type="checkbox"
+          checked={notifications.email}
+          onChange={() => {
+            userState.user.preferences.notifications.email = !notifications.email;
+          }}
+        />
+        Email Notifications: {notifications.email ? "On" : "Off"}
+      </label>
+      
+      <label>
+        <input
+          type="checkbox" 
+          checked={notifications.push}
+          onChange={() => {
+            userState.user.preferences.notifications.push = !notifications.push;
+          }}
+        />
+        Push Notifications: {notifications.push ? "On" : "Off"}
+      </label>
+    </div>
+  );
+}
+```
+
+### Dynamic Property Operations
+
+Mesa handles dynamic property addition and deletion:
+
+```jsx
+const dynamicState = proxy({
+  config: {
+    apiUrl: "https://api.example.com",
+    timeout: 5000
+  }
+});
+
+function DynamicConfig() {
+  const config = useStore(dynamicState, (s) => s.config);
+  const [newKey, setNewKey] = useState("");
+  const [newValue, setNewValue] = useState("");
+  
+  return (
+    <div>
+      <h3>Current Config:</h3>
+      {Object.entries(config).map(([key, value]) => (
+        <div key={key}>
+          <strong>{key}:</strong> {String(value)}
+          <button 
+            onClick={() => { 
+              delete dynamicState.config[key]; 
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      ))}
+      
+      <div>
+        <input
+          placeholder="Property name"
+          value={newKey}
+          onChange={(e) => setNewKey(e.target.value)}
+        />
+        <input
+          placeholder="Property value"
+          value={newValue}
+          onChange={(e) => setNewValue(e.target.value)}
+        />
+        <button
+          onClick={() => {
+            if (newKey && newValue) {
+              dynamicState.config[newKey] = newValue;
+              setNewKey("");
+              setNewValue("");
+            }
+          }}
+        >
+          Add Property
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Complex Object Structures
+
+```jsx
+const appState = proxy({
+  currentUser: {
+    id: 1,
+    profile: {
+      firstName: "John",
+      lastName: "Doe",
+      avatar: "/avatars/john.jpg",
+      settings: {
+        privacy: {
+          showEmail: false,
+          showPhone: true
+        },
+        display: {
+          theme: "auto",
+          fontSize: "medium"
+        }
+      }
+    },
+    permissions: ["read", "write"]
+  }
+});
+
+// Fine-grained component - only re-renders when firstName or lastName changes
+function UserDisplayName() {
+  const firstName = useStore(appState, (s) => s.currentUser.profile.firstName);
+  const lastName = useStore(appState, (s) => s.currentUser.profile.lastName);
+  
+  return <h1>{firstName} {lastName}</h1>;
+}
+
+// This component only re-renders when privacy settings change
+function PrivacySettings() {
+  const privacy = useStore(appState, (s) => s.currentUser.profile.settings.privacy);
+  
+  return (
+    <div>
+      <label>
+        <input
+          type="checkbox"
+          checked={privacy.showEmail}
+          onChange={() => {
+            appState.currentUser.profile.settings.privacy.showEmail = !privacy.showEmail;
+          }}
+        />
+        Show Email Publicly
+      </label>
+      
+      <label>
+        <input
+          type="checkbox"
+          checked={privacy.showPhone}
+          onChange={() => {
+            appState.currentUser.profile.settings.privacy.showPhone = !privacy.showPhone;
+          }}
+        />
+        Show Phone Publicly
+      </label>
+    </div>
+  );
+}
+```
+
+### Conditional Selection
+
+Handle conditional data access safely:
+
+```jsx
+const conditionalState = proxy({
+  isLoggedIn: false,
+  user: null, // Will be populated when logged in
+  guestPreferences: {
+    theme: "light",
+    language: "en"
+  }
+});
+
+function ConditionalUserData() {
+  const isLoggedIn = useStore(conditionalState, (s) => s.isLoggedIn);
+  
+  // Safe conditional selection - only accesses user data when logged in
+  const userData = useStore(conditionalState, (s) => 
+    s.isLoggedIn && s.user ? {
+      name: s.user.name,
+      email: s.user.email
+    } : null
+  );
+  
+  const preferences = useStore(conditionalState, (s) => 
+    s.isLoggedIn && s.user ? s.user.preferences : s.guestPreferences
+  );
+  
+  if (!isLoggedIn) {
+    return (
+      <div>
+        <p>Please log in to access user features</p>
+        <p>Current theme: {preferences.theme}</p>
+        <button 
+          onClick={() => {
+            // Simulate login
+            conditionalState.isLoggedIn = true;
+            conditionalState.user = {
+              name: "John Doe",
+              email: "john@example.com",
+              preferences: {
+                theme: "dark",
+                language: "en"
+              }
+            };
+          }}
+        >
+          Log In
+        </button>
+      </div>
+    );
+  }
+  
+  return (
+    <div>
+      <h2>Welcome, {userData.name}!</h2>
+      <p>Email: {userData.email}</p>
+      <p>Theme: {preferences.theme}</p>
+      <button
+        onClick={() => {
+          conditionalState.isLoggedIn = false;
+          conditionalState.user = null;
+        }}
+      >
+        Log Out
+      </button>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### Performance Optimization
+
+1. **Use React.memo** for array items to prevent unnecessary re-renders
+2. **Use useMemo** for expensive computations on arrays
+3. **Subscribe to specific properties** rather than entire objects when possible
+4. **Group related object properties** in a single selector when they're used together
+
+### Array vs Object Patterns
+
+```jsx
+// ✅ Good: Fine-grained object subscriptions
+const userName = useStore(state, (s) => s.user.name);
+const userEmail = useStore(state, (s) => s.user.email);
+
+// ✅ Good: Coarse-grained array subscription with React optimization
+const todos = useStore(state, (s) => s.todos);
+const TodoItem = React.memo(({ todo }) => <li>{todo.text}</li>);
+
+// ✅ Good: Computed values with useMemo
+const completedTodos = useMemo(() => 
+  todos.filter(t => t.completed).length, [todos]
+);
+
+// ⚠️ Consider: Selecting entire objects
+const user = useStore(state, (s) => s.user); // Re-renders on any user property change
+
+// ❌ Avoid: Complex computations in selectors
+const expensiveData = useStore(state, (s) => 
+  s.items.map(item => heavyComputation(item)) // Runs on every render
+);
+```
+
+## See Also
+
+- **[useStore()](/docs/api/useStore)** - Complete useStore API reference
+- **[proxy()](/docs/api/proxy)** - Creating reactive state objects  
+- **[Fine-Grained Reactivity](/docs/guides/fine-grained)** - Understanding dependency tracking
+- **[Todo List Example](/docs/examples/todo-list)** - Complete example with arrays and objects

@@ -8,16 +8,16 @@ The `useStore()` hook is Mesa's React integration that allows components to subs
 ## Syntax
 
 ```typescript
-function useStore<T extends object, R>(
+function useStore<T extends object, R = T>(
   store: T, 
-  selector: (state: T) => R
+  selector?: (state: T) => R
 ): R
 ```
 
 ### Parameters
 
 - **`store`** - A proxy object created with `proxy()`
-- **`selector`** - A function that extracts the data your component needs
+- **`selector`** *(optional)* - A function that extracts the data your component needs. If omitted, returns the entire store.
 
 ### Returns
 
@@ -25,7 +25,7 @@ Returns the selected data from the store. The component will re-render only when
 
 ## Basic Usage
 
-### Simple Property Selection
+### Entire Store Subscription
 
 ```jsx
 import { proxy, useStore } from "mesa";
@@ -35,6 +35,31 @@ const state = proxy({
   name: "John"
 });
 
+function AppComponent() {
+  // Subscribe to entire store - re-renders when any property changes
+  const store = useStore(state);
+  
+  return (
+    <div>
+      <span>Count: {store.count}</span>
+      <span>Name: {store.name}</span>
+      <button onClick={() => store.count++}>
+        Increment
+      </button>
+    </div>
+  );
+}
+
+// Equivalent to:
+function AppComponentExplicit() {
+  const store = useStore(state, (s) => s);
+  return <div>...</div>;
+}
+```
+
+### Simple Property Selection
+
+```jsx
 function Counter() {
   // Only re-renders when count changes
   const count = useStore(state, (s) => s.count);
@@ -319,10 +344,7 @@ const status = useStore(state, (s) => s.status);
 ### ❌ Don't
 
 ```jsx
-// Don't select entire state
-const state = useStore(store, (s) => s); // ❌
-
-// Don't create new objects unnecessarily
+// Don't create new objects unnecessarily in selectors
 const data = useStore(state, (s) => ({
   ...s.user,
   computed: s.other.value * 2
@@ -332,6 +354,11 @@ const data = useStore(state, (s) => ({
 const expensive = useStore(state, (s) => 
   s.items.map(item => expensiveTransform(item))
 ); // ❌ Runs on every render
+
+// Instead, use useMemo for expensive computations
+const expensive = useMemo(() => 
+  items.map(item => expensiveTransform(item)), [items]
+);
 ```
 
 ## Integration with React DevTools

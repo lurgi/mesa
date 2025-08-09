@@ -133,7 +133,9 @@ const theme = useStore(state, s => s.user.settings.theme);
 const profile = useStore(state, s => s.user.profile);
 ```
 
-### Array Access
+### Array Access (Coarse-Grained)
+
+Mesa uses a coarse-grained approach for arrays - when you subscribe to an array, any change to the array triggers re-renders:
 
 ```jsx
 const state = proxy({
@@ -144,17 +146,32 @@ const state = proxy({
   ]
 });
 
-// Tracks path: "items.length"
-const count = useStore(state, s => s.items.length);
+// Tracks entire "items" array - re-renders on any array change
+const items = useStore(state, s => s.items);
 
-// Tracks path: "items.0" (first element)
-const first = useStore(state, s => s.items[0]);
+// Also tracks entire "todos" array - re-renders when any todo changes
+const todos = useStore(state, s => s.todos);
 
-// Tracks path: "todos.0.done"
-const firstTodoDone = useStore(state, s => s.todos[0]?.done);
+// Changing any property of any todo will re-render all subscribers to todos array
+state.todos[0].done = true; // All components using todos will re-render
+```
 
-// Tracks path: "todos" (entire array)
-const allTodos = useStore(state, s => s.todos);
+### Identity Selector
+
+Mesa supports subscribing to the entire store without a selector:
+
+```jsx
+const state = proxy({
+  count: 0,
+  user: { name: "John" },
+  todos: []
+});
+
+// These are equivalent:
+const store1 = useStore(state);           // Identity selector (shorthand)
+const store2 = useStore(state, s => s);   // Explicit identity selector
+
+// Both subscribe to all top-level properties and re-render when any change
 ```
 
 ## Advanced Tracking Scenarios
@@ -310,12 +327,18 @@ const info = useStore(state, s => ({
 ### ✅ Select Specific Properties
 
 ```jsx
-// Good - specific selection
+// Good - specific selection for objects
 const name = useStore(state, s => s.user.name);
 const age = useStore(state, s => s.user.age);
 
-// Avoid - overly broad selection
-const user = useStore(state, s => s.user); // Re-renders for any user change
+// Consider - broader selection when you need multiple related properties
+const user = useStore(state, s => s.user); // OK if you need multiple user properties
+
+// Good - identity selector for small, simple state
+const state = useStore(simpleStore); // OK for simple state objects
+
+// Avoid - identity selector for large, complex state
+const state = useStore(largeComplexStore); // Too broad, causes unnecessary re-renders
 ```
 
 ### ✅ Use Multiple Subscriptions

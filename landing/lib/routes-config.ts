@@ -34,6 +34,7 @@ export const ROUTES: EachRoute[] = [
     noLink: true,
     items: [
       { title: "Fine-Grained Reactivity", href: "/fine-grained" },
+      { title: "Working with Arrays and Objects", href: "/arrays-objects" },
       // { title: "Performance Optimization", href: "/performance" },
       // { title: "TypeScript Usage", href: "/typescript" },
       // { title: "Advanced Patterns", href: "/advanced" },
