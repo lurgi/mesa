@@ -10,16 +10,12 @@ export function Footer() {
             M
           </div>
           <p className="text-center">
-            © 2025 Mesa. High-performance React state management with
-            fine-grained reactivity.
+            © 2025 Mesa. High-performance React state management with fine-grained reactivity.
           </p>
         </div>
 
         <div className="gap-4 items-center hidden md:flex">
-          <Link
-            href="https://github.com/your-username/mesa"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
+          <Link href="https://github.com/lurgi/mesa" className={buttonVariants({ variant: "outline", size: "sm" })}>
             GitHub
           </Link>
         </div>
