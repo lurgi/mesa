@@ -29,11 +29,25 @@ export const metadata: Metadata = {
     title: "Mesa - High-performance React state management",
     description: "Fine-grained reactivity for React with automatic dependency tracking",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Mesa - High-performance React state management",
     description: "Fine-grained reactivity for React with automatic dependency tracking",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
 };
 
