@@ -377,5 +377,153 @@ describe("useStore hook", () => {
       expect(() => render(<TestComponent />)).not.toThrow();
       expect(screen.getByTestId("value")).toHaveTextContent("no data");
     });
+
+    test("should support optional selector parameter for API compatibility", () => {
+      const state = proxy({ count: 5, name: "test" });
+
+      function ComponentWithOptionalSelector() {
+        // This tests that useStore can be called without a selector (API compatibility)
+        const entireState = useStore(state);
+        return (
+          <div>
+            <div data-testid="no-selector-count">{entireState.count}</div>
+            <div data-testid="no-selector-name">{entireState.name}</div>
+          </div>
+        );
+      }
+
+      render(<ComponentWithOptionalSelector />);
+      
+      // Should display initial values
+      expect(screen.getByTestId("no-selector-count")).toHaveTextContent("5");
+      expect(screen.getByTestId("no-selector-name")).toHaveTextContent("test");
+
+      // Note: Current implementation may not fully support reactivity without explicit selector
+      // This test mainly verifies API compatibility - that useStore(state) doesn't throw
+      expect(true).toBe(true); // Test passes if no errors are thrown
+    });
+
+    test("should return same object reference when using identity selector", () => {
+      const state = proxy({ count: 1, name: "test" });
+      
+      let stateReferences: any[] = [];
+      
+      function TestComponent() {
+        const stateWithSelector = useStore(state, (s) => s);
+        const stateWithoutSelector = useStore(state);
+        
+        stateReferences.push({ withSelector: stateWithSelector, withoutSelector: stateWithoutSelector });
+        
+        return (
+          <div>
+            <div data-testid="count-with">{stateWithSelector.count}</div>
+            <div data-testid="count-without">{stateWithoutSelector.count}</div>
+          </div>
+        );
+      }
+
+      render(<TestComponent />);
+      
+      // Both should reference the same proxy object
+      expect(stateReferences[0].withSelector).toBe(stateReferences[0].withoutSelector);
+      expect(stateReferences[0].withSelector).toBe(state);
+      expect(stateReferences[0].withoutSelector).toBe(state);
+    });
+
+    test("should behave identically for useStore(state, s => s) and useStore(state)", () => {
+      
+      const state = proxy({ count: 42, message: "hello" });
+      
+      let explicitRenders = 0;
+      let implicitRenders = 0;
+      
+      function ExplicitIdentityComponent() {
+        explicitRenders++;
+        const result = useStore(state, (s) => s);
+        return (
+          <div>
+            <div data-testid="explicit-count">{result.count}</div>
+            <div data-testid="explicit-message">{result.message}</div>
+            <div data-testid="explicit-renders">{explicitRenders}</div>
+          </div>
+        );
+      }
+
+      function ImplicitIdentityComponent() {
+        implicitRenders++;
+        const result = useStore(state);
+        return (
+          <div>
+            <div data-testid="implicit-count">{result.count}</div>
+            <div data-testid="implicit-message">{result.message}</div>
+            <div data-testid="implicit-renders">{implicitRenders}</div>
+          </div>
+        );
+      }
+
+      function TestApp() {
+        return (
+          <div>
+            <ExplicitIdentityComponent />
+            <ImplicitIdentityComponent />
+            <button 
+              onClick={() => { 
+                state.count = 99; 
+              }}
+              data-testid="update-count"
+            >
+              Update Count
+            </button>
+            <button 
+              onClick={() => { 
+                state.message = "updated"; 
+              }}
+              data-testid="update-message"
+            >
+              Update Message
+            </button>
+          </div>
+        );
+      }
+
+      render(<TestApp />);
+
+      // Initial values should be identical
+      expect(screen.getByTestId("explicit-count")).toHaveTextContent("42");
+      expect(screen.getByTestId("implicit-count")).toHaveTextContent("42");
+      expect(screen.getByTestId("explicit-message")).toHaveTextContent("hello");
+      expect(screen.getByTestId("implicit-message")).toHaveTextContent("hello");
+      
+      // Both should start with 1 render
+      expect(explicitRenders).toBe(1);
+      expect(implicitRenders).toBe(1);
+
+      // Update count - both should re-render and show updated values
+      act(() => {
+        fireEvent.click(screen.getByTestId("update-count"));
+      });
+      
+      expect(screen.getByTestId("explicit-count")).toHaveTextContent("99");
+      expect(screen.getByTestId("implicit-count")).toHaveTextContent("99");
+      expect(explicitRenders).toBeGreaterThan(1);
+      expect(implicitRenders).toBeGreaterThan(1);
+
+      // Update message - both should re-render and show updated values
+      const prevExplicitRenders = explicitRenders;
+      const prevImplicitRenders = implicitRenders;
+      
+      act(() => {
+        fireEvent.click(screen.getByTestId("update-message"));
+      });
+      
+      expect(screen.getByTestId("explicit-message")).toHaveTextContent("updated");
+      expect(screen.getByTestId("implicit-message")).toHaveTextContent("updated");
+      expect(explicitRenders).toBeGreaterThan(prevExplicitRenders);
+      expect(implicitRenders).toBeGreaterThan(prevImplicitRenders);
+
+      // Both components should have re-rendered the same number of times
+      expect(explicitRenders).toBe(implicitRenders);
+    });
+
   });
 });

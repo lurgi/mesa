@@ -1,13 +1,14 @@
 import { useSyncExternalStore, useRef, useLayoutEffect } from "react";
 import { subscribeToPath, startTracking, stopTracking } from "./proxy";
 
-export function useStore<T extends object, R>(store: T, selector: (state: T) => R): R {
-  const selectorRef = useRef(selector);
+export function useStore<T extends object, R = T>(store: T, selector?: (state: T) => R): R {
+  const actualSelector = selector || ((state: T) => state as unknown as R);
+  const selectorRef = useRef(actualSelector);
   const subscribedPathsRef = useRef<Set<string>>(new Set());
   const unsubscribersRef = useRef<Array<() => void>>([]);
   const lastValueRef = useRef<R | undefined>(undefined);
 
-  selectorRef.current = selector;
+  selectorRef.current = actualSelector;
 
   const subscribe = (callback: () => void) => {
     const tracker = startTracking();
@@ -15,25 +16,39 @@ export function useStore<T extends object, R>(store: T, selector: (state: T) => 
     stopTracking();
 
     lastValueRef.current = initialValue;
-    const paths = tracker.paths;
+    let paths = Array.from(tracker.paths);
+
+    if (paths.length === 0) {
+      paths = Object.keys(store);
+    }
+
     subscribedPathsRef.current = new Set(paths);
+
+    // Check if this is an identity selector (subscribed to all top-level properties)
+    const isIdentitySelector =
+      paths.length === Object.keys(store).length && paths.every((p) => Object.keys(store).includes(p));
 
     paths.forEach((path) => {
       const unsubscriber = subscribeToPath(path, () => {
         const newValue = selectorRef.current(store);
 
-        // Always trigger callback for arrays to ensure proper reactivity
-        if (Array.isArray(newValue)) {
-          lastValueRef.current = [...newValue] as R;
+        if (Array.isArray(newValue) || isIdentitySelector) {
+          if (Array.isArray(newValue)) {
+            lastValueRef.current = [...newValue] as R;
+          } else if (typeof newValue === "object" && newValue !== null) {
+            lastValueRef.current = { ...newValue } as R;
+          } else {
+            lastValueRef.current = newValue;
+          }
           callback();
         } else if (!Object.is(lastValueRef.current, newValue)) {
           lastValueRef.current = newValue;
           callback();
-        } else if (typeof newValue === 'object' && newValue !== null && lastValueRef.current !== null) {
-          // For objects, do a shallow comparison to detect property changes
+        } else if (typeof newValue === "object" && newValue !== null && lastValueRef.current !== null) {
           const oldValue = lastValueRef.current as any;
-          const hasChanges = Object.keys(newValue).some(key => !Object.is(oldValue[key], (newValue as any)[key])) ||
-                            Object.keys(oldValue).some(key => !Object.is(oldValue[key], (newValue as any)[key]));
+          const hasChanges =
+            Object.keys(newValue).some((key) => !Object.is(oldValue[key], (newValue as any)[key])) ||
+            Object.keys(oldValue).some((key) => !Object.is(oldValue[key], (newValue as any)[key]));
           if (hasChanges) {
             lastValueRef.current = { ...newValue } as R;
             callback();
