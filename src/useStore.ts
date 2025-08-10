@@ -24,7 +24,6 @@ export function useStore<T extends object, R = T>(store: T, selector?: (state: T
 
     subscribedPathsRef.current = new Set(paths);
 
-    // Check if this is an identity selector (subscribed to all top-level properties)
     const isIdentitySelector =
       paths.length === Object.keys(store).length && paths.every((p) => Object.keys(store).includes(p));
 
@@ -69,7 +68,6 @@ export function useStore<T extends object, R = T>(store: T, selector?: (state: T
     if (lastValueRef.current === undefined) {
       lastValueRef.current = selectorRef.current(store);
     }
-    // Include force update count to ensure different snapshots for array item changes
     return lastValueRef.current;
   };
 

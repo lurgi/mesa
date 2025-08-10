@@ -1,201 +1,47 @@
+import type { ProxyConfig } from "./core/types";
+import { createGetHandler, createSetHandler, createDeleteHandler } from "./handlers/proxy-handlers";
+import { validateObject } from "./core/utils";
+
+export { subscribeToPath, subscribeGlobal as subscribe } from "./core/listeners";
+export { startTracking, stopTracking } from "./core/tracking";
+
 const proxyMap = new WeakMap<object, any>();
-const pathListeners = new Map<string, Set<() => void>>();
-const globalListeners = new Set<() => void>();
-let currentTracker: { paths: Set<string> } | null = null;
 
-export function subscribe(callback: () => void) {
-  globalListeners.add(callback);
-  return () => globalListeners.delete(callback);
-}
+const DEFAULT_CONFIG: Required<ProxyConfig> = {
+  enableArrayTracking: true,
+  enableNotifications: true,
+};
 
-export function subscribeToPath(path: string, callback: () => void) {
-  if (!pathListeners.has(path)) {
-    pathListeners.set(path, new Set());
-  }
-  pathListeners.get(path)!.add(callback);
-
-  return () => {
-    const listeners = pathListeners.get(path);
-    if (listeners) {
-      listeners.delete(callback);
-      if (listeners.size === 0) {
-        pathListeners.delete(path);
-      }
-    }
-  };
-}
-
-function notifyPath(path: string) {
-  const listeners = pathListeners.get(path);
-  if (listeners) {
-    listeners.forEach((callback) => callback());
-  }
-
-  const arrayItemPattern = /^(.+)\.(\d+)(?:\.(.+))?$/;
-  const match = path.match(arrayItemPattern);
-  if (match) {
-    const [, arrayPath] = match;
-    const arrayListeners = pathListeners.get(arrayPath);
-    if (arrayListeners) {
-      arrayListeners.forEach((callback) => callback());
-    }
-  }
-
-  let parentPath = path;
-  while (parentPath.includes(".")) {
-    parentPath = parentPath.substring(0, parentPath.lastIndexOf("."));
-    const parentListeners = pathListeners.get(parentPath);
-    if (parentListeners) {
-      parentListeners.forEach((callback) => callback());
-    }
-  }
-
-  for (const [listenerPath, listenerSet] of pathListeners.entries()) {
-    if (listenerPath.startsWith(path + ".")) {
-      listenerSet.forEach((callback) => callback());
-    }
-  }
-}
-
-function notifyAll() {
-  globalListeners.forEach((callback) => callback());
-}
-
-export function startTracking(): { paths: Set<string> } {
-  const tracker = { paths: new Set<string>() };
-  currentTracker = tracker;
-  return tracker;
-}
-
-export function stopTracking() {
-  currentTracker = null;
-}
-
-function trackAccess(path: string) {
-  if (currentTracker) {
-    currentTracker.paths.add(path);
-  }
-}
-
-export function proxy<T extends object>(target: T, parentPath: string = ""): T {
+export function proxy<T extends object>(target: T, parentPath: string = "", config: ProxyConfig = {}): T {
   if (proxyMap.has(target)) {
     return proxyMap.get(target);
   }
 
-  if (target === null || typeof target !== "object") {
-    return target;
+  validateObject(target, "proxy");
+
+  if (typeof parentPath !== "string") {
+    throw new Error("proxy: parentPath must be a string");
   }
 
-  const proxied = new Proxy(target, {
-    get(target, property, receiver) {
-      const currentPath = parentPath
-        ? `${parentPath}.${String(property)}`
-        : String(property);
-      trackAccess(currentPath);
+  if (config !== null && typeof config !== "object") {
+    throw new Error("proxy: config must be an object");
+  }
 
-      const value = Reflect.get(target, property, receiver);
+  const finalConfig = { ...DEFAULT_CONFIG, ...config };
 
-      if (Array.isArray(target) && typeof value === "function") {
-        const arrayMethods = [
-          "push",
-          "pop",
-          "shift",
-          "unshift",
-          "splice",
-          "sort",
-          "reverse",
-          "fill",
-        ];
-        if (arrayMethods.includes(String(property))) {
-          return function (this: any, ...args: any[]) {
-            const originalLength = this.length;
-            const result = value.apply(this, args);
-            const arrayPath = parentPath || "root";
-
-            notifyPath(arrayPath);
-            notifyPath(`${arrayPath}.length`);
-
-            const newLength = this.length;
-            const maxLength = Math.max(originalLength, newLength);
-            for (let i = 0; i < maxLength; i++) {
-              notifyPath(`${arrayPath}.${i}`);
-            }
-
-            notifyAll();
-            return result;
-          };
-        }
-      }
-
-      if (value !== null && typeof value === "object") {
-        return proxy(value, currentPath);
-      }
-
-      return value;
-    },
-
-    set(target, property, value, receiver) {
-      const oldValue = Reflect.get(target, property, receiver);
-
-      // Proxy the new value if it's an object
-      if (value !== null && typeof value === "object") {
-        const currentPath = parentPath
-          ? `${parentPath}.${String(property)}`
-          : String(property);
-        value = proxy(value, currentPath);
-      }
-
-      const result = Reflect.set(target, property, value, receiver);
-
-      if (result && !Object.is(oldValue, value)) {
-        const currentPath = parentPath
-          ? `${parentPath}.${String(property)}`
-          : String(property);
-        notifyPath(currentPath);
-
-        // Handle array changes
-        if (Array.isArray(target)) {
-          if (property === "length" || !isNaN(Number(property))) {
-            // Notify the array path itself for any index or length changes
-            notifyPath(parentPath || "root");
-            notifyPath(`${parentPath || "root"}.length`);
-          }
-        }
-
-        notifyAll();
-      }
-
-      return result;
-    },
-
-    deleteProperty(target, property) {
-      const result = Reflect.deleteProperty(target, property);
-
-      if (result) {
-        const currentPath = parentPath
-          ? `${parentPath}.${String(property)}`
-          : String(property);
-        notifyPath(currentPath);
-        notifyAll();
-      }
-
-      return result;
-    },
-
-    has(target, property) {
-      return Reflect.has(target, property);
-    },
-
-    ownKeys(target) {
-      return Reflect.ownKeys(target);
-    },
-
-    getOwnPropertyDescriptor(target, property) {
-      return Reflect.getOwnPropertyDescriptor(target, property);
-    },
-  });
-
+  const proxied = createProxyWithHandlers(target, parentPath, finalConfig);
   proxyMap.set(target, proxied);
 
   return proxied;
+}
+
+function createProxyWithHandlers<T extends object>(target: T, parentPath: string, _config: Required<ProxyConfig>): T {
+  return new Proxy(target, {
+    get: createGetHandler(parentPath),
+    set: createSetHandler(parentPath),
+    deleteProperty: createDeleteHandler(parentPath),
+    has: (target, property) => Reflect.has(target, property),
+    ownKeys: (target) => Reflect.ownKeys(target),
+    getOwnPropertyDescriptor: (target, property) => Reflect.getOwnPropertyDescriptor(target, property),
+  });
 }
