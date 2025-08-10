@@ -2,16 +2,28 @@
 import DarkVeil from "@/components/ogl/dark-veil";
 import { buttonVariants } from "@/components/ui/button";
 import { page_routes } from "@/lib/routes-config";
-import { TerminalSquareIcon } from "lucide-react";
+import { TerminalSquareIcon, CopyIcon, CheckIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 
 export default function Home() {
   const { setTheme } = useTheme();
+  const [copied, setCopied] = useState(false);
+  
   useLayoutEffect(() => {
     setTheme("dark");
   }, [setTheme]);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText("npm install mesa-react");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   return (
     <div className="w-full h-full relative">
@@ -43,10 +55,21 @@ export default function Home() {
               View Examples
             </Link>
           </div>
-          <span className="sm:flex hidden flex-row items-start sm:gap-2 gap-0.5 text-muted-foreground text-md mt-5 -mb-12 max-[800px]:mb-12 font-code sm:text-base text-sm font-medium">
-            <TerminalSquareIcon className="w-5 h-5 sm:mr-1 mt-0.5" />
-            {"npm install mesa-react"}
-          </span>
+          <div className="sm:flex hidden flex-row items-center sm:gap-2 gap-0.5 text-muted-foreground text-md mt-5 -mb-12 max-[800px]:mb-12 font-code sm:text-base text-sm font-medium group">
+            <TerminalSquareIcon className="w-5 h-5 sm:mr-1" />
+            <span className="select-all">npm install mesa-react</span>
+            <button
+              onClick={copyToClipboard}
+              className="ml-2 p-1.5 rounded-md hover:bg-muted transition-colors duration-200 opacity-60 hover:opacity-100"
+              title={copied ? "Copied!" : "Copy to clipboard"}
+            >
+              {copied ? (
+                <CheckIcon className="w-4 h-4 text-green-500" />
+              ) : (
+                <CopyIcon className="w-4 h-4" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Feature highlights */}
