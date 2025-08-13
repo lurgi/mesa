@@ -18,6 +18,7 @@ export function useStore<T extends object, R = T>(store: T, selector?: (state: T
     lastValueRef.current = initialValue;
     let paths = Array.from(tracker.paths);
 
+    // If no paths are tracked, use all keys of the store
     if (paths.length === 0) {
       paths = Object.keys(store);
     }
@@ -27,41 +28,60 @@ export function useStore<T extends object, R = T>(store: T, selector?: (state: T
     const isIdentitySelector =
       paths.length === Object.keys(store).length && paths.every((p) => Object.keys(store).includes(p));
 
-    paths.forEach((path) => {
-      const unsubscriber = subscribeToPath(path, () => {
+    const createPathSubscription = (path: string) => {
+      return subscribeToPath(path, () => {
         const newValue = selectorRef.current(store);
-
-        if (Array.isArray(newValue) || isIdentitySelector) {
-          if (Array.isArray(newValue)) {
-            lastValueRef.current = [...newValue] as R;
-          } else if (typeof newValue === "object" && newValue !== null) {
-            lastValueRef.current = { ...newValue } as R;
-          } else {
-            lastValueRef.current = newValue;
-          }
+        
+        if (shouldUpdateValue(newValue, lastValueRef.current, isIdentitySelector)) {
+          updateLastValue(newValue, isIdentitySelector);
           callback();
-        } else if (!Object.is(lastValueRef.current, newValue)) {
-          lastValueRef.current = newValue;
-          callback();
-        } else if (typeof newValue === "object" && newValue !== null && lastValueRef.current !== null) {
-          const oldValue = lastValueRef.current as any;
-          const hasChanges =
-            Object.keys(newValue).some((key) => !Object.is(oldValue[key], (newValue as any)[key])) ||
-            Object.keys(oldValue).some((key) => !Object.is(oldValue[key], (newValue as any)[key]));
-          if (hasChanges) {
-            lastValueRef.current = { ...newValue } as R;
-            callback();
-          }
         }
       });
+    };
+
+    const shouldUpdateValue = (newValue: R, oldValue: R | undefined, isIdentity: boolean): boolean => {
+      if (Array.isArray(newValue) || isIdentity) {
+        return true;
+      }
+      
+      if (!Object.is(oldValue, newValue)) {
+        return true;
+      }
+      
+      if (typeof newValue === "object" && newValue !== null && oldValue !== null) {
+        return hasObjectChanges(newValue, oldValue as any);
+      }
+      
+      return false;
+    };
+
+    const hasObjectChanges = (newValue: any, oldValue: any): boolean => {
+      return Object.keys(newValue).some((key) => !Object.is(oldValue[key], newValue[key])) ||
+             Object.keys(oldValue).some((key) => !Object.is(oldValue[key], newValue[key]));
+    };
+
+    const updateLastValue = (newValue: R, isIdentity: boolean): void => {
+      if (Array.isArray(newValue)) {
+        lastValueRef.current = [...newValue] as R;
+      } else if (typeof newValue === "object" && newValue !== null && isIdentity) {
+        lastValueRef.current = { ...newValue } as R;
+      } else {
+        lastValueRef.current = newValue;
+      }
+    };
+
+    paths.forEach((path) => {
+      const unsubscriber = createPathSubscription(path);
       unsubscribersRef.current.push(unsubscriber);
     });
 
-    return () => {
+    const cleanup = () => {
       unsubscribersRef.current.forEach((unsub) => unsub());
       unsubscribersRef.current = [];
       subscribedPathsRef.current.clear();
     };
+
+    return cleanup;
   };
 
   const getSnapshot = (): R => {
