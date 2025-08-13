@@ -4,30 +4,21 @@ export function createPath(parentPath: string, property: string | symbol): strin
 }
 
 export function isObject(value: unknown): value is object {
-  return value !== null && typeof value === 'object';
+  return value !== null && typeof value === "object";
 }
 
 export function isValidProperty(property: string | symbol): boolean {
-  return typeof property === 'string' || typeof property === 'symbol';
-}
-
-export function validateObject<T extends object>(target: T, functionName: string): void {
-  if (!isObject(target)) {
-    throw new Error(`${functionName}: Expected an object, got ${typeof target}`);
-  }
+  return typeof property === "string" || typeof property === "symbol";
 }
 
 export function validateCallback(callback: unknown, functionName: string): void {
-  if (typeof callback !== 'function') {
+  if (typeof callback !== "function") {
     throw new Error(`${functionName}: Expected a function, got ${typeof callback}`);
   }
 }
 
 export function isArrayMutationMethod(method: string): boolean {
-  const arrayMethods = [
-    'push', 'pop', 'shift', 'unshift', 
-    'splice', 'sort', 'reverse', 'fill'
-  ];
+  const arrayMethods = ["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill"];
   return arrayMethods.includes(method);
 }
 

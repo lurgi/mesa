@@ -1,6 +1,6 @@
 import type { ProxyConfig } from "./core/types";
 import { createGetHandler, createSetHandler, createDeleteHandler } from "./handlers/proxy-handlers";
-import { validateObject } from "./core/utils";
+import { isObject } from "./core/utils";
 
 export { subscribeToPath, subscribeGlobal as subscribe } from "./core/listeners";
 export { startTracking, stopTracking } from "./core/tracking";
@@ -17,7 +17,9 @@ export function proxy<T extends object>(target: T, parentPath: string = "", conf
     return proxyMap.get(target);
   }
 
-  validateObject(target, "proxy");
+  if (!isObject(target)) {
+    throw new Error(`proxy: Expected an object, got ${typeof target}`);
+  }
 
   if (typeof parentPath !== "string") {
     throw new Error("proxy: parentPath must be a string");
