@@ -1,20 +1,38 @@
-import type { ProxyConfig } from "./core/types";
-import { createGetHandler, createSetHandler, createDeleteHandler } from "./handlers/proxy-handlers";
-import { isObject } from "./core/utils";
+import type { ProxyConfig, PlainObject, WithSyncResult } from "./core/types";
+import {
+  createGetHandler,
+  createSetHandler,
+  createDeleteHandler,
+} from "./handlers/proxy-handlers";
+import { isObject, deepMerge, isValidData } from "./core/utils";
+import {
+  getExistingProxy,
+  getExistingConfig,
+  setProxyCache,
+  isSameConfig,
+  createFinalConfig,
+} from "./core/proxy-cache";
+import { useEffect, useRef, useState } from "react";
 
-export { subscribeToPath, subscribeGlobal as subscribe } from "./core/listeners";
+export {
+  subscribeToPath,
+  subscribeGlobal as subscribe,
+} from "./core/listeners";
 export { startTracking, stopTracking } from "./core/tracking";
 
-const proxyMap = new WeakMap<object, any>();
+export function proxy<T extends object>(
+  target: T,
+  parentPath: string = "",
+  config: ProxyConfig = {}
+): T {
+  const existing = getExistingProxy(target);
+  if (existing) {
+    const existingConfig = getExistingConfig(target);
+    const finalConfig = createFinalConfig(config);
 
-const DEFAULT_CONFIG: Required<ProxyConfig> = {
-  enableArrayTracking: true,
-  enableNotifications: true,
-};
-
-export function proxy<T extends object>(target: T, parentPath: string = "", config: ProxyConfig = {}): T {
-  if (proxyMap.has(target)) {
-    return proxyMap.get(target);
+    if (existingConfig && isSameConfig(existingConfig, finalConfig)) {
+      return existing;
+    }
   }
 
   if (!isObject(target)) {
@@ -29,21 +47,71 @@ export function proxy<T extends object>(target: T, parentPath: string = "", conf
     throw new Error("proxy: config must be an object");
   }
 
-  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  const finalConfig = createFinalConfig(config);
 
   const proxied = createProxyWithHandlers(target, parentPath, finalConfig);
-  proxyMap.set(target, proxied);
+  setProxyCache(target, proxied, finalConfig);
 
   return proxied;
 }
 
-function createProxyWithHandlers<T extends object>(target: T, parentPath: string, _config: Required<ProxyConfig>): T {
+function createProxyWithHandlers<T extends object>(
+  target: T,
+  parentPath: string,
+  _config: Required<ProxyConfig>
+): T {
   return new Proxy(target, {
     get: createGetHandler(parentPath),
     set: createSetHandler(parentPath),
     deleteProperty: createDeleteHandler(parentPath),
     has: (target, property) => Reflect.has(target, property),
     ownKeys: (target) => Reflect.ownKeys(target),
-    getOwnPropertyDescriptor: (target, property) => Reflect.getOwnPropertyDescriptor(target, property),
+    getOwnPropertyDescriptor: (target, property) =>
+      Reflect.getOwnPropertyDescriptor(target, property),
   });
 }
+
+function withSync<T extends PlainObject>(initialState: T): WithSyncResult<T> {
+  if (!isValidData(initialState)) {
+    throw new Error("withSync: initialState must be a valid plain object");
+  }
+
+  const state = proxy(initialState);
+
+  const useSync = (data: Parameters<WithSyncResult<T>["useSync"]>[0]) => {
+    const prevDataRef = useRef<typeof data>(undefined);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+      if (!isValidData(data)) {
+        return;
+      }
+
+      if (prevDataRef.current === data) {
+        return;
+      }
+
+      prevDataRef.current = data;
+      setIsLoading(true);
+
+      try {
+        const merged = deepMerge(state, data);
+        Object.keys(data as object).forEach((key) => {
+          if (Object.prototype.hasOwnProperty.call(data, key)) {
+            (state as any)[key] = merged[key];
+          }
+        });
+      } catch (error) {
+        console.error("useSync: Failed to merge data", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }, [data]);
+
+    return { isLoading };
+  };
+
+  return { state, useSync };
+}
+
+proxy.withSync = withSync;

@@ -16,3 +16,14 @@ export interface ProxyConfig {
   enableArrayTracking?: boolean;
   enableNotifications?: boolean;
 }
+
+export type PlainObject = Record<string, any>;
+
+export interface WithSyncResult<T extends PlainObject> {
+  state: T;
+  useSync: (data: DeepPartial<T> | undefined | null) => { isLoading: boolean };
+}
+
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
