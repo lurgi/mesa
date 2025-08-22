@@ -12,7 +12,7 @@ import {
   isSameConfig,
   createFinalConfig,
 } from "./core/proxy-cache";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 export {
   subscribeToPath,
@@ -82,7 +82,7 @@ function withSync<T extends PlainObject>(initialState: T): WithSyncResult<T> {
     const prevDataRef = useRef<typeof data>(undefined);
     const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       if (!isValidData(data)) {
         return;
       }
@@ -96,16 +96,16 @@ function withSync<T extends PlainObject>(initialState: T): WithSyncResult<T> {
 
       try {
         const merged = deepMerge(state, data);
-        Object.keys(data as object).forEach((key) => {
-          if (Object.prototype.hasOwnProperty.call(data, key)) {
-            (state as any)[key] = merged[key];
-          }
-        });
+        Object.assign(state, merged);
       } catch (error) {
         console.error("useSync: Failed to merge data", error);
       } finally {
         setIsLoading(false);
       }
+
+      return () => {
+        prevDataRef.current = null;
+      };
     }, [data]);
 
     return { isLoading };

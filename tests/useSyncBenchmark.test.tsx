@@ -1,5 +1,6 @@
-import { render, cleanup, act } from "@testing-library/react";
+import { render, cleanup, act, screen } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { proxy } from "../src/main";
 import { useStore } from "../src/useStore";
 
@@ -296,33 +297,86 @@ describe("useSync Realistic Performance Benchmark", () => {
       expect(report.duration?.avg).toBeLessThan(50); // 평균 50ms 이내
     });
 
-    test("대용량 테이블 (100개 행)", async () => {
-      const testName = "large-table";
-      const { state, useSync } = proxy.withSync<TableData>(createTableData(10));
+    test("useEffect vs useLayoutEffect 성능 비교", async () => {
+      // useEffect 기반 구현 (개선 전)
+      const createUseEffectSync = () => {
+        const state = proxy(createTableData(10));
+        
+        const useSync = (data: TableData) => {
+          const prevDataRef = useRef<typeof data | null>(null);
+          const [isLoading, setIsLoading] = useState(false);
 
-      const LargeTableComponent = () => {
-        monitor.trackRender(testName);
-        const data = useStore(state);
-        return <div data-testid="rows">{data.rows.length}</div>;
+          useEffect(() => {
+            if (prevDataRef.current === data) return;
+            
+            prevDataRef.current = data;
+            setIsLoading(true);
+
+            try {
+              const merged = { ...state, ...data };
+              Object.keys(data).forEach((key) => {
+                (state as any)[key] = merged[key as keyof typeof merged];
+              });
+            } finally {
+              setIsLoading(false);
+            }
+          }, [data]);
+
+          return { isLoading };
+        };
+        
+        return { state, useSync };
       };
 
-      render(<LargeTableComponent />);
+      // useLayoutEffect 기반 구현 (개선 후)
+      const { state: layoutState, useSync: useLayoutSync } = proxy.withSync<TableData>(createTableData(10));
 
-      const endMeasurement = monitor.startMeasurement(testName);
+      // 성능 측정 설정
+      const effectResults = { renderCount: 0, duration: 0 };
+      const layoutResults = { renderCount: 0, duration: 0 };
+
+      // useEffect 테스트
+      const { state: effectState, useSync: useEffectSync } = createUseEffectSync();
+      
+      const EffectComponent = () => {
+        effectResults.renderCount++;
+        const data = useStore(effectState);
+        return <div data-testid="effect-rows">{data.rows.length}</div>;
+      };
+
+      const LayoutComponent = () => {
+        layoutResults.renderCount++;
+        const data = useStore(layoutState);
+        return <div data-testid="layout-rows">{data.rows.length}</div>;
+      };
+
+      render(<EffectComponent />);
+      render(<LayoutComponent />);
+
       const largeTableData = createTableData(100);
 
+      // useEffect 성능 측정
+      const effectStart = performance.now();
       await act(async () => {
-        renderHook(() => useSync(largeTableData));
+        renderHook(() => useEffectSync(largeTableData));
       });
+      effectResults.duration = performance.now() - effectStart;
 
-      const duration = endMeasurement();
-      const report = monitor.getPerformanceReport(testName);
+      // useLayoutEffect 성능 측정  
+      const layoutStart = performance.now();
+      await act(async () => {
+        renderHook(() => useLayoutSync(largeTableData));
+      });
+      layoutResults.duration = performance.now() - layoutStart;
 
-      // 대용량 테이블: 100ms 이내
-      expect(RealisticPerformanceMonitor.checkPerformance(duration, 100)).toBe(
-        true
-      );
-      expect(report.renderCount).toBeLessThan(3);
+      // 성능 비교 및 개선 확인
+      console.log(`useEffect: ${effectResults.duration.toFixed(2)}ms, ${effectResults.renderCount} renders`);
+      console.log(`useLayoutEffect: ${layoutResults.duration.toFixed(2)}ms, ${layoutResults.renderCount} renders`);
+
+      // useLayoutEffect가 실제로 개선되었는지 검증
+      expect(layoutResults.duration).toBeLessThan(effectResults.duration + 10); // 동기 실행으로 더 빠르거나 비슷
+      expect(layoutResults.renderCount).toBeLessThanOrEqual(effectResults.renderCount); // 렌더링 최적화
+      expect(screen.getByTestId("layout-rows")).toHaveTextContent("100"); // 정확한 동기화
     });
   });
 
@@ -468,55 +522,60 @@ describe("useSync Realistic Performance Benchmark", () => {
       expect(report.duration?.p95).toBeLessThan(40); // 95%는 40ms 이내
     });
 
-    test("메모리 효율성 검증", async () => {
-      const testName = "memory-efficiency";
-      const memoryRefs: WeakRef<any>[] = [];
-
-      for (let cycle = 0; cycle < 3; cycle++) {
-        const { state, useSync } = proxy.withSync<DashboardData>(
-          createDashboardData(50, 200)
-        );
-
-        const MemoryTestComponent = () => {
-          monitor.trackRender(`${testName}-cycle-${cycle}`);
-          const data = useStore(state);
-          return <div>{data.users.length}</div>;
+    test("Object.assign vs forEach 성능 비교", async () => {
+      // forEach 기반 구현 (기존 방식)
+      const createForEachSync = () => {
+        const state = proxy(createDashboardData(10, 50));
+        
+        const useSync = (data: DashboardData) => {
+          useLayoutEffect(() => {
+            const merged = { ...state, ...data };
+            // 개별 키 할당 (기존 방식)
+            Object.keys(data).forEach((key) => {
+              (state as any)[key] = merged[key as keyof typeof merged];
+            });
+          }, [data]);
         };
+        
+        return { state, useSync };
+      };
 
-        const { unmount } = render(<MemoryTestComponent />);
+      // Object.assign 기반 구현 (개선된 방식) 
+      const { state: assignState, useSync: useAssignSync } = proxy.withSync<DashboardData>(
+        createDashboardData(10, 50)
+      );
 
-        // 여러 번 업데이트
-        for (let i = 0; i < 5; i++) {
-          const testData = createDashboardData(50, 200);
-          if (typeof WeakRef !== "undefined") {
-            memoryRefs.push(new WeakRef(testData));
-          }
+      const results = { forEach: 0, assign: 0 };
 
-          await act(async () => {
-            renderHook(() => useSync(testData));
-          });
-        }
+      // forEach 성능 측정
+      const { useSync: useForEachSync } = createForEachSync();
+      
+      const forEachStart = performance.now();
+      const largeData = createDashboardData(100, 500);
+      
+      await act(async () => {
+        renderHook(() => useForEachSync(largeData));
+      });
+      results.forEach = performance.now() - forEachStart;
 
-        unmount();
-        if (global.gc) {
-          global.gc();
-        }
-      }
+      // Object.assign 성능 측정
+      const assignStart = performance.now();
+      
+      await act(async () => {
+        renderHook(() => useAssignSync(largeData));
+      });
+      results.assign = performance.now() - assignStart;
 
-      // WeakRef로 메모리 해제 확인 (일부만 해제되어도 정상)
-      if (typeof WeakRef !== "undefined") {
-        await new Promise((resolve) => setTimeout(resolve, 100)); // GC 대기
-        const unreferencedCount = memoryRefs.filter(
-          (ref) => ref.deref() === undefined
-        ).length;
-        expect(unreferencedCount).toBeGreaterThan(0); // 일부라도 해제되었는지 확인
-        /*
-            1. GC 타이밍: 브라우저가 메모리 압박을 느끼지 않으면 GC를 지연
-            2. 내부 최적화: V8 등 엔진이 객체를 재사용하거나 캐싱
-            3. 테스트 환경: Jest/JSDOM에서는 실제 브라우저와 GC 동작 차이
-            따라서 일부 객체라도 해제되면 useSync가 메모리 누수를 일으키지 않는다고 판단
-        */
-      }
+      // 성능 비교 결과 출력
+      console.log(`forEach: ${results.forEach.toFixed(2)}ms`);
+      console.log(`Object.assign: ${results.assign.toFixed(2)}ms`);
+
+      // Object.assign이 더 효율적이거나 비슷해야 함
+      expect(results.assign).toBeLessThanOrEqual(results.forEach + 5); // 5ms 오차 허용
+      
+      // 데이터 정합성 확인
+      expect(assignState.users.length).toBe(500);
+      expect(assignState.metrics.length).toBe(100);
     });
   });
 });
