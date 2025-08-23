@@ -5,6 +5,7 @@
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -24,5 +25,5 @@
     "jsx": "react-jsx",
     "esModuleInterop": true
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests", "vitest.d.ts"]
 }
