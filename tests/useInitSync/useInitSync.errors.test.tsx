@@ -500,59 +500,203 @@ describe("useInitSync Error Handling", () => {
     });
   });
 
-  describe("Concurrent error scenarios", () => {
-    test("should handle multiple concurrent async operations with different error outcomes", async () => {
-      const store = proxy({
-        operation1: null,
-        operation2: null,
-        operation3: null,
-      });
+  describe("One store, one useInitSync validation", () => {
+    test("should throw error when multiple useInitSync are used on the same store", () => {
+      const store = proxy({ data: null });
 
-      const successFn = async (state: typeof store) => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        state.operation1 = "success";
-        return "success";
-      };
+      const asyncFn1 = jest.fn().mockResolvedValue("data1");
+      const asyncFn2 = jest.fn().mockResolvedValue("data2");
 
-      const errorFn1 = jest.fn().mockRejectedValue(new Error("Error 1"));
-      const errorFn2 = jest.fn().mockRejectedValue(new Error("Error 2"));
+      function TestComponent() {
+        useInitSync(store, asyncFn1);
+        
+        // This should throw an error - second useInitSync on same store
+        expect(() => {
+          useInitSync(store, asyncFn2);
+        }).toThrow("Multiple useInitSync calls detected on the same store. Only one useInitSync per store is allowed.");
 
-      function AsyncLoaders() {
-        const result1 = useInitSync(store, successFn, { errorBoundary: false });
-        const result2 = useInitSync(store, errorFn1, { errorBoundary: false });
-        const result3 = useInitSync(store, errorFn2, { errorBoundary: false });
+        return <div data-testid="success">Should not render</div>;
+      }
 
+      function App() {
         return (
-          <div>
-            <div data-testid="result1-error">{result1.error?.message || "no error"}</div>
-            <div data-testid="result2-error">{result2.error?.message || "no error"}</div>
-            <div data-testid="result3-error">{result3.error?.message || "no error"}</div>
-          </div>
+          <ErrorBoundary fallback={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
+            <TestComponent />
+          </ErrorBoundary>
         );
       }
 
-      function StoreDisplay() {
-        const op1 = useStore(store, (s) => s.operation1);
-        return <div data-testid="operation1">{op1 || "pending"}</div>;
+      render(<App />);
+
+      expect(screen.getByTestId("error-boundary")).toHaveTextContent(
+        "Multiple useInitSync calls detected on the same store. Only one useInitSync per store is allowed."
+      );
+    });
+
+    test("should throw error when useInitSync is called multiple times in different components for same store", () => {
+      const store = proxy({ data: null });
+
+      const asyncFn1 = jest.fn().mockResolvedValue("data1");
+      const asyncFn2 = jest.fn().mockResolvedValue("data2");
+
+      function Component1() {
+        useInitSync(store, asyncFn1);
+        return <div data-testid="component1">Component 1</div>;
+      }
+
+      function Component2() {
+        // This should throw an error
+        useInitSync(store, asyncFn2);
+        return <div data-testid="component2">Component 2</div>;
+      }
+
+      function App() {
+        return (
+          <ErrorBoundary fallback={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
+            <Component1 />
+            <Component2 />
+          </ErrorBoundary>
+        );
+      }
+
+      render(<App />);
+
+      expect(screen.getByTestId("error-boundary")).toHaveTextContent(
+        "Multiple useInitSync calls detected on the same store. Only one useInitSync per store is allowed."
+      );
+      expect(screen.queryByTestId("component1")).toBeNull();
+      expect(screen.queryByTestId("component2")).toBeNull();
+    });
+
+    test("should allow multiple useInitSync calls on different stores", () => {
+      const store1 = proxy({ data1: null });
+      const store2 = proxy({ data2: null });
+
+      function Component1() {
+        useInitSync(store1, { data1: "initialized1" });
+        const data = useStore(store1, (s) => s.data1);
+        return <div data-testid="component1">{data}</div>;
+      }
+
+      function Component2() {
+        useInitSync(store2, { data2: "initialized2" });
+        const data = useStore(store2, (s) => s.data2);
+        return <div data-testid="component2">{data}</div>;
+      }
+
+      function App() {
+        return (
+          <ErrorBoundary fallback={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
+            <Component1 />
+            <Component2 />
+          </ErrorBoundary>
+        );
+      }
+
+      render(<App />);
+
+      // Should render successfully - different stores are allowed
+      expect(screen.getByTestId("component1")).toHaveTextContent("initialized1");
+      expect(screen.getByTestId("component2")).toHaveTextContent("initialized2");
+      expect(screen.queryByTestId("error-boundary")).toBeNull();
+    });
+
+    test("should detect conflicts even when called asynchronously", async () => {
+      const store = proxy({ data: null });
+
+      const asyncFn1 = jest.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        return "data1";
+      });
+
+      const asyncFn2 = jest.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        return "data2";
+      });
+
+      function Component1() {
+        useInitSync(store, asyncFn1, { errorBoundary: false });
+        return <div data-testid="component1">Component 1</div>;
+      }
+
+      function Component2() {
+        const { error } = useInitSync(store, asyncFn2, { errorBoundary: false });
+        
+        if (error) {
+          return <div data-testid="component2-error">{error.message}</div>;
+        }
+        
+        return <div data-testid="component2">Component 2</div>;
       }
 
       function App() {
         return (
           <div>
-            <AsyncLoaders />
-            <StoreDisplay />
+            <Component1 />
+            <Component2 />
           </div>
         );
       }
 
       render(<App />);
 
+      // Component2 should show error due to duplicate useInitSync
       await waitFor(() => {
-        expect(screen.getByTestId("result1-error")).toHaveTextContent("no error");
-        expect(screen.getByTestId("result2-error")).toHaveTextContent("Error 1");
-        expect(screen.getByTestId("result3-error")).toHaveTextContent("Error 2");
-        expect(screen.getByTestId("operation1")).toHaveTextContent("success");
+        expect(screen.getByTestId("component2-error")).toHaveTextContent(
+          "Multiple useInitSync calls detected on the same store. Only one useInitSync per store is allowed."
+        );
       });
+
+      expect(screen.getByTestId("component1")).toBeInTheDocument();
+    });
+
+    test("should handle cleanup properly when component with useInitSync unmounts", async () => {
+      const store = proxy({ data: null });
+      const asyncFn = jest.fn().mockResolvedValue("data");
+
+      function AsyncComponent() {
+        useInitSync(store, asyncFn);
+        return <div data-testid="async-component">Async Component</div>;
+      }
+
+      function App({ showAsync }: { showAsync: boolean }) {
+        return (
+          <div>
+            {showAsync && <AsyncComponent />}
+            <button onClick={() => {}} data-testid="test-button">Test</button>
+          </div>
+        );
+      }
+
+      const { rerender } = render(<App showAsync={true} />);
+
+      expect(screen.getByTestId("async-component")).toBeInTheDocument();
+
+      // Unmount the component with useInitSync
+      rerender(<App showAsync={false} />);
+
+      expect(screen.queryByTestId("async-component")).toBeNull();
+
+      // After unmounting, a new component should be able to use useInitSync on the same store
+      function NewAsyncComponent() {
+        useInitSync(store, { data: "new data" });
+        const data = useStore(store, (s) => s.data);
+        return <div data-testid="new-async-component">{data}</div>;
+      }
+
+      function AppWithNew() {
+        return (
+          <ErrorBoundary fallback={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
+            <NewAsyncComponent />
+          </ErrorBoundary>
+        );
+      }
+
+      render(<AppWithNew />);
+
+      // Should work without error after cleanup
+      expect(screen.getByTestId("new-async-component")).toHaveTextContent("new data");
+      expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
   });
 });
