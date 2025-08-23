@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import { Suspense } from "react";
 import { proxy, useStore, useInitSync } from "../../src/main";
 import { ErrorBoundary } from "react-error-boundary";
+import { vi } from "vitest";
 
 describe("useInitSync Error Handling", () => {
   describe("Basic error scenarios", () => {
@@ -9,10 +10,14 @@ describe("useInitSync Error Handling", () => {
       const store = proxy({ data: null });
       const error = new Error("Promise rejection error");
 
-      const asyncFn = jest.fn().mockRejectedValue(error);
+      const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
-        const { data, loading, error: asyncError } = useInitSync(store, asyncFn, {
+        const {
+          data,
+          loading,
+          error: asyncError,
+        } = useInitSync(store, asyncFn, {
           errorBoundary: false,
         });
 
@@ -40,12 +45,16 @@ describe("useInitSync Error Handling", () => {
       const store = proxy({ data: null });
       const error = new Error("Synchronous function error");
 
-      const syncFn = jest.fn().mockImplementation(() => {
+      const syncFn = vi.fn().mockImplementation(() => {
         throw error;
       });
 
       function TestComponent() {
-        const { data, loading, error: asyncError } = useInitSync(store, syncFn, {
+        const {
+          data,
+          loading,
+          error: asyncError,
+        } = useInitSync(store, syncFn, {
           errorBoundary: false,
         });
 
@@ -73,7 +82,7 @@ describe("useInitSync Error Handling", () => {
       const store = proxy({ data: null });
       const error = new Error("Error for boundary");
 
-      const asyncFn = jest.fn().mockRejectedValue(error);
+      const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
         useInitSync(store, asyncFn, { errorBoundary: true });
@@ -82,10 +91,8 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">Caught: {error.message}</div>
-            }
+          <ErrorBoundary
+            fallbackRender={({ error }: any) => <div data-testid="error-boundary">Caught: {error.message}</div>}
           >
             <Suspense fallback={<div data-testid="loading">Loading...</div>}>
               <TestComponent />
@@ -112,12 +119,12 @@ describe("useInitSync Error Handling", () => {
       const store = proxy({ data: null });
       const error = new Error("Error not for boundary");
 
-      const asyncFn = jest.fn().mockRejectedValue(error);
+      const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
-        const { error: asyncError, loading } = useInitSync(store, asyncFn, { 
+        const { error: asyncError, loading } = useInitSync(store, asyncFn, {
           errorBoundary: false,
-          suspense: false
+          suspense: false,
         });
 
         if (loading) return <div data-testid="loading">Loading...</div>;
@@ -128,9 +135,9 @@ describe("useInitSync Error Handling", () => {
       function App() {
         return (
           <ErrorBoundary
-            fallback={({ error }: { error: Error }) => 
+            fallbackRender={({ error }: any) => (
               <div data-testid="error-boundary">Should not appear: {error.message}</div>
-            }
+            )}
           >
             <TestComponent />
           </ErrorBoundary>
@@ -153,10 +160,10 @@ describe("useInitSync Error Handling", () => {
     test("should call onError callback", async () => {
       const store = proxy({ data: null });
       const error = new Error("Callback error");
-      const onError = jest.fn();
-      const onSuccess = jest.fn();
+      const onError = vi.fn();
+      const onSuccess = vi.fn();
 
-      const asyncFn = jest.fn().mockRejectedValue(error);
+      const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
         const { error: asyncError } = useInitSync(store, asyncFn, {
@@ -187,7 +194,7 @@ describe("useInitSync Error Handling", () => {
       const error = new Error("Temporary error");
       let callCount = 0;
 
-      const asyncFn = jest.fn().mockImplementation(() => {
+      const asyncFn = vi.fn().mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
           return Promise.reject(error);
@@ -196,7 +203,11 @@ describe("useInitSync Error Handling", () => {
       });
 
       function TestComponent() {
-        const { data, error: asyncError, refetch } = useInitSync(store, asyncFn, {
+        const {
+          data,
+          error: asyncError,
+          refetch,
+        } = useInitSync(store, asyncFn, {
           errorBoundary: false,
         });
 
@@ -237,27 +248,21 @@ describe("useInitSync Error Handling", () => {
     test("should throw error when multiple useInitSync are used on the same store", () => {
       const store = proxy({ data: null });
 
-      const asyncFn1 = jest.fn().mockResolvedValue("data1");
-      const asyncFn2 = jest.fn().mockResolvedValue("data2");
+      const asyncFn1 = vi.fn().mockResolvedValue("data1");
+      const asyncFn2 = vi.fn().mockResolvedValue("data2");
 
       function TestComponent() {
         useInitSync(store, asyncFn1);
-        
-        // This should throw an error immediately during render
-        expect(() => {
-          useInitSync(store, asyncFn2);
-        }).toThrow("Multiple useInitSync calls detected on the same store");
+
+        // This should throw an error - second useInitSync on same store
+        useInitSync(store, asyncFn2);
 
         return <div data-testid="success">Should not render</div>;
       }
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">{error.message}</div>
-            }
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
             <TestComponent />
           </ErrorBoundary>
         );
@@ -273,8 +278,8 @@ describe("useInitSync Error Handling", () => {
     test("should throw error when useInitSync is called in different components for same store", () => {
       const store = proxy({ data: null });
 
-      const asyncFn1 = jest.fn().mockResolvedValue("data1");
-      const asyncFn2 = jest.fn().mockResolvedValue("data2");
+      const asyncFn1 = vi.fn().mockResolvedValue("data1");
+      const asyncFn2 = vi.fn().mockResolvedValue("data2");
 
       function Component1() {
         useInitSync(store, asyncFn1);
@@ -289,11 +294,7 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">{error.message}</div>
-            }
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -327,11 +328,7 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">{error.message}</div>
-            }
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -349,8 +346,8 @@ describe("useInitSync Error Handling", () => {
     test("should allow custom keys to bypass one-store limitation", () => {
       const store = proxy({ data: null });
 
-      const asyncFn1 = jest.fn().mockResolvedValue("data1");
-      const asyncFn2 = jest.fn().mockResolvedValue("data2");
+      const asyncFn1 = vi.fn().mockResolvedValue("data1");
+      const asyncFn2 = vi.fn().mockResolvedValue("data2");
 
       function Component1() {
         const { data } = useInitSync(store, asyncFn1, { key: "operation-1" });
@@ -364,11 +361,7 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">{error.message}</div>
-            }
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
             <Component1 />
             <Component2 />
           </ErrorBoundary>

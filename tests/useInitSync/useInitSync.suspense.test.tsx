@@ -1,7 +1,8 @@
-import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
-import { Suspense, useState } from "react";
+import { render, screen, act, waitFor } from "@testing-library/react";
+import { Suspense } from "react";
 import { proxy, useStore, useInitSync } from "../../src/main";
 import { ErrorBoundary } from "react-error-boundary";
+import { vi } from "vitest";
 
 describe("useInitSync Suspense Integration", () => {
   describe("Basic Suspense behavior", () => {
@@ -15,7 +16,7 @@ describe("useInitSync Suspense Integration", () => {
 
       function AsyncComponent() {
         const { data } = useInitSync(store, asyncFn);
-        return <div data-testid="async-data">{data}</div>;
+        return <div data-testid="async-data">{String(data)}</div>;
       }
 
       function App() {
@@ -55,7 +56,7 @@ describe("useInitSync Suspense Integration", () => {
           return <div data-testid="manual-loading">Manual loading...</div>;
         }
 
-        return <div data-testid="async-data">{data}</div>;
+        return <div data-testid="async-data">{String(data)}</div>;
       }
 
       function App() {
@@ -96,12 +97,12 @@ describe("useInitSync Suspense Integration", () => {
 
       function UserComponent() {
         const { data: user } = useInitSync(store1, userAsyncFn);
-        return <div data-testid="user-data">{user?.name}</div>;
+        return <div data-testid="user-data">{(user as any)?.name}</div>;
       }
 
       function PostsComponent() {
         const { data: posts } = useInitSync(store2, postsAsyncFn);
-        return <div data-testid="posts-data">Posts: {posts?.length || 0}</div>;
+        return <div data-testid="posts-data">Posts: {(posts as any)?.length || 0}</div>;
       }
 
       function App() {
@@ -143,7 +144,7 @@ describe("useInitSync Suspense Integration", () => {
       const store = proxy({ data: null });
       let resolveFn: (value: string) => void;
 
-      const asyncFn = jest.fn().mockImplementation(() => {
+      const asyncFn = vi.fn().mockImplementation(() => {
         return new Promise<string>((resolve) => {
           resolveFn = resolve;
         });
@@ -151,7 +152,7 @@ describe("useInitSync Suspense Integration", () => {
 
       function TestComponent() {
         const { data } = useInitSync(store, asyncFn);
-        return <div data-testid="data">{data || "loading"}</div>;
+        return <div data-testid="data">{String(data) || "loading"}</div>;
       }
 
       function App({ showComponent }: { showComponent: boolean }) {
@@ -185,7 +186,7 @@ describe("useInitSync Suspense Integration", () => {
       const store = proxy({ data: null });
       const error = new Error("Async error");
 
-      const asyncFn = jest.fn().mockRejectedValue(error);
+      const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
         useInitSync(store, asyncFn, { errorBoundary: true });
@@ -194,10 +195,8 @@ describe("useInitSync Suspense Integration", () => {
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">Error: {error.message}</div>
-            }
+          <ErrorBoundary
+            fallbackRender={({ error }: any) => <div data-testid="error-boundary">Error: {error.message}</div>}
           >
             <Suspense fallback={<div data-testid="suspense-fallback">Loading...</div>}>
               <TestComponent />
@@ -223,27 +222,23 @@ describe("useInitSync Suspense Integration", () => {
       const store = proxy({ data: null });
       const error = new Error("Inline error");
 
-      const asyncFn = jest.fn().mockRejectedValue(error);
+      const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
-        const { error: asyncError, loading } = useInitSync(store, asyncFn, { 
+        const { error: asyncError, loading } = useInitSync(store, asyncFn, {
           errorBoundary: false,
-          suspense: false 
+          suspense: false,
         });
 
         if (loading) return <div data-testid="loading">Loading...</div>;
         if (asyncError) return <div data-testid="inline-error">Error: {asyncError.message}</div>;
-        
+
         return <div data-testid="success">Success</div>;
       }
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">Should not appear</div>
-            }
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">Should not appear</div>}>
             <Suspense fallback={<div data-testid="suspense-fallback">Should not appear</div>}>
               <TestComponent />
             </Suspense>
@@ -268,11 +263,11 @@ describe("useInitSync Suspense Integration", () => {
 
   describe("Integration with useStore", () => {
     test("should make useStore components suspend when accessing loading data", async () => {
-      type StoreType = { 
+      type StoreType = {
         user: { id: number; name: string } | null;
         isReady: boolean;
       };
-      
+
       const store = proxy<StoreType>({ user: null, isReady: true });
 
       const userAsyncFn = async (state: StoreType) => {

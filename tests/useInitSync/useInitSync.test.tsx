@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
-import { Suspense } from "react";
 import { proxy, useStore, useInitSync } from "../../src/main";
 import { ErrorBoundary } from "react-error-boundary";
+import { vi } from "vitest";
 
 describe("useInitSync hook", () => {
   describe("Direct value initialization", () => {
@@ -10,7 +10,7 @@ describe("useInitSync hook", () => {
         user: { name: string; id: number } | null;
         theme: string;
       };
-      
+
       const store = proxy<StoreType>({ user: null, theme: "light" });
 
       function TestComponent() {
@@ -56,7 +56,7 @@ describe("useInitSync hook", () => {
     test("should prevent flicker with localStorage values", () => {
       // Mock localStorage
       const mockLocalStorage = {
-        getItem: jest.fn((key: string) => {
+        getItem: vi.fn((key: string) => {
           if (key === "user") return JSON.stringify({ name: "Cached User" });
           if (key === "theme") return "dark";
           return null;
@@ -68,7 +68,7 @@ describe("useInitSync hook", () => {
         user: { name: string } | null;
         theme: string;
       };
-      
+
       const store = proxy<StoreType>({ user: null, theme: "light" });
 
       function TestComponent() {
@@ -105,7 +105,7 @@ describe("useInitSync hook", () => {
         user: { name: string; id: number } | null;
         settings: { theme: string; lang: string } | null;
       };
-      
+
       const store = proxy<StoreType>({ user: null, settings: null });
 
       function TestComponent() {
@@ -139,7 +139,7 @@ describe("useInitSync hook", () => {
         status: string;
         data: { content: string } | null;
       };
-      
+
       const store = proxy<StoreType>({ status: "initial", data: null });
 
       function TestComponent() {
@@ -187,7 +187,7 @@ describe("useInitSync hook", () => {
       const store = proxy<StoreType>({ userId: 1 });
 
       const mockUser = { id: 1, name: "John Doe" };
-      const asyncFn = jest.fn().mockResolvedValue(mockUser);
+      const asyncFn = vi.fn().mockResolvedValue(mockUser);
 
       function TestComponent() {
         const { data, loading, error } = useInitSync(store, asyncFn);
@@ -223,7 +223,7 @@ describe("useInitSync hook", () => {
       const store = proxy<StoreType>({ count: 0 });
       let callCount = 0;
 
-      const asyncFn = jest.fn().mockImplementation(() => {
+      const asyncFn = vi.fn().mockImplementation(() => {
         callCount++;
         return Promise.resolve(`result-${callCount}`);
       });
@@ -265,7 +265,7 @@ describe("useInitSync hook", () => {
       const store = proxy({ data: null });
       const error = new Error("Async operation failed");
 
-      const asyncFn = jest.fn().mockRejectedValue(error);
+      const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
         const { data, loading, error: asyncError } = useInitSync(store, asyncFn);
@@ -291,9 +291,9 @@ describe("useInitSync hook", () => {
     test("should call onError callback", async () => {
       const store = proxy({ data: null });
       const error = new Error("Test error");
-      const onError = jest.fn();
+      const onError = vi.fn();
 
-      const asyncFn = jest.fn().mockRejectedValue(error);
+      const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
         useInitSync(store, asyncFn, { onError, errorBoundary: false });
@@ -314,7 +314,7 @@ describe("useInitSync hook", () => {
       const store = proxy<StoreType>({ userId: 1 });
       let callCount = 0;
 
-      const asyncFn = jest.fn().mockImplementation(async (state: StoreType) => {
+      const asyncFn = vi.fn().mockImplementation(async (state: StoreType) => {
         callCount++;
         return { id: state.userId, name: `User ${state.userId}` };
       });
@@ -326,7 +326,13 @@ describe("useInitSync hook", () => {
         return (
           <div>
             <div data-testid="call-count">{callCount}</div>
-            <button onClick={() => { (store as any).userId = 2; }}>Change User</button>
+            <button
+              onClick={() => {
+                (store as any).userId = 2;
+              }}
+            >
+              Change User
+            </button>
           </div>
         );
       }
@@ -354,27 +360,21 @@ describe("useInitSync hook", () => {
     test("should throw error when multiple useInitSync are used on the same store", () => {
       const store = proxy({ data: null });
 
-      const asyncFn1 = jest.fn().mockResolvedValue("data1");
-      const asyncFn2 = jest.fn().mockResolvedValue("data2");
+      const asyncFn1 = vi.fn().mockResolvedValue("data1");
+      const asyncFn2 = vi.fn().mockResolvedValue("data2");
 
       function TestComponent() {
         useInitSync(store, asyncFn1);
-        
+
         // This should throw an error - second useInitSync on same store
-        expect(() => {
-          useInitSync(store, asyncFn2);
-        }).toThrow("Multiple useInitSync calls detected on the same store");
+        useInitSync(store, asyncFn2);
 
         return <div data-testid="success">Should not render</div>;
       }
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">{error.message}</div>
-            }
-          >
+          <ErrorBoundary fallbackRender={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
             <TestComponent />
           </ErrorBoundary>
         );
@@ -405,11 +405,7 @@ describe("useInitSync hook", () => {
 
       function App() {
         return (
-          <ErrorBoundary 
-            fallback={({ error }: { error: Error }) => 
-              <div data-testid="error-boundary">{error.message}</div>
-            }
-          >
+          <ErrorBoundary fallbackRender={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -422,6 +418,39 @@ describe("useInitSync hook", () => {
       expect(screen.getByTestId("component1")).toHaveTextContent("initialized1");
       expect(screen.getByTestId("component2")).toHaveTextContent("initialized2");
       expect(screen.queryByTestId("error-boundary")).toBeNull();
+    });
+
+    test("should allow custom keys to bypass one-store limitation", () => {
+      const store = proxy({ data: null });
+
+      const asyncFn1 = vi.fn().mockResolvedValue("data1");
+      const asyncFn2 = vi.fn().mockResolvedValue("data2");
+
+      function Component1() {
+        const { data } = useInitSync(store, asyncFn1, { key: "operation-1" });
+        return <div data-testid="component1">{data || "loading1"}</div>;
+      }
+
+      function Component2() {
+        const { data } = useInitSync(store, asyncFn2, { key: "operation-2" });
+        return <div data-testid="component2">{data || "loading2"}</div>;
+      }
+
+      function App() {
+        return (
+          <ErrorBoundary fallbackRender={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
+            <Component1 />
+            <Component2 />
+          </ErrorBoundary>
+        );
+      }
+
+      render(<App />);
+
+      // Should work with custom keys - no error
+      expect(screen.queryByTestId("error-boundary")).toBeNull();
+      expect(screen.getByTestId("component1")).toBeInTheDocument();
+      expect(screen.getByTestId("component2")).toBeInTheDocument();
     });
   });
 });
