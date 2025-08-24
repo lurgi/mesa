@@ -24,14 +24,18 @@ describe("useStore Suspense Integration", () => {
     }
 
     function InitComponent() {
-      useInitSync(store, async (state) => {
-        state.loading = true;
+      useInitSync(
+        store,
+        async (state) => {
+          state.loading = true;
 
-        await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
 
-        state.data = "loaded data";
-        state.loading = false;
-      });
+          state.data = "loaded data";
+          state.loading = false;
+        },
+        { suspense: true }
+      );
 
       return null;
     }
@@ -60,67 +64,45 @@ describe("useStore Suspense Integration", () => {
   });
 
   test("should handle multiple stores with independent suspense", async () => {
-    const userStore = proxy<{ user: any; loading: boolean }>({ user: null, loading: false });
-    const postsStore = proxy<{ posts: any[]; loading: boolean }>({ posts: [], loading: false });
+    const userStore = proxy<{ user: any }>({ user: null });
+    const postsStore = proxy<{ posts: any[] }>({ posts: [] });
 
-    function UserComponent() {
+    function UserSection() {
+      useInitSync(
+        userStore,
+        async (state) => {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          state.user = { name: "John" };
+        },
+        { suspense: true }
+      );
+
       const user = useStore(userStore, (s) => s.user);
-      const loading = useStore(userStore, (s) => s.loading);
-
-      return (
-        <div>
-          <div data-testid="user-data">{user?.name || "no user"}</div>
-          <div data-testid="user-loading">{loading ? "loading" : "ready"}</div>
-        </div>
-      );
+      return <div data-testid="user-data">{user?.name || "no user"}</div>;
     }
 
-    function PostsComponent() {
+    function PostsSection() {
+      useInitSync(
+        postsStore,
+        async (state) => {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          state.posts = [{ id: 1, title: "Post 1" }];
+        },
+        { suspense: true }
+      );
+
       const posts = useStore(postsStore, (s) => s.posts);
-      const loading = useStore(postsStore, (s) => s.loading);
-
-      return (
-        <div>
-          <div data-testid="posts-count">{posts.length}</div>
-          <div data-testid="posts-loading">{loading ? "loading" : "ready"}</div>
-        </div>
-      );
-    }
-
-    function UserInit() {
-      useInitSync(userStore, async (state) => {
-        (state as any).__mesa_loading = true;
-        state.loading = true;
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        state.user = { name: "John" };
-        state.loading = false;
-        (state as any).__mesa_loading = false;
-      });
-      return null;
-    }
-
-    function PostsInit() {
-      useInitSync(postsStore, async (state) => {
-        (state as any).__mesa_loading = true;
-        state.loading = true;
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        state.posts = [{ id: 1, title: "Post 1" }];
-        state.loading = false;
-        (state as any).__mesa_loading = false;
-      });
-      return null;
+      return <div data-testid="posts-count">{posts.length}</div>;
     }
 
     function App() {
       return (
         <div>
-          <UserInit />
-          <PostsInit />
           <Suspense fallback={<div data-testid="user-suspense">Loading user...</div>}>
-            <UserComponent />
+            <UserSection />
           </Suspense>
           <Suspense fallback={<div data-testid="posts-suspense">Loading posts...</div>}>
-            <PostsComponent />
+            <PostsSection />
           </Suspense>
         </div>
       );
@@ -133,7 +115,6 @@ describe("useStore Suspense Integration", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("user-data")).toHaveTextContent("John");
-      expect(screen.getByTestId("user-loading")).toHaveTextContent("ready");
     });
 
     expect(screen.queryByTestId("user-suspense")).not.toBeInTheDocument();
@@ -141,7 +122,6 @@ describe("useStore Suspense Integration", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("posts-count")).toHaveTextContent("1");
-      expect(screen.getByTestId("posts-loading")).toHaveTextContent("ready");
     });
 
     expect(screen.queryByTestId("posts-suspense")).not.toBeInTheDocument();
