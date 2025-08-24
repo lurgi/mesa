@@ -1,6 +1,8 @@
 import { useSyncExternalStore, useRef, useLayoutEffect } from "react";
 import { subscribeToPath, startTracking, stopTracking } from "./proxy";
 
+const suspensePromiseCache = new WeakMap<object, Promise<void>>();
+
 export function useStore<T extends object, R = T>(store: T, selector?: (state: T) => R): R {
   const actualSelector = selector || ((state: T) => state as unknown as R);
   const selectorRef = useRef(actualSelector);
@@ -22,6 +24,7 @@ export function useStore<T extends object, R = T>(store: T, selector?: (state: T
     if (paths.length === 0) {
       paths = Object.keys(store);
     }
+    
 
     subscribedPathsRef.current = new Set(paths);
 
@@ -85,6 +88,24 @@ export function useStore<T extends object, R = T>(store: T, selector?: (state: T
   };
 
   const getSnapshot = (): R => {
+    if ((store as any).__mesa_loading === true) {
+      if (!suspensePromiseCache.has(store)) {
+        const loadingPromise = new Promise<void>((resolve) => {
+          const checkLoading = () => {
+            if ((store as any).__mesa_loading === false) {
+              suspensePromiseCache.delete(store);
+              resolve();
+            } else {
+              setTimeout(checkLoading, 1);
+            }
+          };
+          checkLoading();
+        });
+        suspensePromiseCache.set(store, loadingPromise);
+      }
+      throw suspensePromiseCache.get(store)!;
+    }
+    
     if (lastValueRef.current === undefined) {
       lastValueRef.current = selectorRef.current(store);
     }

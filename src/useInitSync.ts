@@ -8,7 +8,7 @@ export function useInitSync<T extends object>(
   initializer: UseInitSyncInitializer<T>,
   options: UseInitSyncOptions = {}
 ): void {
-  const { key = "default", onError, deps = [] } = options;
+  const { key = "default", onError, deps = [], suspense = false } = options;
   const isInitialized = useRef(false);
 
   if (!storeRegistry.has(store)) {
@@ -29,11 +29,23 @@ export function useInitSync<T extends object>(
       const execute = async () => {
         try {
           if (typeof initializer === "function") {
-            await initializer(store);
+            const result = initializer(store);
+            if (result instanceof Promise) {
+              if (suspense) {
+                (store as any).__mesa_loading = true;
+              }
+              await result;
+              if (suspense) {
+                (store as any).__mesa_loading = false;
+              }
+            }
           } else {
             Object.assign(store, initializer as Partial<T>);
           }
         } catch (error) {
+          if (suspense) {
+            (store as any).__mesa_loading = false;
+          }
           onError?.(error as Error);
         }
       };
