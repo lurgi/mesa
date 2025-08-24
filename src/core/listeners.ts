@@ -1,4 +1,4 @@
-import type { Callback, Unsubscriber } from './types';
+import type { Callback, Unsubscriber } from '../types';
 import { validateCallback } from './utils';
 
 const pathListeners = new Map<string, Set<Callback>>();
