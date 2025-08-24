@@ -1,124 +1,51 @@
-export interface UseInitSyncOptions {
-  suspense?: boolean;
-  errorBoundary?: boolean;
-  key?: string;
-  deps?: any[];
-  onSuccess?: (data: any) => void;
-  onError?: (error: Error) => void;
-}
+import { useEffect, useRef } from "react";
+import type { UseInitSyncInitializer, UseInitSyncOptions } from "./types";
 
-export interface UseInitSyncResult<R> {
-  data: R | undefined;
-  loading: boolean;
-  error: Error | null;
-  refetch: () => Promise<R>;
-}
+const storeRegistry = new WeakMap<object, Set<string>>();
 
-export type UseInitSyncInitializer<T, R> =
-  | R
-  | Partial<T>
-  | Promise<R>
-  | ((state: T) => R)
-  | ((state: T) => Promise<R>)
-  | ((state: T) => void);
-
-import { useRef } from "react";
-import { initializeCaches, getCachedResult } from "./core/caching";
-import { validateStoreUsage } from "./core/validation";
-import { useDependencyTracking } from "./core/dependencies";
-import { handleDirectValue, handleSyncFunction, setupPromise } from "./core/initializers";
-import { createRefetchFunction } from "./core/refetch";
-import { useForceUpdate } from "./core/forceUpdate";
-
-export function useInitSync<T extends object, R = any>(
+export function useInitSync<T extends object>(
   store: T,
-  initializer: UseInitSyncInitializer<T, R>,
+  initializer: UseInitSyncInitializer<T>,
   options: UseInitSyncOptions = {}
-): UseInitSyncResult<R> {
-  const { errorBoundary = false, key, onSuccess, onError, deps } = options;
-  const forceUpdate = useForceUpdate();
-  const cacheKey = key || "default";
-  const instanceKey = key || "default";
-  const hasValidated = useRef(false);
+): void {
+  const { key = "default", onError, deps = [] } = options;
+  const isInitialized = useRef(false);
 
-  // Initialize caches
-  const { promises, results } = initializeCaches(store);
-
-  // Handle dependency changes
-  useDependencyTracking(deps, () => {
-    promises.delete(cacheKey);
-    results.delete(cacheKey);
-    forceUpdate();
-  });
-
-  // Create refetch function
-  const refetch = createRefetchFunction(store, initializer, cacheKey, results, forceUpdate);
-
-  // Validate store usage (only once per hook instance)
-  if (!hasValidated.current) {
-    validateStoreUsage(store, instanceKey);
-    hasValidated.current = true;
+  if (!storeRegistry.has(store)) {
+    storeRegistry.set(store, new Set<string>());
   }
 
-  // Check for cached result
-  const cachedResult = getCachedResult<R>(results, cacheKey);
-  if (cachedResult) {
-    if (cachedResult.error) {
-      if (errorBoundary) throw cachedResult.error;
-      return {
-        data: undefined,
-        loading: false,
-        error: cachedResult.error,
-        refetch: async () => { throw cachedResult.error; },
-      };
+  const keys = storeRegistry.get(store)!;
+
+  useEffect(() => {
+    if (keys.has(key) && !isInitialized.current) {
+      throw new Error("Multiple useInitSync calls detected on the same store");
     }
-    return {
-      data: cachedResult.data,
-      loading: false,
-      error: null,
-      refetch,
+
+    if (!isInitialized.current) {
+      keys.add(key);
+      isInitialized.current = true;
+
+      const execute = async () => {
+        try {
+          if (typeof initializer === "function") {
+            await initializer(store);
+          } else {
+            Object.assign(store, initializer as Partial<T>);
+          }
+        } catch (error) {
+          onError?.(error as Error);
+        }
+      };
+
+      execute();
+    }
+
+    return () => {
+      if (isInitialized.current) {
+        keys.delete(key);
+        isInitialized.current = false;
+      }
     };
-  }
-
-  // Check for existing promise (Suspense re-render)
-  if (promises.has(cacheKey)) {
-    throw promises.get(cacheKey)!;
-  }
-
-  // Handle direct values
-  const directResult = handleDirectValue(store, initializer);
-  if (directResult) {
-    return directResult;
-  }
-
-  // Handle sync/async functions
-  const { result: syncResult, promise } = handleSyncFunction(store, initializer, options);
-  if (syncResult) {
-    return syncResult;
-  }
-
-  // Handle async operations
-  if (promise) {
-    const isFirstRender = !promises.has(cacheKey);
-    setupPromise(promise, promises, results, cacheKey, onSuccess, onError, forceUpdate);
-
-    if (isFirstRender) {
-      return {
-        data: undefined,
-        loading: true,
-        error: null,
-        refetch,
-      };
-    } else {
-      throw promise;
-    }
-  }
-
-  // Fallback (shouldn't reach here)
-  return {
-    data: undefined,
-    loading: false,
-    error: null,
-    refetch: async () => undefined as any,
-  };
+  }, [key, ...deps]);
 }

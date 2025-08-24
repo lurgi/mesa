@@ -1,6 +1,6 @@
-import type { ProxyConfig } from "./core/types";
 import { createGetHandler, createSetHandler, createDeleteHandler } from "./handlers/proxy-handlers";
 import { isObject } from "./core/utils";
+import type { ProxyConfig } from "./types";
 
 export { subscribeToPath, subscribeGlobal as subscribe } from "./core/listeners";
 export { startTracking, stopTracking } from "./core/tracking";
