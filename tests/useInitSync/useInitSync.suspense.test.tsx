@@ -238,7 +238,7 @@ describe("useInitSync Suspense Integration", () => {
 
       function App() {
         return (
-          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">Should not appear</div>}>
+          <ErrorBoundary fallback={<div data-testid="error-boundary">Should not appear</div>}>
             <Suspense fallback={<div data-testid="suspense-fallback">Should not appear</div>}>
               <TestComponent />
             </Suspense>
