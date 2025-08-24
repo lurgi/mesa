@@ -3,9 +3,6 @@
   "private": false,
   "version": "0.0.10",
   "type": "module",
-  "main": "./dist/mesa.umd.cjs",
-  "module": "./dist/mesa.js",
-  "types": "./dist/src/main.d.ts",
   "exports": {
     ".": {
       "import": "./dist/mesa.js",
@@ -41,8 +38,8 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@types/react": ">=16.8.0",
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "@types/react": ">=19.0.0",
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
   }
 }
