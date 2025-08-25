@@ -18,7 +18,9 @@ describe("useStore Suspense Integration", () => {
       return (
         <div>
           <div data-testid="data">{data || "no data"}</div>
-          <div data-testid="loading-status">{loading ? "loading" : "ready"}</div>
+          <div data-testid="loading-status">
+            {loading ? "loading" : "ready"}
+          </div>
         </div>
       );
     }
@@ -27,12 +29,9 @@ describe("useStore Suspense Integration", () => {
       useInitSync(
         store,
         async (state) => {
-          state.loading = true;
-
           await new Promise((resolve) => setTimeout(resolve, 100));
 
           state.data = "loaded data";
-          state.loading = false;
         },
         { suspense: true }
       );
@@ -44,7 +43,9 @@ describe("useStore Suspense Integration", () => {
       return (
         <div>
           <InitComponent />
-          <Suspense fallback={<div data-testid="suspense-fallback">Loading...</div>}>
+          <Suspense
+            fallback={<div data-testid="suspense-fallback">Loading...</div>}
+          >
             <DataComponent />
           </Suspense>
         </div>
@@ -78,6 +79,7 @@ describe("useStore Suspense Integration", () => {
       );
 
       const user = useStore(userStore, (s) => s.user);
+      console.log("UserSection", user);
       return <div data-testid="user-data">{user?.name || "no user"}</div>;
     }
 
@@ -98,10 +100,14 @@ describe("useStore Suspense Integration", () => {
     function App() {
       return (
         <div>
-          <Suspense fallback={<div data-testid="user-suspense">Loading user...</div>}>
+          <Suspense
+            fallback={<div data-testid="user-suspense">Loading user...</div>}
+          >
             <UserSection />
           </Suspense>
-          <Suspense fallback={<div data-testid="posts-suspense">Loading posts...</div>}>
+          <Suspense
+            fallback={<div data-testid="posts-suspense">Loading posts...</div>}
+          >
             <PostsSection />
           </Suspense>
         </div>
@@ -128,7 +134,10 @@ describe("useStore Suspense Integration", () => {
   });
 
   test("should not suspend for synchronous data access", () => {
-    const store = proxy<{ data: string; loading: boolean }>({ data: "", loading: false });
+    const store = proxy<{ data: string; loading: boolean }>({
+      data: "",
+      loading: false,
+    });
 
     function DataComponent() {
       const data = useStore(store, (s) => s.data);
@@ -150,7 +159,9 @@ describe("useStore Suspense Integration", () => {
       return (
         <div>
           <InitComponent />
-          <Suspense fallback={<div data-testid="suspense-fallback">Loading...</div>}>
+          <Suspense
+            fallback={<div data-testid="suspense-fallback">Loading...</div>}
+          >
             <DataComponent />
           </Suspense>
         </div>
