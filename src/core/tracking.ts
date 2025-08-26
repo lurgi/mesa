@@ -1,4 +1,4 @@
-import type { Tracker } from '../types';
+import type { Tracker } from "../types";
 
 let currentTracker: Tracker | null = null;
 

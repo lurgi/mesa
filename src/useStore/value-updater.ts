@@ -2,7 +2,7 @@ export class ValueUpdater {
   static updateLastValue<R>(
     newValue: R,
     isIdentitySelector: boolean,
-    lastValueRef: React.MutableRefObject<R | undefined>
+    lastValueRef: React.RefObject<R | undefined>
   ): void {
     if (Array.isArray(newValue)) {
       lastValueRef.current = [...newValue] as R;

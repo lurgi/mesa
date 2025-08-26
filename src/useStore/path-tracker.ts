@@ -2,7 +2,7 @@ import { startTracking, stopTracking } from "../proxy";
 
 export class PathTracker {
   static trackPaths<T extends object>(
-    store: T, 
+    store: T,
     selector: (state: T) => any
   ): { paths: string[]; initialValue: any } {
     const tracker = startTracking();
@@ -10,7 +10,7 @@ export class PathTracker {
     stopTracking();
 
     let paths = Array.from(tracker.paths);
-    
+
     if (paths.length === 0) {
       paths = Object.keys(store);
     }

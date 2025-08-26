@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from "@testing-library/react";
 import { Suspense } from "react";
 import { proxy, useStore, useInitSync } from "../../src/main";
 import { ErrorBoundary } from "react-error-boundary";
@@ -36,7 +42,9 @@ describe("useInitSync Error Handling", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("loading")).toHaveTextContent("ready");
-        expect(screen.getByTestId("error")).toHaveTextContent("Promise rejection error");
+        expect(screen.getByTestId("error")).toHaveTextContent(
+          "Promise rejection error"
+        );
         expect(screen.getByTestId("data")).toHaveTextContent("no data");
       });
     });
@@ -71,7 +79,9 @@ describe("useInitSync Error Handling", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("loading")).toHaveTextContent("ready");
-        expect(screen.getByTestId("error")).toHaveTextContent("Synchronous function error");
+        expect(screen.getByTestId("error")).toHaveTextContent(
+          "Synchronous function error"
+        );
         expect(screen.getByTestId("data")).toHaveTextContent("no data");
       });
     });
@@ -92,7 +102,9 @@ describe("useInitSync Error Handling", () => {
       function App() {
         return (
           <ErrorBoundary
-            fallbackRender={({ error }: any) => <div data-testid="error-boundary">Caught: {error.message}</div>}
+            fallbackRender={({ error }: any) => (
+              <div data-testid="error-boundary">Caught: {error.message}</div>
+            )}
           >
             <Suspense fallback={<div data-testid="loading">Loading...</div>}>
               <TestComponent />
@@ -108,7 +120,9 @@ describe("useInitSync Error Handling", () => {
 
       // After error, should show ErrorBoundary
       await waitFor(() => {
-        expect(screen.getByTestId("error-boundary")).toHaveTextContent("Caught: Error for boundary");
+        expect(screen.getByTestId("error-boundary")).toHaveTextContent(
+          "Caught: Error for boundary"
+        );
       });
 
       expect(screen.queryByTestId("success")).toBeNull();
@@ -128,7 +142,12 @@ describe("useInitSync Error Handling", () => {
         });
 
         if (loading) return <div data-testid="loading">Loading...</div>;
-        if (asyncError) return <div data-testid="inline-error">Inline error: {asyncError.message}</div>;
+        if (asyncError)
+          return (
+            <div data-testid="inline-error">
+              Inline error: {asyncError.message}
+            </div>
+          );
         return <div data-testid="success">Success</div>;
       }
 
@@ -136,7 +155,9 @@ describe("useInitSync Error Handling", () => {
         return (
           <ErrorBoundary
             fallbackRender={({ error }: any) => (
-              <div data-testid="error-boundary">Should not appear: {error.message}</div>
+              <div data-testid="error-boundary">
+                Should not appear: {error.message}
+              </div>
             )}
           >
             <TestComponent />
@@ -149,7 +170,9 @@ describe("useInitSync Error Handling", () => {
       expect(screen.getByTestId("loading")).toHaveTextContent("Loading...");
 
       await waitFor(() => {
-        expect(screen.getByTestId("inline-error")).toHaveTextContent("Inline error: Error not for boundary");
+        expect(screen.getByTestId("inline-error")).toHaveTextContent(
+          "Inline error: Error not for boundary"
+        );
       });
 
       expect(screen.queryByTestId("error-boundary")).toBeNull();
@@ -226,7 +249,9 @@ describe("useInitSync Error Handling", () => {
 
       // First call should fail
       await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Temporary error");
+        expect(screen.getByTestId("error")).toHaveTextContent(
+          "Temporary error"
+        );
         expect(screen.getByTestId("data")).toHaveTextContent("no data");
       });
 
@@ -262,7 +287,11 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
+          <ErrorBoundary
+            fallbackRender={({ error }: any) => (
+              <div data-testid="error-boundary">{error.message}</div>
+            )}
+          >
             <TestComponent />
           </ErrorBoundary>
         );
@@ -294,7 +323,11 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
+          <ErrorBoundary
+            fallbackRender={({ error }: any) => (
+              <div data-testid="error-boundary">{error.message}</div>
+            )}
+          >
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -328,7 +361,11 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
+          <ErrorBoundary
+            fallbackRender={({ error }: any) => (
+              <div data-testid="error-boundary">{error.message}</div>
+            )}
+          >
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -338,8 +375,12 @@ describe("useInitSync Error Handling", () => {
       render(<App />);
 
       // Should render successfully - different stores are allowed
-      expect(screen.getByTestId("component1")).toHaveTextContent("initialized1");
-      expect(screen.getByTestId("component2")).toHaveTextContent("initialized2");
+      expect(screen.getByTestId("component1")).toHaveTextContent(
+        "initialized1"
+      );
+      expect(screen.getByTestId("component2")).toHaveTextContent(
+        "initialized2"
+      );
       expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
 
@@ -361,7 +402,11 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
+          <ErrorBoundary
+            fallbackRender={({ error }: any) => (
+              <div data-testid="error-boundary">{error.message}</div>
+            )}
+          >
             <Component1 />
             <Component2 />
           </ErrorBoundary>

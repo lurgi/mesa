@@ -6,4 +6,6 @@ export interface UseInitSyncOptions {
   suspense?: boolean;
 }
 
-export type UseInitSyncInitializer<T> = T | ((state: T) => void | Promise<void>);
+export type UseInitSyncInitializer<T> =
+  | T
+  | ((state: T) => void | Promise<void>);

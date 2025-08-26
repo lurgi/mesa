@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from "@testing-library/react";
 import { proxy, useStore, useInitSync } from "../../src/main";
 import { ErrorBoundary } from "react-error-boundary";
 import { vi } from "vitest";
@@ -60,7 +66,9 @@ describe("useInitSync hook", () => {
           return null;
         }),
       };
-      Object.defineProperty(window, "localStorage", { value: mockLocalStorage });
+      Object.defineProperty(window, "localStorage", {
+        value: mockLocalStorage,
+      });
 
       type StoreType = {
         user: { name: string } | null;
@@ -156,12 +164,18 @@ describe("useInitSync hook", () => {
       }
 
       render(<TestComponent />);
-      expect(screen.getByTestId("status")).toHaveTextContent("Status: placeholder");
+      expect(screen.getByTestId("status")).toHaveTextContent(
+        "Status: placeholder"
+      );
       expect(screen.getByTestId("content")).toHaveTextContent("Loading...");
 
       await waitFor(() => {
-        expect(screen.getByTestId("status")).toHaveTextContent("Status: loaded");
-        expect(screen.getByTestId("content")).toHaveTextContent("Final content");
+        expect(screen.getByTestId("status")).toHaveTextContent(
+          "Status: loaded"
+        );
+        expect(screen.getByTestId("content")).toHaveTextContent(
+          "Final content"
+        );
       });
     });
   });
@@ -198,7 +212,9 @@ describe("useInitSync hook", () => {
         return (
           <div>
             <div data-testid="loading">{loading ? "loading" : "ready"}</div>
-            <div data-testid="data">{userData ? JSON.stringify(userData) : "no data"}</div>
+            <div data-testid="data">
+              {userData ? JSON.stringify(userData) : "no data"}
+            </div>
           </div>
         );
       }
@@ -209,7 +225,9 @@ describe("useInitSync hook", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("loading")).toHaveTextContent("ready");
-        expect(screen.getByTestId("data")).toHaveTextContent(JSON.stringify(mockUser));
+        expect(screen.getByTestId("data")).toHaveTextContent(
+          JSON.stringify(mockUser)
+        );
       });
 
       expect(asyncFn).toHaveBeenCalledWith(store);
@@ -222,7 +240,11 @@ describe("useInitSync hook", () => {
         result: string | null;
         initialized: boolean;
       };
-      const store = proxy<StoreType>({ count: 0, result: null, initialized: false });
+      const store = proxy<StoreType>({
+        count: 0,
+        result: null,
+        initialized: false,
+      });
       let callCount = 0;
 
       const asyncFn = vi.fn().mockImplementation(async (state: StoreType) => {
@@ -242,7 +264,9 @@ describe("useInitSync hook", () => {
         return (
           <div>
             <div data-testid="result">{result || "no data"}</div>
-            <div data-testid="initialized">{initialized ? "ready" : "loading"}</div>
+            <div data-testid="initialized">
+              {initialized ? "ready" : "loading"}
+            </div>
             <button
               onClick={() => {
                 store.initialized = false;
@@ -310,7 +334,9 @@ describe("useInitSync hook", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("loading")).toHaveTextContent("ready");
-        expect(screen.getByTestId("error")).toHaveTextContent("Async operation failed");
+        expect(screen.getByTestId("error")).toHaveTextContent(
+          "Async operation failed"
+        );
         expect(screen.getByTestId("data")).toHaveTextContent("no data");
       });
     });
@@ -347,7 +373,10 @@ describe("useInitSync hook", () => {
       const asyncFn = vi.fn().mockImplementation(async (state: StoreType) => {
         callCount++;
         await new Promise((resolve) => setTimeout(resolve, 10));
-        (state as any).userData = { id: state.userId, name: `User ${state.userId}` };
+        (state as any).userData = {
+          id: state.userId,
+          name: `User ${state.userId}`,
+        };
       });
 
       function TestComponent() {
@@ -360,7 +389,9 @@ describe("useInitSync hook", () => {
         return (
           <div>
             <div data-testid="call-count">{callCount}</div>
-            <div data-testid="user-data">{userData ? userData.name : "no data"}</div>
+            <div data-testid="user-data">
+              {userData ? userData.name : "no data"}
+            </div>
             <button
               onClick={() => {
                 (store as any).userId = 2;
@@ -410,7 +441,11 @@ describe("useInitSync hook", () => {
 
       function App() {
         return (
-          <ErrorBoundary fallbackRender={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
+          <ErrorBoundary
+            fallbackRender={({ error }) => (
+              <div data-testid="error-boundary">{error.message}</div>
+            )}
+          >
             <TestComponent />
           </ErrorBoundary>
         );
@@ -441,7 +476,11 @@ describe("useInitSync hook", () => {
 
       function App() {
         return (
-          <ErrorBoundary fallbackRender={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
+          <ErrorBoundary
+            fallbackRender={({ error }) => (
+              <div data-testid="error-boundary">{error.message}</div>
+            )}
+          >
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -450,8 +489,12 @@ describe("useInitSync hook", () => {
 
       render(<App />);
 
-      expect(screen.getByTestId("component1")).toHaveTextContent("initialized1");
-      expect(screen.getByTestId("component2")).toHaveTextContent("initialized2");
+      expect(screen.getByTestId("component1")).toHaveTextContent(
+        "initialized1"
+      );
+      expect(screen.getByTestId("component2")).toHaveTextContent(
+        "initialized2"
+      );
       expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
 
@@ -483,7 +526,11 @@ describe("useInitSync hook", () => {
 
       function App() {
         return (
-          <ErrorBoundary fallbackRender={({ error }) => <div data-testid="error-boundary">{error.message}</div>}>
+          <ErrorBoundary
+            fallbackRender={({ error }) => (
+              <div data-testid="error-boundary">{error.message}</div>
+            )}
+          >
             <Component1 />
             <Component2 />
           </ErrorBoundary>

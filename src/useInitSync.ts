@@ -15,7 +15,11 @@ export function useInitSync<T extends object>(
   const isInitialized = useRef(false);
   const hasSetupSuspense = useRef(false);
 
-  if (!SuspenseManager.hasSetup(store, key) && suspense && typeof initializer === "function") {
+  if (
+    !SuspenseManager.hasSetup(store, key) &&
+    suspense &&
+    typeof initializer === "function"
+  ) {
     SuspenseManager.setSetup(store, key);
     hasSetupSuspense.current = true;
     SuspenseManager.createPromise(store, initializer, onError);

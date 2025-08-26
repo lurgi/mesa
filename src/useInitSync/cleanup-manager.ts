@@ -5,8 +5,8 @@ export class CleanupManager {
   static cleanup<T extends object>(
     store: T,
     key: string,
-    isInitializedRef: React.MutableRefObject<boolean>,
-    hasSetupSuspenseRef: React.MutableRefObject<boolean>
+    isInitializedRef: React.RefObject<boolean>,
+    hasSetupSuspenseRef: React.RefObject<boolean>
   ): void {
     if (isInitializedRef.current) {
       StoreRegistry.removeKey(store, key);

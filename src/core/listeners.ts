@@ -1,20 +1,23 @@
-import type { Callback, Unsubscriber } from '../types';
-import { validateCallback } from './utils';
+import type { Callback, Unsubscriber } from "../types";
+import { validateCallback } from "./utils";
 
 const pathListeners = new Map<string, Set<Callback>>();
 const globalListeners = new Set<Callback>();
 
-export function subscribeToPath(path: string, callback: Callback): Unsubscriber {
-  validateCallback(callback, 'subscribeToPath');
-  
-  if (typeof path !== 'string') {
-    throw new Error('subscribeToPath: path must be a string');
+export function subscribeToPath(
+  path: string,
+  callback: Callback
+): Unsubscriber {
+  validateCallback(callback, "subscribeToPath");
+
+  if (typeof path !== "string") {
+    throw new Error("subscribeToPath: path must be a string");
   }
-  
+
   if (!pathListeners.has(path)) {
     pathListeners.set(path, new Set());
   }
-  
+
   const listeners = pathListeners.get(path)!;
   listeners.add(callback);
 
@@ -27,8 +30,8 @@ export function subscribeToPath(path: string, callback: Callback): Unsubscriber 
 }
 
 export function subscribeGlobal(callback: Callback): Unsubscriber {
-  validateCallback(callback, 'subscribeGlobal');
-  
+  validateCallback(callback, "subscribeGlobal");
+
   globalListeners.add(callback);
   return () => globalListeners.delete(callback);
 }

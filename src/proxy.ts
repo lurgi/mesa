@@ -1,8 +1,15 @@
-import { createGetHandler, createSetHandler, createDeleteHandler } from "./handlers/proxy-handlers";
+import {
+  createGetHandler,
+  createSetHandler,
+  createDeleteHandler,
+} from "./handlers/proxy-handlers";
 import { isObject } from "./core/utils";
 import type { ProxyConfig } from "./types";
 
-export { subscribeToPath, subscribeGlobal as subscribe } from "./core/listeners";
+export {
+  subscribeToPath,
+  subscribeGlobal as subscribe,
+} from "./core/listeners";
 export { startTracking, stopTracking } from "./core/tracking";
 
 const proxyMap = new WeakMap<object, any>();
@@ -12,7 +19,11 @@ const DEFAULT_CONFIG: Required<ProxyConfig> = {
   enableNotifications: true,
 };
 
-export function proxy<T extends object>(target: T, parentPath: string = "", config: ProxyConfig = {}): T {
+export function proxy<T extends object>(
+  target: T,
+  parentPath: string = "",
+  config: ProxyConfig = {}
+): T {
   if (proxyMap.has(target)) {
     return proxyMap.get(target);
   }
@@ -37,13 +48,18 @@ export function proxy<T extends object>(target: T, parentPath: string = "", conf
   return proxied;
 }
 
-function createProxyWithHandlers<T extends object>(target: T, parentPath: string, _config: Required<ProxyConfig>): T {
+function createProxyWithHandlers<T extends object>(
+  target: T,
+  parentPath: string,
+  _config: Required<ProxyConfig>
+): T {
   return new Proxy(target, {
     get: createGetHandler(parentPath),
     set: createSetHandler(parentPath),
     deleteProperty: createDeleteHandler(parentPath),
     has: (target, property) => Reflect.has(target, property),
     ownKeys: (target) => Reflect.ownKeys(target),
-    getOwnPropertyDescriptor: (target, property) => Reflect.getOwnPropertyDescriptor(target, property),
+    getOwnPropertyDescriptor: (target, property) =>
+      Reflect.getOwnPropertyDescriptor(target, property),
   });
 }

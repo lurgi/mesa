@@ -11,7 +11,7 @@ export class SubscriptionManager {
   static createMultipleSubscriptions(
     paths: string[],
     callback: () => void,
-    unsubscribersRef: React.MutableRefObject<Array<() => void>>
+    unsubscribersRef: React.RefObject<Array<() => void>>
   ): void {
     paths.forEach((path) => {
       const unsubscriber = this.createPathSubscription(path, callback);
@@ -20,8 +20,8 @@ export class SubscriptionManager {
   }
 
   static cleanup(
-    unsubscribersRef: React.MutableRefObject<Array<() => void>>,
-    subscribedPathsRef: React.MutableRefObject<Set<string>>
+    unsubscribersRef: React.RefObject<Array<() => void>>,
+    subscribedPathsRef: React.RefObject<Set<string>>
   ): void {
     unsubscribersRef.current.forEach((unsub) => unsub());
     unsubscribersRef.current = [];

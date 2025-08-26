@@ -19,9 +19,12 @@ export function useStore<T extends object, R = T>(
   selectorRef.current = actualSelector;
 
   const subscribe = (callback: () => void) => {
-    const { paths, initialValue } = PathTracker.trackPaths(store, selectorRef.current);
+    const { paths, initialValue } = PathTracker.trackPaths(
+      store,
+      selectorRef.current
+    );
     lastValueRef.current = initialValue;
-    
+
     subscribedPathsRef.current = new Set(paths);
     const isIdentitySelector = PathTracker.isIdentitySelector(paths, store);
 
@@ -29,8 +32,18 @@ export function useStore<T extends object, R = T>(
       return SubscriptionManager.createPathSubscription(path, () => {
         const newValue = selectorRef.current(store);
 
-        if (ValueComparator.shouldUpdateValue(newValue, lastValueRef.current, isIdentitySelector)) {
-          ValueUpdater.updateLastValue(newValue, isIdentitySelector, lastValueRef);
+        if (
+          ValueComparator.shouldUpdateValue(
+            newValue,
+            lastValueRef.current,
+            isIdentitySelector
+          )
+        ) {
+          ValueUpdater.updateLastValue(
+            newValue,
+            isIdentitySelector,
+            lastValueRef
+          );
           callback();
         }
       });
@@ -49,7 +62,11 @@ export function useStore<T extends object, R = T>(
   };
 
   const getSnapshot = (): R => {
-    return SnapshotManager.getSnapshot(store, selectorRef.current, lastValueRef);
+    return SnapshotManager.getSnapshot(
+      store,
+      selectorRef.current,
+      lastValueRef
+    );
   };
 
   useLayoutEffect(() => {

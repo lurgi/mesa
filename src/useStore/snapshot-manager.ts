@@ -4,10 +4,10 @@ export class SnapshotManager {
   static getSnapshot<T extends object, R>(
     store: T,
     selector: (state: T) => R,
-    lastValueRef: React.MutableRefObject<R | undefined>
+    lastValueRef: React.RefObject<R | undefined>
   ): R {
     const suspensePromise = getSuspensePromise(store);
-    
+
     if (suspensePromise) {
       const trackingPromise = suspensePromise
         .then(() => {
@@ -22,7 +22,7 @@ export class SnapshotManager {
     if (lastValueRef.current === undefined) {
       lastValueRef.current = selector(store);
     }
-    
+
     return lastValueRef.current;
   }
 }

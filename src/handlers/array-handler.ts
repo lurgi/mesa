@@ -1,7 +1,10 @@
 import { notifyPath } from "../core/notifications";
 import { isArrayMutationMethod, getArrayIndexRange } from "../core/utils";
 
-export function createArrayMethodHandler(originalMethod: Function, arrayPath: string): Function {
+export function createArrayMethodHandler(
+  originalMethod: Function,
+  arrayPath: string
+): Function {
   return function (this: any[], ...args: any[]): any {
     const originalLength = this.length;
     const result = originalMethod.apply(this, args);
@@ -30,7 +33,11 @@ export function handleArrayMethodCall(
   return undefined;
 }
 
-function notifyArrayChanges(arrayPath: string, originalLength: number, newLength: number): void {
+function notifyArrayChanges(
+  arrayPath: string,
+  originalLength: number,
+  newLength: number
+): void {
   notifyPath(arrayPath);
   notifyPath(`${arrayPath}.length`);
 
