@@ -1,6 +1,10 @@
 import { useSyncExternalStore, useRef, useLayoutEffect } from "react";
-import { subscribeToPath, startTracking, stopTracking } from "./proxy";
-import { getSuspensePromise } from "./useInitSync";
+import { PathTracker } from "./useStore/path-tracker";
+import { SubscriptionManager } from "./useStore/subscription-manager";
+import { ValueComparator } from "./useStore/value-comparator";
+import { ValueUpdater } from "./useStore/value-updater";
+import { SnapshotManager } from "./useStore/snapshot-manager";
+import { CleanupSubscription } from "./useStore/cleanup-subscription";
 
 export function useStore<T extends object, R = T>(
   store: T,
@@ -15,83 +19,21 @@ export function useStore<T extends object, R = T>(
   selectorRef.current = actualSelector;
 
   const subscribe = (callback: () => void) => {
-    const tracker = startTracking();
-    const initialValue = selectorRef.current(store);
-    stopTracking();
-
+    const { paths, initialValue } = PathTracker.trackPaths(store, selectorRef.current);
     lastValueRef.current = initialValue;
-    let paths = Array.from(tracker.paths);
-
-    if (paths.length === 0) {
-      paths = Object.keys(store);
-    }
-
+    
     subscribedPathsRef.current = new Set(paths);
-
-    const isIdentitySelector =
-      paths.length === Object.keys(store).length &&
-      paths.every((p) => Object.keys(store).includes(p));
+    const isIdentitySelector = PathTracker.isIdentitySelector(paths, store);
 
     const createPathSubscription = (path: string) => {
-      return subscribeToPath(path, () => {
+      return SubscriptionManager.createPathSubscription(path, () => {
         const newValue = selectorRef.current(store);
 
-        if (
-          shouldUpdateValue(newValue, lastValueRef.current, isIdentitySelector)
-        ) {
-          updateLastValue(newValue, isIdentitySelector);
+        if (ValueComparator.shouldUpdateValue(newValue, lastValueRef.current, isIdentitySelector)) {
+          ValueUpdater.updateLastValue(newValue, isIdentitySelector, lastValueRef);
           callback();
         }
       });
-    };
-
-    const shouldUpdateValue = (
-      newValue: R,
-      oldValue: R | undefined,
-      isIdentity: boolean
-    ): boolean => {
-      if (Array.isArray(newValue) || isIdentity) {
-        return true;
-      }
-
-      if (!Object.is(oldValue, newValue)) {
-        return true;
-      }
-
-      if (
-        typeof newValue === "object" &&
-        newValue !== null &&
-        oldValue !== null
-      ) {
-        return hasObjectChanges(newValue, oldValue as any);
-      }
-
-      return false;
-    };
-
-    const hasObjectChanges = (newValue: any, oldValue: any): boolean => {
-      return (
-        Object.keys(newValue).some(
-          (key) => !Object.is(oldValue[key], newValue[key])
-        ) ||
-        Object.keys(oldValue).some(
-          (key) => !Object.is(oldValue[key], newValue[key])
-        )
-      );
-    };
-
-    const updateLastValue = (newValue: R, isIdentity: boolean): void => {
-      if (Array.isArray(newValue)) {
-        lastValueRef.current = [...newValue] as R;
-      } else if (
-        typeof newValue === "object" &&
-        newValue !== null &&
-        isIdentity
-      ) {
-        lastValueRef.current = { ...newValue } as R;
-      } else {
-        lastValueRef.current = newValue;
-      }
     };
 
     paths.forEach((path) => {
@@ -100,35 +42,18 @@ export function useStore<T extends object, R = T>(
     });
 
     const cleanup = () => {
-      unsubscribersRef.current.forEach((unsub) => unsub());
-      unsubscribersRef.current = [];
-      subscribedPathsRef.current.clear();
+      SubscriptionManager.cleanup(unsubscribersRef, subscribedPathsRef);
     };
 
     return cleanup;
   };
 
   const getSnapshot = (): R => {
-    const suspensePromise = getSuspensePromise(store);
-    if (suspensePromise) {
-      const trackingPromise = suspensePromise.then(() => {
-        lastValueRef.current = undefined;
-      }).catch(() => {
-        lastValueRef.current = undefined;
-      });
-      throw trackingPromise;
-    }
-
-    if (lastValueRef.current === undefined) {
-      lastValueRef.current = selectorRef.current(store);
-    }
-    return lastValueRef.current;
+    return SnapshotManager.getSnapshot(store, selectorRef.current, lastValueRef);
   };
 
   useLayoutEffect(() => {
-    return () => {
-      unsubscribersRef.current.forEach((unsub) => unsub());
-    };
+    return CleanupSubscription.cleanupOnUnmount(unsubscribersRef);
   }, []);
 
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

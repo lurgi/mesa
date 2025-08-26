@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { UseInitSyncInitializer, UseInitSyncOptions } from "./types/hooks";
-import { StoreRegistry } from "./core/store-registry";
-import { SuspenseManager } from "./core/suspense-manager";
-import { StoreValidator } from "./core/store-validator";
-import { InitializerExecutor } from "./core/initializer-executor";
-import { CleanupManager } from "./core/cleanup-manager";
+import { StoreRegistry } from "./useInitSync/store-registry";
+import { SuspenseManager } from "./useInitSync/suspense-manager";
+import { StoreValidator } from "./useInitSync/store-validator";
+import { InitializerExecutor } from "./useInitSync/initializer-executor";
+import { CleanupManager } from "./useInitSync/cleanup-manager";
 
 export function useInitSync<T extends object>(
   store: T,
