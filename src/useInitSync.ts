@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
-import type { UseInitSyncInitializer, UseInitSyncOptions } from "./types";
-
-const storeRegistry = new WeakMap<object, Set<string>>();
-const suspensePromises = new WeakMap<object, Promise<void>>();
-const suspenseSetup = new WeakMap<object, Map<string, boolean>>();
+import type { UseInitSyncInitializer, UseInitSyncOptions } from "./types/hooks";
+import { StoreRegistry } from "./core/store-registry";
+import { SuspenseManager } from "./core/suspense-manager";
+import { StoreValidator } from "./core/store-validator";
+import { InitializerExecutor } from "./core/initializer-executor";
+import { CleanupManager } from "./core/cleanup-manager";
 
 export function useInitSync<T extends object>(
   store: T,
@@ -14,75 +15,28 @@ export function useInitSync<T extends object>(
   const isInitialized = useRef(false);
   const hasSetupSuspense = useRef(false);
 
-  if (!storeRegistry.has(store)) {
-    storeRegistry.set(store, new Set<string>());
-  }
-
-  if (!suspenseSetup.has(store)) {
-    suspenseSetup.set(store, new Map<string, boolean>());
-  }
-
-  const keys = storeRegistry.get(store)!;
-  const setupMap = suspenseSetup.get(store)!;
-
-  if (!setupMap.has(key) && suspense && typeof initializer === "function") {
-    setupMap.set(key, true);
+  if (!SuspenseManager.hasSetup(store, key) && suspense && typeof initializer === "function") {
+    SuspenseManager.setSetup(store, key);
     hasSetupSuspense.current = true;
-
-    const result = initializer(store);
-    if (result instanceof Promise) {
-      const suspensePromise = result
-        .then(() => {
-          suspensePromises.delete(store);
-        })
-        .catch((error) => {
-          suspensePromises.delete(store);
-          onError?.(error as Error);
-        });
-      suspensePromises.set(store, suspensePromise);
-    }
+    SuspenseManager.createPromise(store, initializer, onError);
   }
 
   useEffect(() => {
-    if (keys.has(key) && !isInitialized.current) {
-      throw new Error("Multiple useInitSync calls detected on the same store");
-    }
+    StoreValidator.validateSingleUse(store, key, isInitialized.current);
 
     if (!isInitialized.current) {
-      keys.add(key);
+      StoreRegistry.addKey(store, key);
       isInitialized.current = true;
 
       if (!suspense) {
-        const execute = async () => {
-          try {
-            if (typeof initializer === "function") {
-              const result = initializer(store);
-              if (result instanceof Promise) {
-                await result;
-              }
-            } else {
-              Object.assign(store, initializer as Partial<T>);
-            }
-          } catch (error) {
-            onError?.(error as Error);
-          }
-        };
-
-        execute();
+        InitializerExecutor.executeAsync(store, initializer, onError);
       } else {
-        if (typeof initializer !== "function") {
-          Object.assign(store, initializer as Partial<T>);
-        }
+        InitializerExecutor.executeSync(store, initializer);
       }
     }
 
     return () => {
-      if (isInitialized.current) {
-        keys.delete(key);
-        setupMap.delete(key);
-        isInitialized.current = false;
-        hasSetupSuspense.current = false;
-      }
+      CleanupManager.cleanup(store, key, isInitialized, hasSetupSuspense);
     };
   }, [key, ...deps]);
 }
@@ -90,5 +44,5 @@ export function useInitSync<T extends object>(
 export function getSuspensePromise<T extends object>(
   store: T
 ): Promise<void> | undefined {
-  return suspensePromises.get(store);
+  return SuspenseManager.getPromise(store);
 }
