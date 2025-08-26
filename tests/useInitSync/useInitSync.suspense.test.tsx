@@ -87,7 +87,7 @@ describe("useStore Suspense Integration", () => {
       useInitSync(
         postsStore,
         async (state) => {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 300));
           state.posts = [{ id: 1, title: "Post 1" }];
         },
         { suspense: true }
