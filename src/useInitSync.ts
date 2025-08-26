@@ -3,6 +3,7 @@ import type { UseInitSyncInitializer, UseInitSyncOptions } from "./types";
 
 const storeRegistry = new WeakMap<object, Set<string>>();
 const suspensePromises = new WeakMap<object, Promise<void>>();
+const suspenseSetup = new WeakMap<object, Map<string, boolean>>();
 
 export function useInitSync<T extends object>(
   store: T,
@@ -17,14 +18,17 @@ export function useInitSync<T extends object>(
     storeRegistry.set(store, new Set<string>());
   }
 
-  const keys = storeRegistry.get(store)!;
+  if (!suspenseSetup.has(store)) {
+    suspenseSetup.set(store, new Map<string, boolean>());
+  }
 
-  if (
-    !hasSetupSuspense.current &&
-    suspense &&
-    typeof initializer === "function"
-  ) {
+  const keys = storeRegistry.get(store)!;
+  const setupMap = suspenseSetup.get(store)!;
+
+  if (!setupMap.has(key) && suspense && typeof initializer === "function") {
+    setupMap.set(key, true);
     hasSetupSuspense.current = true;
+
     const result = initializer(store);
     if (result instanceof Promise) {
       const suspensePromise = result
@@ -66,7 +70,6 @@ export function useInitSync<T extends object>(
 
         execute();
       } else {
-        // For suspense cases, only handle non-function initializers here
         if (typeof initializer !== "function") {
           Object.assign(store, initializer as Partial<T>);
         }
@@ -76,6 +79,7 @@ export function useInitSync<T extends object>(
     return () => {
       if (isInitialized.current) {
         keys.delete(key);
+        setupMap.delete(key);
         isInitialized.current = false;
         hasSetupSuspense.current = false;
       }

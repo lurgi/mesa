@@ -22,7 +22,6 @@ export function useStore<T extends object, R = T>(
     lastValueRef.current = initialValue;
     let paths = Array.from(tracker.paths);
 
-    // If no paths are tracked, use all keys of the store
     if (paths.length === 0) {
       paths = Object.keys(store);
     }
@@ -112,7 +111,12 @@ export function useStore<T extends object, R = T>(
   const getSnapshot = (): R => {
     const suspensePromise = getSuspensePromise(store);
     if (suspensePromise) {
-      throw suspensePromise;
+      const trackingPromise = suspensePromise.then(() => {
+        lastValueRef.current = undefined;
+      }).catch(() => {
+        lastValueRef.current = undefined;
+      });
+      throw trackingPromise;
     }
 
     if (lastValueRef.current === undefined) {
