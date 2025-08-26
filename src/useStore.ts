@@ -1,9 +1,11 @@
 import { useSyncExternalStore, useRef, useLayoutEffect } from "react";
 import { subscribeToPath, startTracking, stopTracking } from "./proxy";
+import { getSuspensePromise } from "./useInitSync";
 
-const suspensePromiseCache = new WeakMap<object, Promise<void>>();
-
-export function useStore<T extends object, R = T>(store: T, selector?: (state: T) => R): R {
+export function useStore<T extends object, R = T>(
+  store: T,
+  selector?: (state: T) => R
+): R {
   const actualSelector = selector || ((state: T) => state as unknown as R);
   const selectorRef = useRef(actualSelector);
   const subscribedPathsRef = useRef<Set<string>>(new Set());
@@ -24,49 +26,69 @@ export function useStore<T extends object, R = T>(store: T, selector?: (state: T
     if (paths.length === 0) {
       paths = Object.keys(store);
     }
-    
 
     subscribedPathsRef.current = new Set(paths);
 
     const isIdentitySelector =
-      paths.length === Object.keys(store).length && paths.every((p) => Object.keys(store).includes(p));
+      paths.length === Object.keys(store).length &&
+      paths.every((p) => Object.keys(store).includes(p));
 
     const createPathSubscription = (path: string) => {
       return subscribeToPath(path, () => {
         const newValue = selectorRef.current(store);
-        
-        if (shouldUpdateValue(newValue, lastValueRef.current, isIdentitySelector)) {
+
+        if (
+          shouldUpdateValue(newValue, lastValueRef.current, isIdentitySelector)
+        ) {
           updateLastValue(newValue, isIdentitySelector);
           callback();
         }
       });
     };
 
-    const shouldUpdateValue = (newValue: R, oldValue: R | undefined, isIdentity: boolean): boolean => {
+    const shouldUpdateValue = (
+      newValue: R,
+      oldValue: R | undefined,
+      isIdentity: boolean
+    ): boolean => {
       if (Array.isArray(newValue) || isIdentity) {
         return true;
       }
-      
+
       if (!Object.is(oldValue, newValue)) {
         return true;
       }
-      
-      if (typeof newValue === "object" && newValue !== null && oldValue !== null) {
+
+      if (
+        typeof newValue === "object" &&
+        newValue !== null &&
+        oldValue !== null
+      ) {
         return hasObjectChanges(newValue, oldValue as any);
       }
-      
+
       return false;
     };
 
     const hasObjectChanges = (newValue: any, oldValue: any): boolean => {
-      return Object.keys(newValue).some((key) => !Object.is(oldValue[key], newValue[key])) ||
-             Object.keys(oldValue).some((key) => !Object.is(oldValue[key], newValue[key]));
+      return (
+        Object.keys(newValue).some(
+          (key) => !Object.is(oldValue[key], newValue[key])
+        ) ||
+        Object.keys(oldValue).some(
+          (key) => !Object.is(oldValue[key], newValue[key])
+        )
+      );
     };
 
     const updateLastValue = (newValue: R, isIdentity: boolean): void => {
       if (Array.isArray(newValue)) {
         lastValueRef.current = [...newValue] as R;
-      } else if (typeof newValue === "object" && newValue !== null && isIdentity) {
+      } else if (
+        typeof newValue === "object" &&
+        newValue !== null &&
+        isIdentity
+      ) {
         lastValueRef.current = { ...newValue } as R;
       } else {
         lastValueRef.current = newValue;
@@ -88,24 +110,11 @@ export function useStore<T extends object, R = T>(store: T, selector?: (state: T
   };
 
   const getSnapshot = (): R => {
-    if ((store as any).__mesa_loading === true) {
-      if (!suspensePromiseCache.has(store)) {
-        const loadingPromise = new Promise<void>((resolve) => {
-          const checkLoading = () => {
-            if ((store as any).__mesa_loading === false) {
-              suspensePromiseCache.delete(store);
-              resolve();
-            } else {
-              setTimeout(checkLoading, 1);
-            }
-          };
-          checkLoading();
-        });
-        suspensePromiseCache.set(store, loadingPromise);
-      }
-      throw suspensePromiseCache.get(store)!;
+    const suspensePromise = getSuspensePromise(store);
+    if (suspensePromise) {
+      throw suspensePromise;
     }
-    
+
     if (lastValueRef.current === undefined) {
       lastValueRef.current = selectorRef.current(store);
     }
