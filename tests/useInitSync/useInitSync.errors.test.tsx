@@ -200,21 +200,38 @@ describe("useInitSync Error Handling", () => {
         return <div data-testid="success">Should not render</div>;
       }
 
-      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      let thrownError: Error | null = null;
+      function GlobalErrorBoundary({ children }: { children: React.ReactNode }) {
+        return (
+          <ErrorBoundary
+            fallbackRender={({ error }: any) => {
+              thrownError = error;
+              return <div data-testid="global-error">Global error caught</div>;
+            }}
+            onError={(error) => {
+              thrownError = error;
+            }}
+          >
+            {children}
+          </ErrorBoundary>
+        );
+      }
 
       render(
-        <Suspense fallback={<div data-testid="loading">Loading...</div>}>
-          <TestComponent />
-        </Suspense>
+        <GlobalErrorBoundary>
+          <Suspense fallback={<div data-testid="loading">Loading...</div>}>
+            <TestComponent />
+          </Suspense>
+        </GlobalErrorBoundary>
       );
 
       expect(screen.getByTestId("loading")).toHaveTextContent("Loading...");
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(error);
+        expect(thrownError).toBeTruthy();
+        expect(thrownError?.message).toBe("Uncaught error");
+        expect(screen.getByTestId("global-error")).toBeInTheDocument();
       });
-
-      consoleSpy.mockRestore();
     });
   });
 
