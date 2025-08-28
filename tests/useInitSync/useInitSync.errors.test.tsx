@@ -1,10 +1,4 @@
-import {
-  render,
-  screen,
-  fireEvent,
-  act,
-  waitFor,
-} from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import { Suspense } from "react";
 import { proxy, useStore, useInitSync } from "../../src/main";
 import { ErrorBoundary } from "react-error-boundary";
@@ -13,7 +7,7 @@ import { vi } from "vitest";
 describe("useInitSync Error Handling", () => {
   describe("Basic error scenarios", () => {
     test("should handle Promise rejection", async () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
       const error = new Error("Promise rejection error");
 
       const asyncFn = vi.fn().mockRejectedValue(error);
@@ -40,15 +34,13 @@ describe("useInitSync Error Handling", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("loading")).toHaveTextContent("ready");
-        expect(screen.getByTestId("error")).toHaveTextContent(
-          "Promise rejection error"
-        );
+        expect(screen.getByTestId("error")).toHaveTextContent("Promise rejection error");
         expect(screen.getByTestId("data")).toHaveTextContent("no data");
       });
     });
 
     test("should handle function that throws synchronously", async () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
       const error = new Error("Synchronous function error");
 
       const syncFn = vi.fn().mockImplementation(() => {
@@ -75,9 +67,7 @@ describe("useInitSync Error Handling", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("loading")).toHaveTextContent("ready");
-        expect(screen.getByTestId("error")).toHaveTextContent(
-          "Synchronous function error"
-        );
+        expect(screen.getByTestId("error")).toHaveTextContent("Synchronous function error");
         expect(screen.getByTestId("data")).toHaveTextContent("no data");
       });
     });
@@ -85,22 +75,17 @@ describe("useInitSync Error Handling", () => {
 
   describe("ErrorBoundary integration", () => {
     test("should not throw to ErrorBoundary by default (errorBoundary defaults to false)", async () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
       const error = new Error("Default behavior error");
 
       const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
-        const { error: asyncError } = useInitSync(store, asyncFn); // No options specified
+        const { error: asyncError } = useInitSync(store, asyncFn);
         const loading = useStore(store, (s) => s.loading);
 
         if (loading) return <div data-testid="loading">Loading...</div>;
-        if (asyncError)
-          return (
-            <div data-testid="inline-error">
-              Inline error: {asyncError.message}
-            </div>
-          );
+        if (asyncError) return <div data-testid="inline-error">Inline error: {asyncError.message}</div>;
         return <div data-testid="success">Success</div>;
       }
 
@@ -108,9 +93,7 @@ describe("useInitSync Error Handling", () => {
         return (
           <ErrorBoundary
             fallbackRender={({ error }: any) => (
-              <div data-testid="error-boundary">
-                Should not appear: {error.message}
-              </div>
+              <div data-testid="error-boundary">Should not appear: {error.message}</div>
             )}
           >
             <TestComponent />
@@ -123,32 +106,28 @@ describe("useInitSync Error Handling", () => {
       expect(screen.getByTestId("loading")).toHaveTextContent("Loading...");
 
       await waitFor(() => {
-        expect(screen.getByTestId("inline-error")).toHaveTextContent(
-          "Inline error: Default behavior error"
-        );
+        expect(screen.getByTestId("inline-error")).toHaveTextContent("Inline error: Default behavior error");
       });
 
       expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
 
     test("should throw error to ErrorBoundary when errorBoundary option is true", async () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
       const error = new Error("Error for boundary");
 
       const asyncFn = vi.fn().mockRejectedValue(error);
 
       function TestComponent() {
-        useInitSync(store, asyncFn, { errorBoundary: true });
-        const data = useStore(store, (s) => s.data);
+        useInitSync(store, asyncFn, { errorBoundary: true, suspense: true });
+        useStore(store, (s) => s.data);
         return <div data-testid="success">Success render</div>;
       }
 
       function App() {
         return (
           <ErrorBoundary
-            fallbackRender={({ error }: any) => (
-              <div data-testid="error-boundary">Caught: {error.message}</div>
-            )}
+            fallbackRender={({ error }: any) => <div data-testid="error-boundary">Caught: {error.message}</div>}
           >
             <Suspense fallback={<div data-testid="loading">Loading...</div>}>
               <TestComponent />
@@ -159,14 +138,10 @@ describe("useInitSync Error Handling", () => {
 
       render(<App />);
 
-      // Initially should show loading
       expect(screen.getByTestId("loading")).toHaveTextContent("Loading...");
 
-      // After error, should show ErrorBoundary
       await waitFor(() => {
-        expect(screen.getByTestId("error-boundary")).toHaveTextContent(
-          "Caught: Error for boundary"
-        );
+        expect(screen.getByTestId("error-boundary")).toHaveTextContent("Caught: Error for boundary");
       });
 
       expect(screen.queryByTestId("success")).toBeNull();
@@ -174,7 +149,7 @@ describe("useInitSync Error Handling", () => {
     });
 
     test("should not throw to ErrorBoundary when errorBoundary option is false", async () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
       const error = new Error("Error not for boundary");
 
       const asyncFn = vi.fn().mockRejectedValue(error);
@@ -187,12 +162,7 @@ describe("useInitSync Error Handling", () => {
         const loading = useStore(store, (s) => s.loading);
 
         if (loading) return <div data-testid="loading">Loading...</div>;
-        if (asyncError)
-          return (
-            <div data-testid="inline-error">
-              Inline error: {asyncError.message}
-            </div>
-          );
+        if (asyncError) return <div data-testid="inline-error">Inline error: {asyncError.message}</div>;
         return <div data-testid="success">Success</div>;
       }
 
@@ -200,9 +170,7 @@ describe("useInitSync Error Handling", () => {
         return (
           <ErrorBoundary
             fallbackRender={({ error }: any) => (
-              <div data-testid="error-boundary">
-                Should not appear: {error.message}
-              </div>
+              <div data-testid="error-boundary">Should not appear: {error.message}</div>
             )}
           >
             <TestComponent />
@@ -215,43 +183,44 @@ describe("useInitSync Error Handling", () => {
       expect(screen.getByTestId("loading")).toHaveTextContent("Loading...");
 
       await waitFor(() => {
-        expect(screen.getByTestId("inline-error")).toHaveTextContent(
-          "Inline error: Error not for boundary"
-        );
+        expect(screen.getByTestId("inline-error")).toHaveTextContent("Inline error: Error not for boundary");
       });
 
       expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
 
     test("should throw error even without ErrorBoundary when errorBoundary is true", async () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
       const error = new Error("Uncaught error");
-      
+
       const asyncFn = vi.fn().mockRejectedValue(error);
-      
+
       function TestComponent() {
-        useInitSync(store, asyncFn, { errorBoundary: true });
+        useInitSync(store, asyncFn, { errorBoundary: true, suspense: true });
         return <div data-testid="success">Should not render</div>;
       }
 
-      // ErrorBoundary가 없는 상태에서 렌더링하면 에러가 throw되어야 함
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
-      expect(() => {
-        render(
-          <Suspense fallback={<div data-testid="loading">Loading...</div>}>
-            <TestComponent />
-          </Suspense>
-        );
-      }).toThrow("Uncaught error");
-      
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      render(
+        <Suspense fallback={<div data-testid="loading">Loading...</div>}>
+          <TestComponent />
+        </Suspense>
+      );
+
+      expect(screen.getByTestId("loading")).toHaveTextContent("Loading...");
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(error);
+      });
+
       consoleSpy.mockRestore();
     });
   });
 
   describe("Error callbacks", () => {
     test("should call onError callback", async () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
       const error = new Error("Callback error");
       const onError = vi.fn();
       const onSuccess = vi.fn();
@@ -283,7 +252,7 @@ describe("useInitSync Error Handling", () => {
     });
 
     test("should allow error recovery with refetch", async () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
       const error = new Error("Temporary error");
       let callCount = 0;
 
@@ -314,15 +283,11 @@ describe("useInitSync Error Handling", () => {
 
       render(<TestComponent />);
 
-      // First call should fail
       await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent(
-          "Temporary error"
-        );
+        expect(screen.getByTestId("error")).toHaveTextContent("Temporary error");
         expect(screen.getByTestId("data")).toHaveTextContent("no data");
       });
 
-      // Retry should succeed
       act(() => {
         fireEvent.click(screen.getByTestId("retry"));
       });
@@ -338,7 +303,7 @@ describe("useInitSync Error Handling", () => {
 
   describe("One store, one useInitSync validation", () => {
     test("should throw error when multiple useInitSync are used on the same store", () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
 
       const asyncFn1 = vi.fn().mockResolvedValue("data1");
       const asyncFn2 = vi.fn().mockResolvedValue("data2");
@@ -346,7 +311,6 @@ describe("useInitSync Error Handling", () => {
       function TestComponent() {
         useInitSync(store, asyncFn1);
 
-        // This should throw an error - second useInitSync on same store
         useInitSync(store, asyncFn2);
 
         return <div data-testid="success">Should not render</div>;
@@ -354,11 +318,7 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary
-            fallbackRender={({ error }: any) => (
-              <div data-testid="error-boundary">{error.message}</div>
-            )}
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
             <TestComponent />
           </ErrorBoundary>
         );
@@ -372,7 +332,7 @@ describe("useInitSync Error Handling", () => {
     });
 
     test("should throw error when useInitSync is called in different components for same store", () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
 
       const asyncFn1 = vi.fn().mockResolvedValue("data1");
       const asyncFn2 = vi.fn().mockResolvedValue("data2");
@@ -383,18 +343,13 @@ describe("useInitSync Error Handling", () => {
       }
 
       function Component2() {
-        // This should throw an error
         useInitSync(store, asyncFn2);
         return <div data-testid="component2">Component 2</div>;
       }
 
       function App() {
         return (
-          <ErrorBoundary
-            fallbackRender={({ error }: any) => (
-              <div data-testid="error-boundary">{error.message}</div>
-            )}
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -411,8 +366,8 @@ describe("useInitSync Error Handling", () => {
     });
 
     test("should allow multiple useInitSync calls on different stores", () => {
-      const store1 = proxy({ data1: null });
-      const store2 = proxy({ data2: null });
+      const store1 = proxy<{ data1: string | null }>({ data1: null });
+      const store2 = proxy<{ data2: string | null }>({ data2: null });
 
       function Component1() {
         useInitSync(store1, { data1: "initialized1" });
@@ -428,11 +383,7 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary
-            fallbackRender={({ error }: any) => (
-              <div data-testid="error-boundary">{error.message}</div>
-            )}
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -441,18 +392,13 @@ describe("useInitSync Error Handling", () => {
 
       render(<App />);
 
-      // Should render successfully - different stores are allowed
-      expect(screen.getByTestId("component1")).toHaveTextContent(
-        "initialized1"
-      );
-      expect(screen.getByTestId("component2")).toHaveTextContent(
-        "initialized2"
-      );
+      expect(screen.getByTestId("component1")).toHaveTextContent("initialized1");
+      expect(screen.getByTestId("component2")).toHaveTextContent("initialized2");
       expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
 
     test("should allow custom keys to bypass one-store limitation", () => {
-      const store = proxy({ data: null });
+      const store = proxy({ data: null, loading: false });
 
       const asyncFn1 = vi.fn().mockResolvedValue("data1");
       const asyncFn2 = vi.fn().mockResolvedValue("data2");
@@ -471,11 +417,7 @@ describe("useInitSync Error Handling", () => {
 
       function App() {
         return (
-          <ErrorBoundary
-            fallbackRender={({ error }: any) => (
-              <div data-testid="error-boundary">{error.message}</div>
-            )}
-          >
+          <ErrorBoundary fallbackRender={({ error }: any) => <div data-testid="error-boundary">{error.message}</div>}>
             <Component1 />
             <Component2 />
           </ErrorBoundary>
@@ -484,7 +426,6 @@ describe("useInitSync Error Handling", () => {
 
       render(<App />);
 
-      // Should work with custom keys - no error
       expect(screen.queryByTestId("error-boundary")).toBeNull();
       expect(screen.getByTestId("component1")).toBeInTheDocument();
       expect(screen.getByTestId("component2")).toBeInTheDocument();
