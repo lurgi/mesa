@@ -2,6 +2,7 @@ import type { UseInitSyncInitializer } from "../types/hooks";
 
 const suspensePromises = new WeakMap<object, Promise<void>>();
 const suspenseSetup = new WeakMap<object, Map<string, boolean>>();
+const errorBoundaryErrors = new WeakMap<object, Error>();
 
 export class SuspenseManager {
   static getSetupMap<T extends object>(store: T): Map<string, boolean> {
@@ -29,7 +30,8 @@ export class SuspenseManager {
   static createPromise<T extends object>(
     store: T,
     initializer: UseInitSyncInitializer<T>,
-    onError?: (error: Error) => void
+    onError?: (error: Error) => void,
+    errorBoundary: boolean = false
   ): void {
     if (typeof initializer !== "function") return;
 
@@ -40,8 +42,18 @@ export class SuspenseManager {
           suspensePromises.delete(store);
         })
         .catch((error) => {
-          suspensePromises.delete(store);
           onError?.(error as Error);
+          if (errorBoundary) {
+            // For ErrorBoundary integration, store the error and remove the promise
+            // This will allow the component to re-render and then throw the error
+            errorBoundaryErrors.set(store, error);
+            suspensePromises.delete(store);
+            return Promise.resolve(); // Resolve so suspense ends and component re-renders
+          } else {
+            // For non-errorBoundary errors, resolve the promise so suspense ends
+            suspensePromises.delete(store);
+            return Promise.resolve();
+          }
         });
       suspensePromises.set(store, suspensePromise);
     }
@@ -49,5 +61,13 @@ export class SuspenseManager {
 
   static getPromise<T extends object>(store: T): Promise<void> | undefined {
     return suspensePromises.get(store);
+  }
+
+  static getErrorBoundaryError<T extends object>(store: T): Error | undefined {
+    return errorBoundaryErrors.get(store);
+  }
+
+  static clearErrorBoundaryError<T extends object>(store: T): void {
+    errorBoundaryErrors.delete(store);
   }
 }

@@ -1,5 +1,8 @@
 import { StoreRegistry } from "./store-registry";
 import { SuspenseManager } from "./suspense-manager";
+import { LoadingManager } from "./loading-manager";
+import { ErrorManager } from "./error-manager";
+import type React from "react";
 
 export class CleanupManager {
   static cleanup<T extends object>(
@@ -11,6 +14,8 @@ export class CleanupManager {
     if (isInitializedRef.current) {
       StoreRegistry.removeKey(store, key);
       SuspenseManager.removeSetup(store, key);
+      LoadingManager.removeLoading(store, key);
+      ErrorManager.removeError(store, key);
       isInitializedRef.current = false;
       hasSetupSuspenseRef.current = false;
     }
