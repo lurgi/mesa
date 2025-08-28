@@ -19,8 +19,11 @@ export class InitializerExecutor {
         result = initializer(store);
         if (result instanceof Promise) {
           result = await result;
-          // If the promise resolves to a value, assign it to store.data
-          if (result !== undefined && result !== null && typeof result !== 'object') {
+          if (
+            result !== undefined &&
+            result !== null &&
+            typeof result !== "object"
+          ) {
             (store as any).data = result;
           }
         }
@@ -35,7 +38,7 @@ export class InitializerExecutor {
       const errorObj = error as Error;
       ErrorManager.setError(store, key, errorObj);
       onError?.(errorObj);
-      throw errorObj; // Re-throw for error boundary handling
+      throw errorObj;
     }
   }
 
@@ -62,7 +65,7 @@ export class InitializerExecutor {
       const errorObj = error as Error;
       ErrorManager.setError(store, key, errorObj);
       onError?.(errorObj);
-      throw errorObj; // Re-throw for error boundary handling
+      throw errorObj;
     }
   }
 }

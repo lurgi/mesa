@@ -1,5 +1,5 @@
 import { getSuspensePromise } from "../useInitSync";
-import { SuspenseManager } from "../useInitSync/suspense-manager";
+import { ErrorManager } from "../useInitSync/error-manager";
 
 export class SnapshotManager {
   static getSnapshot<T extends object, R>(
@@ -9,10 +9,8 @@ export class SnapshotManager {
   ): R {
     const suspensePromise = getSuspensePromise(store);
 
-    // Check for ErrorBoundary errors first
-    const errorBoundaryError = SuspenseManager.getErrorBoundaryError(store);
+    const errorBoundaryError = ErrorManager.getErrorBoundaryError(store);
     if (errorBoundaryError) {
-      // Don't clear immediately - let ErrorBoundary handle it first
       throw errorBoundaryError;
     }
 
@@ -23,7 +21,6 @@ export class SnapshotManager {
         })
         .catch((error) => {
           lastValueRef.current = undefined;
-          // Re-throw the error so ErrorBoundary can catch it
           throw error;
         });
       throw trackingPromise;

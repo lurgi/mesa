@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { UseInitSyncInitializer, UseInitSyncOptions, UseInitSyncReturn } from "./types/hooks";
+import type {
+  UseInitSyncInitializer,
+  UseInitSyncOptions,
+  UseInitSyncReturn,
+} from "./types/hooks";
 import { StoreRegistry } from "./useInitSync/store-registry";
 import { SuspenseManager } from "./useInitSync/suspense-manager";
 import { StoreValidator } from "./useInitSync/store-validator";
@@ -13,20 +17,19 @@ export function useInitSync<T extends object>(
   initializer: UseInitSyncInitializer<T>,
   options: UseInitSyncOptions = {}
 ): UseInitSyncReturn {
-  const { 
-    key = "default", 
-    onError, 
+  const {
+    key = "default",
+    onError,
     onSuccess,
-    deps = [], 
-    suspense = false, 
-    errorBoundary = false 
+    deps = [],
+    suspense = false,
+    errorBoundary = false,
   } = options;
-  
+
   const isInitialized = useRef(false);
   const hasSetupSuspense = useRef(false);
   const [, forceUpdate] = useState({});
 
-  // Force re-render when error state changes
   const triggerUpdate = useCallback(() => {
     forceUpdate({});
   }, []);
@@ -37,23 +40,43 @@ export function useInitSync<T extends object>(
     const execute = async () => {
       try {
         if (!suspense) {
-          await InitializerExecutor.executeAsync(store, initializer, key, onError, onSuccess);
+          await InitializerExecutor.executeAsync(
+            store,
+            initializer,
+            key,
+            onError,
+            onSuccess
+          );
         } else {
-          InitializerExecutor.executeSync(store, initializer, key, onError, onSuccess);
+          InitializerExecutor.executeSync(
+            store,
+            initializer,
+            key,
+            onError,
+            onSuccess
+          );
         }
         triggerUpdate();
       } catch (error) {
         triggerUpdate();
         if (errorBoundary) {
-          throw error; // Re-throw for ErrorBoundary
+          throw error;
         }
       }
     };
 
     execute();
-  }, [store, initializer, key, onError, onSuccess, suspense, errorBoundary, triggerUpdate]);
+  }, [
+    store,
+    initializer,
+    key,
+    onError,
+    onSuccess,
+    suspense,
+    errorBoundary,
+    triggerUpdate,
+  ]);
 
-  // Handle suspense setup outside of useEffect
   if (
     !SuspenseManager.hasSetup(store, key) &&
     suspense &&
@@ -64,15 +87,12 @@ export function useInitSync<T extends object>(
     SuspenseManager.createPromise(store, initializer, onError, errorBoundary);
   }
 
-  // When errorBoundary is true and suspense is enabled, useInitSync needs to handle throwing
-  // This is for cases where there's no useStore call in the component
   if (suspense && errorBoundary) {
-    const errorBoundaryError = SuspenseManager.getErrorBoundaryError(store);
+    const errorBoundaryError = ErrorManager.getErrorBoundaryError(store);
     if (errorBoundaryError) {
       throw errorBoundaryError;
     }
-    
-    // If there's a suspense promise, throw it (for components without useStore)
+
     const suspensePromise = SuspenseManager.getPromise(store);
     if (suspensePromise) {
       throw suspensePromise;
@@ -89,15 +109,27 @@ export function useInitSync<T extends object>(
       const execute = async () => {
         try {
           if (!suspense) {
-            await InitializerExecutor.executeAsync(store, initializer, key, onError, onSuccess);
+            await InitializerExecutor.executeAsync(
+              store,
+              initializer,
+              key,
+              onError,
+              onSuccess
+            );
           } else {
-            InitializerExecutor.executeSync(store, initializer, key, onError, onSuccess);
+            InitializerExecutor.executeSync(
+              store,
+              initializer,
+              key,
+              onError,
+              onSuccess
+            );
           }
           triggerUpdate();
         } catch (error) {
           triggerUpdate();
           if (errorBoundary) {
-            throw error; // Re-throw for ErrorBoundary
+            throw error;
           }
         }
       };
@@ -110,7 +142,6 @@ export function useInitSync<T extends object>(
     };
   }, [key, ...deps]);
 
-  // Get current error state
   const error = ErrorManager.getError(store, key);
 
   return { error, refetch };

@@ -1,7 +1,7 @@
 const storeRegistry = new WeakMap<object, Set<string>>();
 
 export class StoreRegistry {
-  static getKeys<T extends object>(store: T): Set<string> {
+  private static getKeys<T extends object>(store: T): Set<string> {
     if (!storeRegistry.has(store)) {
       storeRegistry.set(store, new Set<string>());
     }

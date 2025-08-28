@@ -15,7 +15,7 @@ export class CleanupManager {
       StoreRegistry.removeKey(store, key);
       SuspenseManager.removeSetup(store, key);
       LoadingManager.removeLoading(store, key);
-      ErrorManager.removeError(store, key);
+      ErrorManager.clearError(store, key);
       isInitializedRef.current = false;
       hasSetupSuspenseRef.current = false;
     }
