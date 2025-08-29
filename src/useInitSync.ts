@@ -10,7 +10,6 @@ import { StoreValidator } from "./useInitSync/store-validator";
 import { InitializerExecutor } from "./useInitSync/initializer-executor";
 import { CleanupManager } from "./useInitSync/cleanup-manager";
 import { ErrorManager } from "./useInitSync/error-manager";
-import { LoadingManager } from "./useInitSync/loading-manager";
 
 export function useInitSync<T extends object>(
   store: T,
