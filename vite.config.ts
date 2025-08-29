@@ -19,5 +19,9 @@ export default defineConfig({
       },
     },
   },
-  plugins: [dts()],
+  plugins: [
+    dts({
+      entryRoot: "src",
+    }),
+  ],
 });

@@ -5,7 +5,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/src/main.d.ts",
+      "types": "./dist/main.d.ts",
       "import": "./dist/mesa.js",
       "require": "./dist/mesa.umd.cjs"
     }

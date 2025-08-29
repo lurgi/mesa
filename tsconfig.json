@@ -25,5 +25,5 @@
     "jsx": "react-jsx",
     "esModuleInterop": true
   },
-  "include": ["src", "tests", "vitest.d.ts"]
+  "include": ["src", "tests", "vitest.d.ts", "setupTests.ts"]
 }
