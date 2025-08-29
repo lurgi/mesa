@@ -21,9 +21,11 @@
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
     "dev": "cd landing && npm run dev",
-    "patch": "npm version patch && npm publish",
-    "minor": "npm version minor && npm publish",
-    "major": "npm version major && npm publish"
+    "publish-beta:patch": "npm version prerelease --preid=beta && npm publish --tag beta",
+    "publish-beta:minor": "npm version preminor --preid=beta && npm publish --tag beta",
+    "publish-beta:major": "npm version premajor --preid=beta && npm publish --tag beta",
+    "promote-beta": "npm version patch && npm publish --tag latest",
+    "update-landing": "cd landing && npm install mesa-react@beta"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.4",
