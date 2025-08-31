@@ -249,7 +249,6 @@ describe("useInitSync hook", () => {
 
       const asyncFn = vi.fn().mockImplementation(async (state: StoreType) => {
         callCount++;
-        // Simulate async operation
         await new Promise((resolve) => setTimeout(resolve, 10));
         (state as any).result = `result-${callCount}`;
         (state as any).initialized = true;
@@ -433,7 +432,6 @@ describe("useInitSync hook", () => {
       function TestComponent() {
         useInitSync(store, asyncFn1);
 
-        // This should throw an error - second useInitSync on same store
         useInitSync(store, asyncFn2);
 
         return <div data-testid="success">Should not render</div>;
@@ -498,29 +496,26 @@ describe("useInitSync hook", () => {
       expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
 
-    test("should allow custom keys to bypass one-store limitation", () => {
-      type StoreType = {
-        data1: string | null;
-        data2: string | null;
-      };
-      const store = proxy<StoreType>({ data1: null, data2: null });
+    test("should require separate stores for different concerns", () => {
+      const store1 = proxy<{ data1: string | null }>({ data1: null });
+      const store2 = proxy<{ data2: string | null }>({ data2: null });
 
-      const asyncFn1 = vi.fn().mockImplementation(async (state: StoreType) => {
-        (state as any).data1 = "data1";
+      const asyncFn1 = vi.fn().mockImplementation(async (state: any) => {
+        state.data1 = "data1";
       });
-      const asyncFn2 = vi.fn().mockImplementation(async (state: StoreType) => {
-        (state as any).data2 = "data2";
+      const asyncFn2 = vi.fn().mockImplementation(async (state: any) => {
+        state.data2 = "data2";
       });
 
       function Component1() {
-        useInitSync(store, asyncFn1, { key: "operation-1" });
-        const data1 = useStore(store, (s) => s.data1);
+        useInitSync(store1, asyncFn1);
+        const data1 = useStore(store1, (s) => s.data1);
         return <div data-testid="component1">{data1 || "loading1"}</div>;
       }
 
       function Component2() {
-        useInitSync(store, asyncFn2, { key: "operation-2" });
-        const data2 = useStore(store, (s) => s.data2);
+        useInitSync(store2, asyncFn2);
+        const data2 = useStore(store2, (s) => s.data2);
         return <div data-testid="component2">{data2 || "loading2"}</div>;
       }
 
@@ -541,6 +536,63 @@ describe("useInitSync hook", () => {
       expect(screen.queryByTestId("error-boundary")).toBeNull();
       expect(screen.getByTestId("component1")).toBeInTheDocument();
       expect(screen.getByTestId("component2")).toBeInTheDocument();
+    });
+
+    test("should allow coordinated initialization in single useInitSync", async () => {
+      type StoreType = {
+        data1: string | null;
+        data2: string | null;
+        loading: boolean;
+      };
+      const store = proxy<StoreType>({ data1: null, data2: null, loading: true });
+
+      const coordinated = vi.fn().mockImplementation(async (state: StoreType) => {
+        await Promise.all([
+          new Promise(resolve => setTimeout(resolve, 10)),
+          new Promise(resolve => setTimeout(resolve, 10))
+        ]);
+        
+        (state as any).data1 = "coordinated-data1";
+        (state as any).data2 = "coordinated-data2";
+        (state as any).loading = false;
+      });
+
+      function CoordinatedComponent() {
+        useInitSync(store, coordinated);
+        const { data1, data2, loading } = useStore(store, (s) => s);
+        
+        if (loading) return <div data-testid="loading">Loading...</div>;
+        
+        return (
+          <div>
+            <div data-testid="data1">{data1 || "no-data1"}</div>
+            <div data-testid="data2">{data2 || "no-data2"}</div>
+          </div>
+        );
+      }
+
+      function App() {
+        return (
+          <ErrorBoundary
+            fallbackRender={({ error }) => (
+              <div data-testid="error-boundary">{error.message}</div>
+            )}
+          >
+            <CoordinatedComponent />
+          </ErrorBoundary>
+        );
+      }
+
+      render(<App />);
+      
+      expect(screen.getByTestId("loading")).toBeInTheDocument();
+      
+      await waitFor(() => {
+        expect(screen.getByTestId("data1")).toHaveTextContent("coordinated-data1");
+        expect(screen.getByTestId("data2")).toHaveTextContent("coordinated-data2");
+      });
+      
+      expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
   });
 });

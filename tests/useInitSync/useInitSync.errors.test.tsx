@@ -414,21 +414,26 @@ describe("useInitSync Error Handling", () => {
       expect(screen.queryByTestId("error-boundary")).toBeNull();
     });
 
-    test("should allow custom keys to bypass one-store limitation", () => {
-      const store = proxy({ data: null, loading: false });
+    test("should enforce separate stores for different concerns", () => {
+      const store1 = proxy({ data: null, loading: false });
+      const store2 = proxy({ data: null, loading: false });
 
       const asyncFn1 = vi.fn().mockResolvedValue("data1");
       const asyncFn2 = vi.fn().mockResolvedValue("data2");
 
       function Component1() {
-        useInitSync(store, asyncFn1, { key: "operation-1" });
-        const data = useStore(store, (s) => s.data);
+        useInitSync(store1, async (state: any) => {
+          state.data = await asyncFn1();
+        });
+        const data = useStore(store1, (s) => s.data);
         return <div data-testid="component1">{data || "loading1"}</div>;
       }
 
       function Component2() {
-        useInitSync(store, asyncFn2, { key: "operation-2" });
-        const data = useStore(store, (s) => s.data);
+        useInitSync(store2, async (state: any) => {
+          state.data = await asyncFn2();
+        });
+        const data = useStore(store2, (s) => s.data);
         return <div data-testid="component2">{data || "loading2"}</div>;
       }
 
