@@ -1,33 +1,20 @@
-const loadingStates = new WeakMap<object, Map<string, boolean>>();
+const loadingStates = new WeakMap<object, boolean>();
 
 export class LoadingManager {
-  private static getLoadingMap<T extends object>(
-    store: T
-  ): Map<string, boolean> {
-    if (!loadingStates.has(store)) {
-      loadingStates.set(store, new Map<string, boolean>());
-    }
-    return loadingStates.get(store)!;
-  }
-
   static setLoading<T extends object>(
     store: T,
-    key: string,
     loading: boolean
   ): void {
-    const loadingMap = this.getLoadingMap(store);
-    loadingMap.set(key, loading);
-
+    loadingStates.set(store, loading);
     (store as any).loading = loading;
   }
 
-  static removeLoading<T extends object>(store: T, key: string): void {
-    const loadingMap = this.getLoadingMap(store);
-    loadingMap.delete(key);
+  static removeLoading<T extends object>(store: T): void {
+    loadingStates.delete(store);
+    (store as any).loading = false;
+  }
 
-    const hasLoadingOperations = Array.from(loadingMap.values()).some(
-      (loading) => loading
-    );
-    (store as any).loading = hasLoadingOperations;
+  static getLoading<T extends object>(store: T): boolean {
+    return loadingStates.get(store) || false;
   }
 }

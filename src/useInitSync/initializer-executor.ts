@@ -6,12 +6,11 @@ export class InitializerExecutor {
   static async executeAsync<T extends object>(
     store: T,
     initializer: UseInitSyncInitializer<T>,
-    key: string,
     onError?: (error: Error) => void,
     onSuccess?: (data: any) => void
   ): Promise<void> {
-    LoadingManager.setLoading(store, key, true);
-    ErrorManager.clearError(store, key);
+    LoadingManager.setLoading(store, true);
+    ErrorManager.clearError(store);
 
     try {
       let result: any;
@@ -31,12 +30,12 @@ export class InitializerExecutor {
         Object.assign(store, initializer as Partial<T>);
         result = store;
       }
-      LoadingManager.setLoading(store, key, false);
+      LoadingManager.setLoading(store, false);
       onSuccess?.(result);
     } catch (error) {
-      LoadingManager.setLoading(store, key, false);
+      LoadingManager.setLoading(store, false);
       const errorObj = error as Error;
-      ErrorManager.setError(store, key, errorObj);
+      ErrorManager.setError(store, errorObj);
       onError?.(errorObj);
       throw errorObj;
     }
@@ -45,12 +44,11 @@ export class InitializerExecutor {
   static executeSync<T extends object>(
     store: T,
     initializer: UseInitSyncInitializer<T>,
-    key: string,
     onError?: (error: Error) => void,
     onSuccess?: (data: any) => void
   ): void {
-    LoadingManager.setLoading(store, key, true);
-    ErrorManager.clearError(store, key);
+    LoadingManager.setLoading(store, true);
+    ErrorManager.clearError(store);
 
     try {
       if (typeof initializer === "function") {
@@ -58,12 +56,12 @@ export class InitializerExecutor {
       } else {
         Object.assign(store, initializer as Partial<T>);
       }
-      LoadingManager.setLoading(store, key, false);
+      LoadingManager.setLoading(store, false);
       onSuccess?.(store);
     } catch (error) {
-      LoadingManager.setLoading(store, key, false);
+      LoadingManager.setLoading(store, false);
       const errorObj = error as Error;
-      ErrorManager.setError(store, key, errorObj);
+      ErrorManager.setError(store, errorObj);
       onError?.(errorObj);
       throw errorObj;
     }

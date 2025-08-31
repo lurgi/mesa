@@ -1,5 +1,4 @@
 export interface UseInitSyncOptions {
-  key?: string;
   deps?: any[];
   onSuccess?: (data: any) => void;
   onError?: (error: Error) => void;

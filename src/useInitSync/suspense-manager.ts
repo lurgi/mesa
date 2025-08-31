@@ -2,29 +2,19 @@ import type { UseInitSyncInitializer } from "../types/hooks";
 import { ErrorManager } from "./error-manager";
 
 const suspensePromises = new WeakMap<object, Promise<void>>();
-const suspenseSetup = new WeakMap<object, Map<string, boolean>>();
+const suspenseSetup = new WeakMap<object, boolean>();
 
 export class SuspenseManager {
-  private static getSetupMap<T extends object>(store: T): Map<string, boolean> {
-    if (!suspenseSetup.has(store)) {
-      suspenseSetup.set(store, new Map<string, boolean>());
-    }
-    return suspenseSetup.get(store)!;
+  static hasSetup<T extends object>(store: T): boolean {
+    return suspenseSetup.get(store) || false;
   }
 
-  static hasSetup<T extends object>(store: T, key: string): boolean {
-    const setupMap = this.getSetupMap(store);
-    return setupMap.has(key);
+  static setSetup<T extends object>(store: T): void {
+    suspenseSetup.set(store, true);
   }
 
-  static setSetup<T extends object>(store: T, key: string): void {
-    const setupMap = this.getSetupMap(store);
-    setupMap.set(key, true);
-  }
-
-  static removeSetup<T extends object>(store: T, key: string): void {
-    const setupMap = this.getSetupMap(store);
-    setupMap.delete(key);
+  static removeSetup<T extends object>(store: T): void {
+    suspenseSetup.delete(store);
   }
 
   static createPromise<T extends object>(

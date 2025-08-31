@@ -4,7 +4,6 @@ import type {
   UseInitSyncOptions,
   UseInitSyncReturn,
 } from "./types/hooks";
-import { StoreRegistry } from "./useInitSync/store-registry";
 import { SuspenseManager } from "./useInitSync/suspense-manager";
 import { StoreValidator } from "./useInitSync/store-validator";
 import { InitializerExecutor } from "./useInitSync/initializer-executor";
@@ -17,7 +16,6 @@ export function useInitSync<T extends object>(
   options: UseInitSyncOptions = {}
 ): UseInitSyncReturn {
   const {
-    key = "default",
     onError,
     onSuccess,
     deps = [],
@@ -42,7 +40,6 @@ export function useInitSync<T extends object>(
           await InitializerExecutor.executeAsync(
             store,
             initializer,
-            key,
             onError,
             onSuccess
           );
@@ -50,7 +47,6 @@ export function useInitSync<T extends object>(
           InitializerExecutor.executeSync(
             store,
             initializer,
-            key,
             onError,
             onSuccess
           );
@@ -68,7 +64,6 @@ export function useInitSync<T extends object>(
   }, [
     store,
     initializer,
-    key,
     onError,
     onSuccess,
     suspense,
@@ -77,11 +72,11 @@ export function useInitSync<T extends object>(
   ]);
 
   if (
-    !SuspenseManager.hasSetup(store, key) &&
+    !SuspenseManager.hasSetup(store) &&
     suspense &&
     typeof initializer === "function"
   ) {
-    SuspenseManager.setSetup(store, key);
+    SuspenseManager.setSetup(store);
     hasSetupSuspense.current = true;
     SuspenseManager.createPromise(store, initializer, onError, errorBoundary);
   }
@@ -99,10 +94,10 @@ export function useInitSync<T extends object>(
   }
 
   useEffect(() => {
-    StoreValidator.validateSingleUse(store, key, isInitialized.current);
+    StoreValidator.validateSingleUse(store, isInitialized.current);
 
     if (!isInitialized.current) {
-      StoreRegistry.addKey(store, key);
+      StoreValidator.markAsInitialized(store);
       isInitialized.current = true;
 
       const execute = async () => {
@@ -111,7 +106,6 @@ export function useInitSync<T extends object>(
             await InitializerExecutor.executeAsync(
               store,
               initializer,
-              key,
               onError,
               onSuccess
             );
@@ -119,7 +113,6 @@ export function useInitSync<T extends object>(
             InitializerExecutor.executeSync(
               store,
               initializer,
-              key,
               onError,
               onSuccess
             );
@@ -137,11 +130,11 @@ export function useInitSync<T extends object>(
     }
 
     return () => {
-      CleanupManager.cleanup(store, key, isInitialized, hasSetupSuspense);
+      CleanupManager.cleanup(store, isInitialized, hasSetupSuspense);
     };
-  }, [key, ...deps]);
+  }, [...deps]);
 
-  const error = ErrorManager.getError(store, key);
+  const error = ErrorManager.getError(store);
 
   return { error, refetch };
 }
