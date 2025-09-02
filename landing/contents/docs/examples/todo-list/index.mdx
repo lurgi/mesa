@@ -879,8 +879,437 @@ describe("Professional Todo Dashboard", () => {
 
 This professional todo dashboard showcases Mesa's ability to handle complex, real-world applications with multiple interconnected features while maintaining optimal performance through fine-grained reactivity.
 
+## Data Initialization with useInitSync
+
+For real-world applications, you'll often need to initialize your todo list with data from APIs, localStorage, or user preferences. Here's how to enhance the todo dashboard with `useInitSync`:
+
+```jsx
+import { proxy, useStore, useInitSync } from "mesa-react";
+
+// Enhanced todo state with initialization support
+const enhancedTodoState = proxy({
+  todos: [],
+  categories: [],
+  userPreferences: {
+    theme: "light",
+    defaultPriority: "medium",
+    defaultCategory: "General",
+    viewMode: "list",
+  },
+  filters: {
+    status: "all",
+    priority: "all", 
+    category: "all",
+    search: "",
+  },
+  loading: true,
+  error: null,
+  initialized: false,
+});
+
+// Mock API functions
+const fetchUserTodos = async (userId) => {
+  // Simulate API call
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        {
+          id: 1,
+          text: "Review quarterly performance metrics",
+          completed: false,
+          priority: "high",
+          category: "Work",
+          createdAt: "2024-01-10",
+          dueDate: "2024-01-15",
+        },
+        {
+          id: 2,
+          text: "Complete React hooks tutorial",
+          completed: true,
+          priority: "medium", 
+          category: "Learning",
+          createdAt: "2024-01-08",
+        },
+        {
+          id: 3,
+          text: "Update project documentation",
+          completed: false,
+          priority: "low",
+          category: "Documentation", 
+          createdAt: "2024-01-12",
+          dueDate: "2024-01-20",
+        },
+      ]);
+    }, 800);
+  });
+};
+
+const fetchUserPreferences = async (userId) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        theme: "dark",
+        defaultPriority: "medium",
+        defaultCategory: "Work",
+        viewMode: "grid",
+        savedFilters: {
+          status: "active",
+          priority: "all",
+          category: "Work",
+        }
+      });
+    }, 500);
+  });
+};
+
+const fetchAvailableCategories = async () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        "General",
+        "Work", 
+        "Learning",
+        "Personal",
+        "Health",
+        "Documentation",
+        "Meeting",
+        "Shopping"
+      ]);
+    }, 300);
+  });
+};
+
+// Enhanced TodoApp with initialization
+function EnhancedTodoApp({ userId = "user123" }) {
+  // Initialize all todo data and user preferences
+  const { error, refetch } = useInitSync(enhancedTodoState, async (state) => {
+    state.loading = true;
+    state.error = null;
+
+    try {
+      // Load data in parallel for better performance
+      const [todos, preferences, categories] = await Promise.all([
+        fetchUserTodos(userId),
+        fetchUserPreferences(userId),
+        fetchAvailableCategories(),
+      ]);
+
+      // Update state atomically
+      state.todos = todos;
+      state.userPreferences = preferences;
+      state.categories = categories;
+      
+      // Apply saved filter preferences
+      if (preferences.savedFilters) {
+        state.filters = { ...state.filters, ...preferences.savedFilters };
+      }
+      
+      state.initialized = true;
+      
+    } catch (error) {
+      state.error = error.message;
+      console.error("Failed to initialize todo app:", error);
+    } finally {
+      state.loading = false;
+    }
+  }, {
+    deps: [userId], // Re-initialize when user changes
+    onSuccess: () => {
+      console.log("Todo app initialized successfully");
+    },
+    onError: (error) => {
+      console.error("Todo initialization failed:", error);
+    }
+  });
+
+  const { loading, initialized, error: initError } = useStore(enhancedTodoState, s => ({
+    loading: s.loading,
+    initialized: s.initialized,
+    error: s.error
+  }));
+
+  if (loading && !initialized) {
+    return <TodoLoadingSkeleton />;
+  }
+
+  if (initError) {
+    return <TodoErrorDisplay error={initError} onRetry={refetch} />;
+  }
+
+  return (
+    <div className="enhanced-todo-app">
+      <TodoHeader />
+      <div className="todo-layout">
+        <TodoSidebar />
+        <TodoMainContent />
+      </div>
+    </div>
+  );
+}
+
+// Loading skeleton for todos
+function TodoLoadingSkeleton() {
+  return (
+    <div className="todo-skeleton">
+      <div className="skeleton-header">
+        <div className="skeleton-line skeleton-title"></div>
+        <div className="skeleton-line skeleton-subtitle"></div>
+      </div>
+      
+      <div className="skeleton-stats">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="skeleton-stat-card"></div>
+        ))}
+      </div>
+      
+      <div className="skeleton-todos">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="skeleton-todo-item">
+            <div className="skeleton-checkbox"></div>
+            <div className="skeleton-text"></div>
+            <div className="skeleton-badge"></div>
+          </div>
+        ))}
+      </div>
+      
+      <style jsx>{`
+        .skeleton-line, .skeleton-stat-card, .skeleton-todo-item > div {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading 1.5s infinite;
+        }
+        
+        @keyframes skeleton-loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// Error display component
+function TodoErrorDisplay({ error, onRetry }) {
+  return (
+    <div className="todo-error">
+      <div className="error-content">
+        <div className="error-icon">⚠️</div>
+        <h2>Failed to Load Todos</h2>
+        <p>{error}</p>
+        <div className="error-actions">
+          <button onClick={onRetry} className="retry-button">
+            Try Again
+          </button>
+          <button onClick={() => window.location.reload()} className="refresh-button">
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Enhanced components with access to initialized data
+function TodoHeader() {
+  const { userPreferences, todos } = useStore(enhancedTodoState, s => ({
+    userPreferences: s.userPreferences,
+    todos: s.todos
+  }));
+
+  const completedCount = todos.filter(t => t.completed).length;
+  const completionRate = todos.length > 0 ? Math.round((completedCount / todos.length) * 100) : 0;
+
+  return (
+    <header className={`todo-header theme-${userPreferences.theme}`}>
+      <h1>My Todo Dashboard</h1>
+      <div className="progress-indicator">
+        <div className="progress-circle">
+          <span>{completionRate}%</span>
+        </div>
+        <div className="progress-stats">
+          <p>{completedCount} of {todos.length} completed</p>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function TodoSidebar() {
+  const categories = useStore(enhancedTodoState, s => s.categories);
+  const userPreferences = useStore(enhancedTodoState, s => s.userPreferences);
+
+  return (
+    <aside className="todo-sidebar">
+      <AddTodoForm categories={categories} defaultCategory={userPreferences.defaultCategory} />
+      <TodoAnalytics />
+      <CategoryFilter categories={categories} />
+    </aside>
+  );
+}
+
+function AddTodoForm({ categories, defaultCategory }) {
+  const [newTodo, setNewTodo] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [category, setCategory] = useState(defaultCategory);
+  
+  const addTodo = () => {
+    if (newTodo.trim()) {
+      enhancedTodoState.todos.push({
+        id: Date.now(),
+        text: newTodo.trim(),
+        completed: false,
+        priority,
+        category,
+        createdAt: new Date().toISOString(),
+      });
+      setNewTodo("");
+      
+      // Save to backend/localStorage
+      saveTodoChanges();
+    }
+  };
+
+  return (
+    <form className="add-todo-form" onSubmit={(e) => { e.preventDefault(); addTodo(); }}>
+      <input
+        type="text"
+        value={newTodo}
+        onChange={(e) => setNewTodo(e.target.value)}
+        placeholder="Add a new todo..."
+        className="todo-input"
+      />
+      
+      <div className="todo-form-controls">
+        <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+          <option value="low">Low Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="high">High Priority</option>
+        </select>
+        
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          {categories.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+      
+      <button type="submit" disabled={!newTodo.trim()}>
+        Add Todo
+      </button>
+    </form>
+  );
+}
+
+// Helper function to persist changes
+const saveTodoChanges = async () => {
+  try {
+    // In a real app, this would save to your backend
+    const dataToSave = {
+      todos: enhancedTodoState.todos,
+      filters: enhancedTodoState.filters,
+      userPreferences: enhancedTodoState.userPreferences,
+    };
+    
+    localStorage.setItem('enhanced-todos', JSON.stringify(dataToSave));
+    
+    // Optionally sync with backend
+    // await fetch('/api/todos', { method: 'PUT', body: JSON.stringify(dataToSave) });
+    
+  } catch (error) {
+    console.error('Failed to save todo changes:', error);
+  }
+};
+```
+
+### Key Initialization Patterns
+
+#### 1. Parallel Data Loading
+
+```jsx
+// Load all required data sources concurrently
+const [todos, preferences, categories] = await Promise.all([
+  fetchUserTodos(userId),
+  fetchUserPreferences(userId), 
+  fetchAvailableCategories(),
+]);
+```
+
+#### 2. Progressive Enhancement
+
+```jsx
+useInitSync(todoState, async (state) => {
+  // Load critical data first
+  state.todos = await fetchUserTodos(userId);
+  state.initialized = true; // App is usable
+  
+  // Load enhancements in background
+  const preferences = await fetchUserPreferences(userId);
+  state.userPreferences = preferences;
+});
+```
+
+#### 3. Offline-First with Fallbacks
+
+```jsx
+useInitSync(todoState, async (state) => {
+  try {
+    // Try to load from server first
+    const serverTodos = await fetchUserTodos(userId);
+    state.todos = serverTodos;
+    
+    // Cache for offline use
+    localStorage.setItem('todos-cache', JSON.stringify(serverTodos));
+  } catch (error) {
+    // Fall back to cached data
+    const cachedTodos = JSON.parse(localStorage.getItem('todos-cache') || '[]');
+    state.todos = cachedTodos;
+    
+    // Show offline indicator
+    state.isOffline = true;
+  }
+});
+```
+
+#### 4. User-Specific Initialization
+
+```jsx
+function TodoApp({ userId }) {
+  useInitSync(todoState, async (state) => {
+    if (!userId) {
+      // Guest user - load sample todos
+      state.todos = getSampleTodos();
+      state.userPreferences = getDefaultPreferences();
+      return;
+    }
+    
+    // Authenticated user - load their data
+    const [todos, prefs] = await Promise.all([
+      fetchUserTodos(userId),
+      fetchUserPreferences(userId)
+    ]);
+    
+    state.todos = todos;
+    state.userPreferences = prefs;
+  }, {
+    deps: [userId] // Re-run when user changes
+  });
+}
+```
+
+### Benefits of Todo Initialization
+
+1. **Seamless User Experience**: Data loads transparently while showing appropriate loading states
+2. **Personalization**: User preferences and saved filters are automatically applied
+3. **Performance**: Parallel data loading reduces initial load time
+4. **Offline Capability**: Graceful fallbacks to cached data when network is unavailable
+5. **Error Recovery**: Clear error states with retry functionality
+
 ## See Also
 
+- **[useInitSync() API](/docs/api/useInitSync)** - Complete initialization API reference
+- **[User Profile Example](/docs/examples/user-profile)** - Async data loading patterns  
+- **[Shopping Cart Example](/docs/examples/shopping-cart)** - Multiple stores architecture
+- **[Dashboard Example](/docs/examples/dashboard)** - Coordinated initialization
 - **[Counter Example](/docs/examples/counter)** - Basic state management patterns
 - **[API Reference](/docs/api/proxy)** - Complete Mesa API documentation
 - **[Fine-Grained Guide](/docs/guides/fine-grained)** - Deep dive into Mesa's reactivity system

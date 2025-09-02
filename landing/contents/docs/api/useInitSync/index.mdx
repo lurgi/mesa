@@ -1,0 +1,557 @@
+---
+title: useInitSync()
+description: React hook for initializing proxy state with data fetching and loading states.
+---
+
+The `useInitSync()` hook provides a declarative way to initialize your proxy state, handle loading states, and manage async data fetching. It enforces the "One Store, One Initialization" pattern for predictable state management.
+
+## Syntax
+
+```typescript
+function useInitSync<T extends object>(
+  store: T,
+  initializer: UseInitSyncInitializer<T>,
+  options?: UseInitSyncOptions
+): UseInitSyncReturn
+```
+
+### Parameters
+
+- **`store`** - A proxy object created with `proxy()`
+- **`initializer`** - Either a plain object to merge into the store, or a function that modifies the store state
+- **`options`** _(optional)_ - Configuration options for error handling, dependencies, etc.
+
+### Returns
+
+Returns an object with:
+- **`error`** - Any error that occurred during initialization
+- **`refetch`** - Function to re-run the initialization
+
+## Basic Usage
+
+### Direct Value Initialization
+
+```jsx
+import { proxy, useStore, useInitSync } from "mesa-react";
+
+const userStore = proxy({
+  name: "",
+  email: "",
+  loading: true,
+});
+
+function UserProfile() {
+  // Initialize with direct values
+  useInitSync(userStore, {
+    name: "John Doe",
+    email: "john@example.com",
+    loading: false,
+  });
+
+  const user = useStore(userStore);
+
+  if (user.loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+    </div>
+  );
+}
+```
+
+### Function-Based Initialization
+
+```jsx
+const counterStore = proxy({
+  count: 0,
+  lastUpdated: null,
+});
+
+function Counter() {
+  // Initialize with a function
+  useInitSync(counterStore, (state) => {
+    state.count = 10;
+    state.lastUpdated = new Date().toISOString();
+  });
+
+  const { count, lastUpdated } = useStore(counterStore);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Last updated: {lastUpdated}</p>
+      <button onClick={() => counterStore.count++}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+## Async Data Fetching
+
+### Basic Async Initialization
+
+```jsx
+const userStore = proxy({
+  user: null,
+  loading: true,
+  error: null,
+});
+
+// Mock API function
+const fetchUser = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        id: 1,
+        name: "John Doe",
+        email: "john@example.com",
+        avatar: "https://example.com/avatar.jpg",
+      });
+    }, 1000);
+  });
+};
+
+function UserProfile() {
+  useInitSync(userStore, async (state) => {
+    state.loading = true;
+    state.error = null;
+    
+    try {
+      const user = await fetchUser();
+      state.user = user;
+    } catch (error) {
+      state.error = error.message;
+    } finally {
+      state.loading = false;
+    }
+  });
+
+  const { user, loading, error } = useStore(userStore);
+
+  if (loading) return <div>Loading user...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!user) return <div>No user found</div>;
+
+  return (
+    <div>
+      <img src={user.avatar} alt={user.name} />
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+    </div>
+  );
+}
+```
+
+### Multiple Data Sources
+
+```jsx
+const dashboardStore = proxy({
+  user: null,
+  stats: null,
+  notifications: [],
+  loading: true,
+  error: null,
+});
+
+const fetchDashboardData = async () => {
+  // Simulate multiple API calls
+  const [user, stats, notifications] = await Promise.all([
+    new Promise(resolve => setTimeout(() => resolve({
+      name: "John Doe",
+      role: "Admin"
+    }), 500)),
+    new Promise(resolve => setTimeout(() => resolve({
+      totalUsers: 1234,
+      activeUsers: 856,
+      revenue: "$12,345"
+    }), 800)),
+    new Promise(resolve => setTimeout(() => resolve([
+      { id: 1, message: "Welcome back!", type: "info" },
+      { id: 2, message: "You have 3 new messages", type: "alert" }
+    ]), 300))
+  ]);
+
+  return { user, stats, notifications };
+};
+
+function Dashboard() {
+  useInitSync(dashboardStore, async (state) => {
+    state.loading = true;
+    state.error = null;
+
+    try {
+      const { user, stats, notifications } = await fetchDashboardData();
+      state.user = user;
+      state.stats = stats;
+      state.notifications = notifications;
+    } catch (error) {
+      state.error = error.message;
+    } finally {
+      state.loading = false;
+    }
+  });
+
+  const { user, stats, notifications, loading, error } = useStore(dashboardStore);
+
+  if (loading) return <div>Loading dashboard...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      <h1>Welcome, {user?.name}</h1>
+      <div className="stats">
+        <div>Total Users: {stats?.totalUsers}</div>
+        <div>Active Users: {stats?.activeUsers}</div>
+        <div>Revenue: {stats?.revenue}</div>
+      </div>
+      <div className="notifications">
+        {notifications.map(notif => (
+          <div key={notif.id} className={notif.type}>
+            {notif.message}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Configuration Options
+
+```typescript
+interface UseInitSyncOptions {
+  deps?: any[];                    // Dependencies that trigger re-initialization
+  onSuccess?: (data: any) => void; // Success callback
+  onError?: (error: Error) => void;// Error callback
+  suspense?: boolean;              // Enable React Suspense
+  errorBoundary?: boolean;         // Throw errors to Error Boundary
+}
+```
+
+### Dependency Tracking
+
+```jsx
+function UserProfile({ userId }) {
+  useInitSync(userStore, async (state) => {
+    state.loading = true;
+    const user = await fetchUser(userId);
+    state.user = user;
+    state.loading = false;
+  }, {
+    deps: [userId] // Re-run when userId changes
+  });
+
+  const { user, loading } = useStore(userStore);
+  
+  return loading ? <div>Loading...</div> : <UserCard user={user} />;
+}
+```
+
+### Error Handling
+
+```jsx
+function DataComponent() {
+  const [retryCount, setRetryCount] = useState(0);
+
+  const { error, refetch } = useInitSync(dataStore, async (state) => {
+    const data = await fetchData();
+    state.data = data;
+  }, {
+    onError: (error) => {
+      console.error("Data fetch failed:", error);
+      // Could trigger toast notification
+    },
+    onSuccess: (data) => {
+      console.log("Data loaded successfully:", data);
+      setRetryCount(0);
+    }
+  });
+
+  if (error) {
+    return (
+      <div>
+        <p>Failed to load data</p>
+        <button onClick={() => {
+          setRetryCount(prev => prev + 1);
+          refetch();
+        }}>
+          Retry ({retryCount} attempts)
+        </button>
+      </div>
+    );
+  }
+
+  // Rest of component...
+}
+```
+
+## Store Separation Patterns
+
+### Domain-Separated Stores
+
+```jsx
+// ✅ Good: Separate stores for different concerns
+const userStore = proxy({ user: null, loading: false });
+const cartStore = proxy({ items: [], total: 0 });
+const uiStore = proxy({ theme: "light", sidebarOpen: false });
+
+function App() {
+  // Each store gets its own initialization
+  useInitSync(userStore, async (state) => {
+    const user = await fetchCurrentUser();
+    state.user = user;
+  });
+
+  useInitSync(cartStore, async (state) => {
+    const cart = await fetchUserCart();
+    state.items = cart.items;
+    state.total = cart.total;
+  });
+
+  useInitSync(uiStore, (state) => {
+    state.theme = localStorage.getItem("theme") || "light";
+    state.sidebarOpen = window.innerWidth > 1024;
+  });
+
+  return <MainApp />;
+}
+```
+
+### Coordinated Initialization
+
+```jsx
+// ✅ Good: Single store with coordinated initialization
+const appStore = proxy({
+  user: null,
+  settings: null,
+  notifications: [],
+  initialized: false,
+});
+
+function App() {
+  useInitSync(appStore, async (state) => {
+    // Load all related data together
+    const [user, settings, notifications] = await Promise.all([
+      fetchUser(),
+      fetchUserSettings(),
+      fetchNotifications()
+    ]);
+
+    state.user = user;
+    state.settings = settings;
+    state.notifications = notifications;
+    state.initialized = true;
+  });
+
+  const { initialized } = useStore(appStore);
+
+  if (!initialized) {
+    return <LoadingScreen />;
+  }
+
+  return <MainApp />;
+}
+```
+
+## Validation and Error Prevention
+
+### One Store, One Initialization
+
+```jsx
+// ❌ This will throw an error
+function BadExample() {
+  const store = proxy({ data: null });
+
+  useInitSync(store, { data: "first" });
+  useInitSync(store, { data: "second" }); // Error: Multiple useInitSync calls!
+
+  return <div>This won't render</div>;
+}
+
+// ✅ Use separate stores instead
+function GoodExample() {
+  const store1 = proxy({ data: null });
+  const store2 = proxy({ data: null });
+
+  useInitSync(store1, { data: "first" });
+  useInitSync(store2, { data: "second" });
+
+  return <div>This works perfectly!</div>;
+}
+```
+
+## TypeScript Support
+
+Mesa provides full TypeScript support for `useInitSync`:
+
+```typescript
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  preferences: {
+    theme: "light" | "dark";
+    notifications: boolean;
+  };
+}
+
+interface UserStore {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+const userStore = proxy<UserStore>({
+  user: null,
+  loading: true,
+  error: null,
+});
+
+function TypedUserComponent() {
+  // TypeScript ensures type safety
+  const { error } = useInitSync(userStore, async (state) => {
+    state.loading = true;
+    
+    try {
+      const user: User = await fetchUser();
+      state.user = user; // ✓ Type-safe
+      state.loading = false;
+    } catch (err) {
+      state.error = err.message;
+      state.loading = false;
+    }
+  });
+
+  // TypeScript infers correct return types
+  const { user, loading } = useStore(userStore);
+
+  return (
+    <div>
+      {loading && <div>Loading...</div>}
+      {error && <div>Error: {error}</div>}
+      {user && <h1>Hello, {user.name}!</h1>}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### ✅ Do
+
+```jsx
+// Use separate stores for different domains
+const userStore = proxy({ user: null });
+const productsStore = proxy({ products: [] });
+
+// Handle loading states explicitly
+useInitSync(store, async (state) => {
+  state.loading = true;
+  try {
+    const data = await fetchData();
+    state.data = data;
+  } finally {
+    state.loading = false;
+  }
+});
+
+// Use dependencies for conditional re-initialization
+useInitSync(store, fetchData, { deps: [userId] });
+```
+
+### ❌ Don't
+
+```jsx
+// Don't use multiple useInitSync on the same store
+useInitSync(store, initUser);
+useInitSync(store, initSettings); // ❌ Error!
+
+// Don't forget error handling
+useInitSync(store, async (state) => {
+  const data = await fetchData(); // ❌ No error handling
+  state.data = data;
+});
+
+// Don't create stores inside components
+function Component() {
+  const store = proxy({ data: null }); // ❌ Creates new store each render
+  useInitSync(store, fetchData);
+}
+```
+
+## Performance Considerations
+
+- **Initialization runs only once** per component mount (unless dependencies change)
+- **Store separation** prevents unnecessary re-renders across unrelated components
+- **Fine-grained subscriptions** ensure optimal update patterns
+- **Async operations** don't block the UI thread
+
+## Common Patterns
+
+### Loading States with Skeleton UI
+
+```jsx
+function ProductList() {
+  const productsStore = proxy({
+    products: [],
+    loading: true,
+    error: null,
+  });
+
+  useInitSync(productsStore, async (state) => {
+    try {
+      const products = await fetchProducts();
+      state.products = products;
+    } catch (error) {
+      state.error = error.message;
+    } finally {
+      state.loading = false;
+    }
+  });
+
+  const { products, loading, error } = useStore(productsStore);
+
+  if (error) return <ErrorMessage error={error} />;
+
+  return (
+    <div>
+      {loading ? (
+        <SkeletonGrid count={6} />
+      ) : (
+        <ProductGrid products={products} />
+      )}
+    </div>
+  );
+}
+```
+
+### Conditional Initialization
+
+```jsx
+function ConditionalData({ shouldLoad }) {
+  useInitSync(dataStore, async (state) => {
+    if (shouldLoad) {
+      state.data = await fetchData();
+    } else {
+      state.data = null;
+    }
+  }, {
+    deps: [shouldLoad]
+  });
+
+  // Component implementation...
+}
+```
+
+## See Also
+
+- **[proxy()](/docs/api/proxy)** - Creating reactive state objects
+- **[useStore()](/docs/api/useStore)** - Subscribing to proxy state in components  
+- **[Examples](/docs/examples/user-profile)** - Practical useInitSync examples
+- **[Integration Guide](/docs/guides/integration)** - Using all Mesa APIs together

@@ -48,7 +48,7 @@ Here's a complete counter application built with Mesa:
 
 ```jsx
 import React from "react";
-import { proxy, useStore } from "mesa-react";
+import { proxy, useStore, useInitSync } from "mesa-react";
 
 // Create reactive state
 const counterState = proxy({
@@ -60,6 +60,7 @@ const counterState = proxy({
     decrements: 0,
     resets: 0,
   },
+  initialized: false,
 });
 
 // Counter display component
@@ -211,6 +212,249 @@ function CounterApp() {
 
 export default CounterApp;
 ```
+
+## Initialization with useInitSync
+
+For more advanced use cases, you can use `useInitSync` to initialize your counter with data from localStorage, user preferences, or API calls:
+
+```jsx
+import { proxy, useStore, useInitSync } from "mesa-react";
+
+// Enhanced counter state with initialization
+const enhancedCounterState = proxy({
+  count: 0,
+  step: 1,
+  history: [],
+  stats: {
+    increments: 0,
+    decrements: 0,
+    resets: 0,
+  },
+  userPreferences: {
+    theme: "light",
+    defaultStep: 1,
+  },
+  initialized: false,
+  loading: true,
+});
+
+// Mock functions for demonstration
+const loadUserPreferences = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // Simulate loading from localStorage or API
+      const saved = localStorage.getItem('counter-preferences');
+      if (saved) {
+        resolve(JSON.parse(saved));
+      } else {
+        resolve({
+          theme: "light",
+          defaultStep: 1,
+          savedCount: 0,
+        });
+      }
+    }, 300);
+  });
+};
+
+function EnhancedCounterApp() {
+  // Initialize counter with saved data
+  useInitSync(enhancedCounterState, async (state) => {
+    state.loading = true;
+    
+    try {
+      const preferences = await loadUserPreferences();
+      
+      // Apply loaded preferences
+      state.count = preferences.savedCount || 0;
+      state.step = preferences.defaultStep || 1;
+      state.userPreferences = preferences;
+      state.initialized = true;
+      
+    } catch (error) {
+      console.error("Failed to load preferences:", error);
+      // Use defaults on error
+      state.initialized = true;
+    } finally {
+      state.loading = false;
+    }
+  });
+
+  const { loading, initialized } = useStore(enhancedCounterState, s => ({
+    loading: s.loading,
+    initialized: s.initialized
+  }));
+
+  if (loading) {
+    return (
+      <div className="counter-app">
+        <div className="loading-state">
+          <div>🔄 Loading counter...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="counter-app">
+      <h1>Enhanced Counter with Initialization</h1>
+      <EnhancedCounterDisplay />
+      <EnhancedCounterControls />
+      <PreferencesPanel />
+    </div>
+  );
+}
+
+function EnhancedCounterDisplay() {
+  const count = useStore(enhancedCounterState, s => s.count);
+  const theme = useStore(enhancedCounterState, s => s.userPreferences.theme);
+  
+  return (
+    <div className={`counter-display theme-${theme}`}>
+      <h2>Count: {count}</h2>
+    </div>
+  );
+}
+
+function EnhancedCounterControls() {
+  const step = useStore(enhancedCounterState, s => s.step);
+  
+  const increment = () => {
+    enhancedCounterState.count += step;
+    enhancedCounterState.stats.increments++;
+    saveToLocalStorage();
+  };
+  
+  const decrement = () => {
+    enhancedCounterState.count -= step;
+    enhancedCounterState.stats.decrements++;
+    saveToLocalStorage();
+  };
+  
+  const reset = () => {
+    enhancedCounterState.count = 0;
+    enhancedCounterState.stats.resets++;
+    saveToLocalStorage();
+  };
+  
+  return (
+    <div className="counter-controls">
+      <button onClick={increment}>+{step}</button>
+      <button onClick={decrement}>-{step}</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+
+function PreferencesPanel() {
+  const { theme, defaultStep } = useStore(enhancedCounterState, s => s.userPreferences);
+  const step = useStore(enhancedCounterState, s => s.step);
+  
+  const updateTheme = (newTheme) => {
+    enhancedCounterState.userPreferences.theme = newTheme;
+    saveToLocalStorage();
+  };
+  
+  const updateStep = (newStep) => {
+    enhancedCounterState.step = newStep;
+    enhancedCounterState.userPreferences.defaultStep = newStep;
+    saveToLocalStorage();
+  };
+  
+  return (
+    <div className="preferences-panel">
+      <h3>Preferences</h3>
+      <div className="preference-group">
+        <label>Theme:</label>
+        <select value={theme} onChange={(e) => updateTheme(e.target.value)}>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
+      <div className="preference-group">
+        <label>Step Size:</label>
+        <select value={step} onChange={(e) => updateStep(Number(e.target.value))}>
+          <option value={1}>1</option>
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+// Helper function to save state to localStorage
+function saveToLocalStorage() {
+  const dataToSave = {
+    savedCount: enhancedCounterState.count,
+    defaultStep: enhancedCounterState.userPreferences.defaultStep,
+    theme: enhancedCounterState.userPreferences.theme,
+  };
+  localStorage.setItem('counter-preferences', JSON.stringify(dataToSave));
+}
+```
+
+### Key Initialization Patterns
+
+#### 1. Loading from localStorage
+
+```jsx
+useInitSync(counterState, (state) => {
+  // Load saved count from localStorage
+  const savedCount = localStorage.getItem('counter-value');
+  if (savedCount) {
+    state.count = parseInt(savedCount, 10);
+  }
+  
+  // Load user preferences
+  const preferences = JSON.parse(localStorage.getItem('counter-prefs') || '{}');
+  state.step = preferences.defaultStep || 1;
+});
+```
+
+#### 2. Async Data Loading
+
+```jsx
+useInitSync(counterState, async (state) => {
+  state.loading = true;
+  
+  try {
+    // Fetch user's counter settings from API
+    const response = await fetch('/api/user/counter-settings');
+    const settings = await response.json();
+    
+    state.count = settings.startValue || 0;
+    state.step = settings.preferredStep || 1;
+  } catch (error) {
+    console.error('Failed to load settings:', error);
+    // Use defaults
+  } finally {
+    state.loading = false;
+  }
+});
+```
+
+#### 3. Conditional Initialization
+
+```jsx
+function CounterWithUser({ userId }) {
+  useInitSync(counterState, async (state) => {
+    if (!userId) {
+      // Anonymous user - use defaults
+      state.count = 0;
+      state.step = 1;
+      return;
+    }
+    
+    // Logged-in user - load their settings
+    const userSettings = await fetchUserCounterSettings(userId);
+    state.count = userSettings.lastCount;
+    state.step = userSettings.preferredStep;
+    state.history = userSettings.recentHistory;
+  }, {
+    deps: [userId] // Re-run when userId changes
+  });
+}
 
 ## What This Example Demonstrates
 
@@ -466,6 +710,10 @@ This counter example demonstrates Mesa's key benefits: fine-grained updates, per
 
 ## See Also
 
+- **[useInitSync() API](/docs/api/useInitSync)** - Complete initialization API reference
+- **[User Profile Example](/docs/examples/user-profile)** - Async data loading with useInitSync
+- **[Shopping Cart Example](/docs/examples/shopping-cart)** - Multiple stores pattern
+- **[Dashboard Example](/docs/examples/dashboard)** - Coordinated initialization
 - **[Todo List Example](/docs/examples/todo-list)** - More complex state management patterns
 - **[API Reference](/docs/api/proxy)** - Detailed API documentation
 - **[Fine-Grained Reactivity](/docs/guides/fine-grained)** - Understanding the tracking system

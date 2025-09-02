@@ -1,0 +1,924 @@
+---
+title: API Integration Guide
+description: Comprehensive guide to using Mesa's three core APIs together in real-world applications.
+---
+
+This guide demonstrates how Mesa's three core APIs — `proxy()`, `useStore()`, and `useInitSync()` — work together to create powerful, reactive applications with clean data flow and optimal performance.
+
+## The Three Pillars of Mesa
+
+### 1. `proxy()` - Reactive State Creation
+Creates reactive state objects that automatically track mutations and notify subscribers.
+
+### 2. `useStore()` - Fine-Grained Subscriptions  
+Allows React components to subscribe to specific parts of proxy state with surgical precision.
+
+### 3. `useInitSync()` - Declarative Initialization
+Provides a declarative way to initialize proxy state with data loading, error handling, and loading states.
+
+## Complete Integration Example
+
+Let's build a complete user dashboard that demonstrates all three APIs working together:
+
+```jsx
+import React, { useState } from "react";
+import { proxy, useStore, useInitSync } from "mesa-react";
+
+// 1. CREATE REACTIVE STATE with proxy()
+const appState = proxy({
+  // User domain
+  user: {
+    profile: null,
+    preferences: {
+      theme: "light",
+      language: "en",
+      notifications: true,
+    },
+    loading: false,
+    error: null,
+  },
+  
+  // Dashboard domain
+  dashboard: {
+    stats: {
+      totalUsers: 0,
+      activeUsers: 0,
+      revenue: 0,
+    },
+    notifications: [],
+    recentActivity: [],
+    loading: false,
+    error: null,
+  },
+  
+  // UI domain
+  ui: {
+    sidebarOpen: false,
+    activeTab: "overview",
+    modal: {
+      isOpen: false,
+      type: null,
+      data: null,
+    },
+  },
+  
+  // App lifecycle
+  initialized: false,
+  globalLoading: true,
+});
+
+// Mock API functions
+const fetchUserProfile = async (userId) => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  return {
+    id: userId,
+    name: "Sarah Johnson",
+    email: "sarah@company.com",
+    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b77c?w=80",
+    role: "Product Manager",
+    department: "Engineering",
+  };
+};
+
+const fetchUserPreferences = async (userId) => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return {
+    theme: "dark",
+    language: "en",
+    notifications: true,
+    autoSave: true,
+  };
+};
+
+const fetchDashboardData = async () => {
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  return {
+    stats: {
+      totalUsers: 15420,
+      activeUsers: 8934,
+      revenue: 124567,
+    },
+    notifications: [
+      { id: 1, title: "New user registered", time: "2 min ago", type: "info" },
+      { id: 2, title: "Payment received", time: "5 min ago", type: "success" },
+      { id: 3, title: "Server alert", time: "10 min ago", type: "warning" },
+    ],
+    recentActivity: [
+      { id: 1, user: "John Doe", action: "Created new project", time: "3 min ago" },
+      { id: 2, user: "Alice Smith", action: "Updated profile", time: "7 min ago" },
+      { id: 3, user: "Bob Wilson", action: "Completed task", time: "15 min ago" },
+    ],
+  };
+};
+
+// 2. INITIALIZE STATE with useInitSync()
+function useAppInitialization(userId) {
+  return useInitSync(appState, async (state) => {
+    state.globalLoading = true;
+    
+    try {
+      // Load user data first (blocking)
+      state.user.loading = true;
+      const [profile, preferences] = await Promise.all([
+        fetchUserProfile(userId),
+        fetchUserPreferences(userId)
+      ]);
+      
+      state.user.profile = profile;
+      state.user.preferences = preferences;
+      state.user.loading = false;
+      
+      // App is now minimally functional
+      state.initialized = true;
+      
+      // Load dashboard data (non-blocking)
+      state.dashboard.loading = true;
+      const dashboardData = await fetchDashboardData();
+      
+      state.dashboard.stats = dashboardData.stats;
+      state.dashboard.notifications = dashboardData.notifications;
+      state.dashboard.recentActivity = dashboardData.recentActivity;
+      state.dashboard.loading = false;
+      
+    } catch (error) {
+      state.user.error = error.message;
+      state.user.loading = false;
+      state.dashboard.error = error.message;
+      state.dashboard.loading = false;
+    } finally {
+      state.globalLoading = false;
+    }
+  }, {
+    deps: [userId],
+    onError: (error) => {
+      console.error("App initialization failed:", error);
+    },
+    onSuccess: () => {
+      console.log("App initialized successfully");
+    }
+  });
+}
+
+// 3. CONSUME STATE with useStore()
+function App({ userId = "user123" }) {
+  // Initialize the app
+  const { error: initError, refetch } = useAppInitialization(userId);
+  
+  // Subscribe to global loading state
+  const globalLoading = useStore(appState, s => s.globalLoading);
+  const initialized = useStore(appState, s => s.initialized);
+  
+  if (globalLoading && !initialized) {
+    return <LoadingSplash />;
+  }
+  
+  if (initError) {
+    return <InitErrorDisplay error={initError} onRetry={refetch} />;
+  }
+  
+  return (
+    <div className="app">
+      <AppHeader />
+      <div className="app-layout">
+        <Sidebar />
+        <MainContent />
+      </div>
+      <AppModals />
+    </div>
+  );
+}
+
+// Header component with fine-grained subscriptions
+function AppHeader() {
+  // Only re-renders when these specific values change
+  const user = useStore(appState, s => s.user.profile);
+  const theme = useStore(appState, s => s.user.preferences.theme);
+  const notificationCount = useStore(appState, s => 
+    s.dashboard.notifications.filter(n => !n.read).length
+  );
+  
+  const toggleSidebar = () => {
+    appState.ui.sidebarOpen = !appState.ui.sidebarOpen;
+  };
+  
+  return (
+    <header className={`app-header theme-${theme}`}>
+      <div className="header-left">
+        <button onClick={toggleSidebar} className="sidebar-toggle">
+          ☰
+        </button>
+        <h1>Dashboard</h1>
+      </div>
+      
+      <div className="header-right">
+        <NotificationBell count={notificationCount} />
+        <UserMenu user={user} />
+      </div>
+    </header>
+  );
+}
+
+function Sidebar() {
+  // Subscribe to sidebar state and user preferences
+  const { sidebarOpen, activeTab } = useStore(appState, s => ({
+    sidebarOpen: s.ui.sidebarOpen,
+    activeTab: s.ui.activeTab
+  }));
+  const theme = useStore(appState, s => s.user.preferences.theme);
+  
+  const setActiveTab = (tab) => {
+    appState.ui.activeTab = tab;
+  };
+  
+  if (!sidebarOpen) return null;
+  
+  return (
+    <aside className={`sidebar theme-${theme}`}>
+      <nav className="sidebar-nav">
+        <SidebarItem 
+          id="overview" 
+          active={activeTab === "overview"}
+          onClick={() => setActiveTab("overview")}
+        >
+          📊 Overview
+        </SidebarItem>
+        <SidebarItem 
+          id="users"
+          active={activeTab === "users"}
+          onClick={() => setActiveTab("users")}
+        >
+          👥 Users
+        </SidebarItem>
+        <SidebarItem 
+          id="analytics"
+          active={activeTab === "analytics"}
+          onClick={() => setActiveTab("analytics")}
+        >
+          📈 Analytics
+        </SidebarItem>
+        <SidebarItem 
+          id="settings"
+          active={activeTab === "settings"}
+          onClick={() => setActiveTab("settings")}
+        >
+          ⚙️ Settings
+        </SidebarItem>
+      </nav>
+    </aside>
+  );
+}
+
+function MainContent() {
+  const activeTab = useStore(appState, s => s.ui.activeTab);
+  
+  const renderContent = () => {
+    switch (activeTab) {
+      case "overview":
+        return <OverviewTab />;
+      case "users":
+        return <UsersTab />;
+      case "analytics":
+        return <AnalyticsTab />;
+      case "settings":
+        return <SettingsTab />;
+      default:
+        return <OverviewTab />;
+    }
+  };
+  
+  return (
+    <main className="main-content">
+      {renderContent()}
+    </main>
+  );
+}
+
+function OverviewTab() {
+  // Subscribe to dashboard data with loading states
+  const { stats, notifications, recentActivity, loading } = useStore(appState, s => ({
+    stats: s.dashboard.stats,
+    notifications: s.dashboard.notifications,
+    recentActivity: s.dashboard.recentActivity,
+    loading: s.dashboard.loading
+  }));
+  
+  return (
+    <div className="overview-tab">
+      <h2>Dashboard Overview</h2>
+      
+      <div className="stats-grid">
+        <StatCard 
+          title="Total Users" 
+          value={loading ? "..." : stats.totalUsers.toLocaleString()} 
+          icon="👥"
+        />
+        <StatCard 
+          title="Active Users" 
+          value={loading ? "..." : stats.activeUsers.toLocaleString()} 
+          icon="✅"
+        />
+        <StatCard 
+          title="Revenue" 
+          value={loading ? "..." : `$${stats.revenue.toLocaleString()}`} 
+          icon="💰"
+        />
+      </div>
+      
+      <div className="overview-grid">
+        <NotificationPanel notifications={notifications} loading={loading} />
+        <ActivityPanel activities={recentActivity} loading={loading} />
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab() {
+  // Subscribe to user preferences
+  const preferences = useStore(appState, s => s.user.preferences);
+  
+  const updatePreference = (key, value) => {
+    appState.user.preferences[key] = value;
+    // In a real app, you'd also save to backend/localStorage
+    saveUserPreferences(appState.user.preferences);
+  };
+  
+  return (
+    <div className="settings-tab">
+      <h2>Settings</h2>
+      
+      <div className="settings-section">
+        <h3>Appearance</h3>
+        <div className="setting-item">
+          <label>Theme:</label>
+          <select 
+            value={preferences.theme}
+            onChange={(e) => updatePreference('theme', e.target.value)}
+          >
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto</option>
+          </select>
+        </div>
+        
+        <div className="setting-item">
+          <label>Language:</label>
+          <select 
+            value={preferences.language}
+            onChange={(e) => updatePreference('language', e.target.value)}
+          >
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+          </select>
+        </div>
+      </div>
+      
+      <div className="settings-section">
+        <h3>Notifications</h3>
+        <div className="setting-item">
+          <label>
+            <input
+              type="checkbox"
+              checked={preferences.notifications}
+              onChange={(e) => updatePreference('notifications', e.target.checked)}
+            />
+            Enable notifications
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Utility components
+function LoadingSplash() {
+  return (
+    <div className="loading-splash">
+      <div className="loading-spinner">🔄</div>
+      <h2>Loading Dashboard...</h2>
+      <p>Preparing your workspace</p>
+    </div>
+  );
+}
+
+function InitErrorDisplay({ error, onRetry }) {
+  return (
+    <div className="init-error">
+      <div className="error-content">
+        <h2>Failed to Initialize App</h2>
+        <p>{error}</p>
+        <button onClick={onRetry}>Try Again</button>
+      </div>
+    </div>
+  );
+}
+
+function NotificationBell({ count }) {
+  const openNotifications = () => {
+    appState.ui.modal = {
+      isOpen: true,
+      type: "notifications",
+      data: null
+    };
+  };
+  
+  return (
+    <button className="notification-bell" onClick={openNotifications}>
+      🔔
+      {count > 0 && <span className="notification-count">{count}</span>}
+    </button>
+  );
+}
+
+function UserMenu({ user }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  if (!user) return null;
+  
+  return (
+    <div className="user-menu">
+      <button onClick={() => setIsOpen(!isOpen)}>
+        <img src={user.avatar} alt={user.name} />
+        <span>{user.name}</span>
+      </button>
+      
+      {isOpen && (
+        <div className="user-menu-dropdown">
+          <div className="menu-item">Profile</div>
+          <div className="menu-item">Settings</div>
+          <div className="menu-item">Logout</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Helper function to save preferences
+const saveUserPreferences = async (preferences) => {
+  try {
+    // Save to localStorage immediately
+    localStorage.setItem('user-preferences', JSON.stringify(preferences));
+    
+    // Sync with backend
+    await fetch('/api/user/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(preferences)
+    });
+  } catch (error) {
+    console.error('Failed to save preferences:', error);
+  }
+};
+
+export default App;
+```
+
+## Integration Patterns
+
+### 1. Data Flow Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       proxy() State                        │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                 App State Tree                      │   │
+│  │  ├── user/                                         │   │
+│  │  ├── dashboard/                                    │   │
+│  │  ├── ui/                                          │   │
+│  │  └── meta/                                        │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    useInitSync()                           │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              Data Loading Logic                     │   │
+│  │  • API calls                                       │   │
+│  │  • Error handling                                  │   │
+│  │  • Loading states                                  │   │
+│  │  • Dependencies                                    │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     useStore()                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │            Component Subscriptions                  │   │
+│  │  • Fine-grained updates                           │   │
+│  │  • Selective re-renders                           │   │
+│  │  • Computed selectors                             │   │
+│  │  • Performance optimization                       │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2. State Organization Best Practices
+
+#### Domain-Based State Structure
+
+```jsx
+const appState = proxy({
+  // User domain - everything related to the current user
+  user: {
+    profile: null,
+    preferences: {},
+    permissions: [],
+    loading: false,
+    error: null,
+  },
+  
+  // Data domains - separate by business concern
+  products: { items: [], categories: [], loading: false },
+  orders: { list: [], filters: {}, loading: false },
+  customers: { list: [], search: "", loading: false },
+  
+  // UI domain - interface state
+  ui: {
+    theme: "light",
+    sidebarOpen: true,
+    activeModal: null,
+    breadcrumbs: [],
+  },
+  
+  // App meta - application lifecycle
+  meta: {
+    initialized: false,
+    globalLoading: false,
+    lastSync: null,
+    version: "1.0.0",
+  }
+});
+```
+
+#### Initialization Strategy
+
+```jsx
+// Progressive initialization - load critical data first
+useInitSync(appState, async (state) => {
+  // Phase 1: Critical user data (blocking)
+  state.meta.globalLoading = true;
+  const user = await fetchCurrentUser();
+  state.user.profile = user;
+  state.meta.initialized = true; // App is now usable
+  
+  // Phase 2: Non-critical data (background)
+  const [products, orders] = await Promise.all([
+    fetchProducts(),
+    fetchRecentOrders(),
+  ]);
+  
+  state.products.items = products;
+  state.orders.list = orders;
+  state.meta.globalLoading = false;
+});
+```
+
+### 3. Component Integration Patterns
+
+#### Smart vs Presentational Components
+
+```jsx
+// Smart Component - handles data and business logic
+function UserProfileContainer() {
+  // Subscribe to user data
+  const { profile, loading, error } = useStore(appState, s => ({
+    profile: s.user.profile,
+    loading: s.user.loading,
+    error: s.user.error
+  }));
+  
+  // Handle business logic
+  const updateProfile = (updates) => {
+    Object.assign(appState.user.profile, updates);
+    saveProfileToAPI(appState.user.profile);
+  };
+  
+  // Render presentational component
+  return (
+    <UserProfile
+      profile={profile}
+      loading={loading}
+      error={error}
+      onUpdate={updateProfile}
+    />
+  );
+}
+
+// Presentational Component - pure UI
+function UserProfile({ profile, loading, error, onUpdate }) {
+  if (loading) return <ProfileSkeleton />;
+  if (error) return <ProfileError error={error} />;
+  if (!profile) return <ProfileEmpty />;
+  
+  return (
+    <div className="user-profile">
+      <ProfileHeader user={profile} onEdit={onUpdate} />
+      <ProfileDetails user={profile} onUpdate={onUpdate} />
+    </div>
+  );
+}
+```
+
+#### Custom Hooks for Business Logic
+
+```jsx
+// Custom hook encapsulates complex state logic
+function useUserManagement() {
+  const user = useStore(appState, s => s.user.profile);
+  const loading = useStore(appState, s => s.user.loading);
+  
+  const updateUser = useCallback(async (updates) => {
+    appState.user.loading = true;
+    try {
+      const updated = await updateUserAPI(user.id, updates);
+      appState.user.profile = updated;
+    } catch (error) {
+      appState.user.error = error.message;
+    } finally {
+      appState.user.loading = false;
+    }
+  }, [user?.id]);
+  
+  const deleteUser = useCallback(async () => {
+    if (!confirm('Delete user?')) return;
+    
+    appState.user.loading = true;
+    try {
+      await deleteUserAPI(user.id);
+      appState.user.profile = null;
+    } catch (error) {
+      appState.user.error = error.message;
+    } finally {
+      appState.user.loading = false;
+    }
+  }, [user?.id]);
+  
+  return {
+    user,
+    loading,
+    updateUser,
+    deleteUser,
+  };
+}
+
+// Use the custom hook in components
+function UserManagementPanel() {
+  const { user, loading, updateUser, deleteUser } = useUserManagement();
+  
+  return (
+    <div className="user-management">
+      <UserForm user={user} onSubmit={updateUser} loading={loading} />
+      <button onClick={deleteUser} disabled={loading}>
+        Delete User
+      </button>
+    </div>
+  );
+}
+```
+
+### 4. Advanced Integration Techniques
+
+#### Computed State with Selectors
+
+```jsx
+// Complex computed values that update efficiently
+function DashboardAnalytics() {
+  const analytics = useStore(appState, s => {
+    const orders = s.orders.list;
+    const products = s.products.items;
+    
+    // This computation only runs when orders or products change
+    return {
+      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
+      topProducts: products
+        .sort((a, b) => b.salesCount - a.salesCount)
+        .slice(0, 5),
+      ordersByMonth: groupOrdersByMonth(orders),
+      averageOrderValue: orders.length > 0 
+        ? orders.reduce((sum, order) => sum + order.total, 0) / orders.length 
+        : 0,
+    };
+  });
+  
+  return (
+    <div className="analytics-dashboard">
+      <MetricCard title="Revenue" value={analytics.totalRevenue} />
+      <TopProductsList products={analytics.topProducts} />
+      <OrderChart data={analytics.ordersByMonth} />
+      <MetricCard title="Avg Order" value={analytics.averageOrderValue} />
+    </div>
+  );
+}
+```
+
+#### Cross-Domain Updates
+
+```jsx
+// Actions that affect multiple domains
+function useOrderActions() {
+  return {
+    createOrder: async (orderData) => {
+      // Update multiple domains atomically
+      appState.orders.loading = true;
+      appState.ui.activeModal = null; // Close order form modal
+      
+      try {
+        const newOrder = await createOrderAPI(orderData);
+        
+        // Update orders domain
+        appState.orders.list.unshift(newOrder);
+        
+        // Update products domain (reduce stock)
+        newOrder.items.forEach(item => {
+          const product = appState.products.items.find(p => p.id === item.productId);
+          if (product) {
+            product.stock -= item.quantity;
+          }
+        });
+        
+        // Update UI domain (show success)
+        appState.ui.toast = {
+          type: 'success',
+          message: `Order #${newOrder.id} created successfully`
+        };
+        
+      } catch (error) {
+        appState.orders.error = error.message;
+        appState.ui.toast = {
+          type: 'error', 
+          message: 'Failed to create order'
+        };
+      } finally {
+        appState.orders.loading = false;
+      }
+    },
+  };
+}
+```
+
+### 5. Performance Optimization Patterns
+
+#### Selective Subscriptions
+
+```jsx
+// ✅ Good - only subscribes to needed data
+function ProductCard({ productId }) {
+  const product = useStore(appState, s => 
+    s.products.items.find(p => p.id === productId)
+  );
+  
+  return product ? <ProductDisplay product={product} /> : null;
+}
+
+// ❌ Avoid - subscribes to all products
+function ProductCard({ productId }) {
+  const products = useStore(appState, s => s.products.items);
+  const product = products.find(p => p.id === productId);
+  
+  return product ? <ProductDisplay product={product} /> : null;
+}
+```
+
+#### Memoized Selectors
+
+```jsx
+// Use useMemo for expensive computations
+function ProductAnalytics() {
+  const products = useStore(appState, s => s.products.items);
+  
+  const analytics = useMemo(() => {
+    // Expensive computation only runs when products change
+    return {
+      totalValue: products.reduce((sum, p) => sum + (p.price * p.stock), 0),
+      categoryStats: groupProductsByCategory(products),
+      lowStockItems: products.filter(p => p.stock < 10),
+      topPerformers: products.sort((a, b) => b.salesCount - a.salesCount).slice(0, 10),
+    };
+  }, [products]);
+  
+  return <AnalyticsDashboard data={analytics} />;
+}
+```
+
+## Testing Integration
+
+### Testing State Logic
+
+```jsx
+import { proxy } from "mesa-react";
+import { renderHook, act } from "@testing-library/react";
+
+describe("App State Integration", () => {
+  let testState;
+  
+  beforeEach(() => {
+    testState = proxy({
+      user: { profile: null, loading: false },
+      dashboard: { stats: null, loading: false },
+    });
+  });
+  
+  test("user loading affects dashboard", async () => {
+    // Mock initialization
+    testState.user.loading = true;
+    expect(testState.user.loading).toBe(true);
+    
+    // Simulate user load completion
+    testState.user.profile = { id: 1, name: "Test User" };
+    testState.user.loading = false;
+    
+    expect(testState.user.profile).toBeTruthy();
+    expect(testState.user.loading).toBe(false);
+  });
+  
+  test("cross-domain updates work correctly", () => {
+    // Initial state
+    testState.user.profile = { id: 1, name: "Test" };
+    testState.dashboard.stats = { userCount: 0 };
+    
+    // Simulate user deletion affecting dashboard
+    testState.user.profile = null;
+    testState.dashboard.stats.userCount--;
+    
+    expect(testState.user.profile).toBe(null);
+    expect(testState.dashboard.stats.userCount).toBe(-1);
+  });
+});
+```
+
+### Integration Testing with Components
+
+```jsx
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+describe("App Integration", () => {
+  test("complete user workflow", async () => {
+    const mockUser = { id: 1, name: "Test User" };
+    
+    // Mock API calls
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockUser)
+    });
+    
+    render(<App userId="1" />);
+    
+    // Should show loading initially
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(screen.getByText("Test User")).toBeInTheDocument();
+    });
+    
+    // Should show dashboard content
+    expect(screen.getByText(/dashboard/i)).toBeInTheDocument();
+    
+    // Test settings update
+    fireEvent.change(screen.getByLabelText(/theme/i), { target: { value: "dark" } });
+    
+    // Should update theme in state
+    expect(appState.user.preferences.theme).toBe("dark");
+  });
+});
+```
+
+## Best Practices Summary
+
+### 1. State Organization
+- **Domain separation**: Group related state by business domain
+- **Flat structure**: Avoid deeply nested state when possible
+- **Consistent naming**: Use predictable naming patterns
+
+### 2. Initialization Strategy
+- **Progressive loading**: Load critical data first, enhancements second
+- **Error boundaries**: Handle initialization errors gracefully
+- **Loading states**: Show appropriate feedback during data loading
+
+### 3. Component Architecture
+- **Smart/Presentational separation**: Keep business logic separate from UI
+- **Custom hooks**: Encapsulate complex state logic in reusable hooks
+- **Selective subscriptions**: Only subscribe to data components actually need
+
+### 4. Performance
+- **Memoized selectors**: Use `useMemo` for expensive computations
+- **Granular updates**: Subscribe to specific state slices, not entire domains
+- **Batch updates**: Group related state changes together
+
+### 5. Testing
+- **Unit test state logic**: Test state mutations and business logic separately
+- **Integration test workflows**: Test complete user workflows end-to-end
+- **Mock external dependencies**: Mock API calls and external services
+
+This integration guide demonstrates how Mesa's three APIs work together to create maintainable, performant React applications with clean data flow and optimal user experience.
+
+## See Also
+
+- **[proxy() API](/docs/api/proxy)** - Creating reactive state
+- **[useStore() API](/docs/api/useStore)** - Component subscriptions  
+- **[useInitSync() API](/docs/api/useInitSync)** - State initialization
+- **[User Profile Example](/docs/examples/user-profile)** - Single store patterns
+- **[Shopping Cart Example](/docs/examples/shopping-cart)** - Multiple store patterns
+- **[Dashboard Example](/docs/examples/dashboard)** - Coordinated initialization

@@ -1,0 +1,742 @@
+---
+title: Dashboard Example
+description: Learn how to use coordinated initialization with useInitSync for loading related data together in a single store.
+---
+
+This example demonstrates **coordinated initialization** using `useInitSync()` with a single store that manages multiple related data sources. This pattern is ideal when you need to load interdependent data together.
+
+## 🚀 Live Interactive Playground
+
+Experience Mesa's coordinated initialization with our feature-rich dashboard playground:
+
+<div style={{ textAlign: "center", margin: "32px 0" }}>
+  <a
+    href="/examples/play/dashboard"
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "12px",
+      background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+      color: "white",
+      padding: "16px 32px",
+      borderRadius: "12px",
+      textDecoration: "none",
+      fontWeight: "600",
+      fontSize: "16px",
+      boxShadow: "0 8px 25px rgba(59, 130, 246, 0.3)",
+      transition: "all 0.3s ease",
+    }}
+    className="playground-button"
+  >
+    <span style={{ fontSize: "24px" }}>🎮</span>
+    Open Interactive Dashboard →
+  </a>
+</div>
+
+The playground features:
+
+- **Coordinated data loading** with parallel API requests
+- **Real-time analytics** with interactive charts and metrics
+- **Activity feed** showing live updates and notifications
+- **User session management** with profile and preferences  
+- **Progressive loading states** and error recovery
+- **Performance insights** showing single-store efficiency
+
+## Features Demonstrated
+
+- 🎯 **Coordinated Initialization**: Loading multiple related data sources together
+- 🔄 **Parallel Data Fetching**: Using Promise.all for concurrent requests  
+- 📊 **Complex Dashboard State**: Managing analytics, notifications, and user data
+- 🎨 **Progressive Loading**: Showing partial data as it loads
+- ⚡ **Optimized Updates**: Single store for related concerns
+
+## Store Architecture
+
+```jsx
+// Single store for all dashboard-related data
+const dashboardStore = proxy({
+  // User information
+  user: null,
+  
+  // Analytics data
+  analytics: {
+    totalRevenue: 0,
+    totalOrders: 0,
+    activeUsers: 0,
+    conversionRate: 0,
+    monthlyData: [],
+  },
+  
+  // Recent activities
+  recentActivities: [],
+  
+  // Notifications
+  notifications: [],
+  
+  // Loading and error states
+  loading: true,
+  error: null,
+  initialized: false,
+});
+```
+
+## Complete Implementation
+
+```jsx
+import React, { useState } from "react";
+import { proxy, useStore, useInitSync } from "mesa-react";
+
+// Dashboard store definition
+const dashboardStore = proxy({
+  user: null,
+  analytics: {
+    totalRevenue: 0,
+    totalOrders: 0,
+    activeUsers: 0,
+    conversionRate: 0,
+    monthlyData: [],
+  },
+  recentActivities: [],
+  notifications: [],
+  loading: true,
+  error: null,
+  initialized: false,
+});
+
+// Mock API functions
+const fetchDashboardData = async () => {
+  // Simulate fetching different data sources in parallel
+  const [userInfo, analyticsData, activities, notifications] = await Promise.all([
+    fetchUserInfo(),
+    fetchAnalytics(),
+    fetchRecentActivities(),
+    fetchNotifications(),
+  ]);
+
+  return {
+    user: userInfo,
+    analytics: analyticsData,
+    recentActivities: activities,
+    notifications: notifications,
+  };
+};
+
+const fetchUserInfo = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        id: 1,
+        name: "Sarah Johnson",
+        email: "sarah@company.com",
+        role: "Product Manager",
+        avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b77c?w=80&h=80&fit=crop&crop=face",
+        company: "Mesa Corp",
+        joinDate: "2023-01-15",
+      });
+    }, 600);
+  });
+};
+
+const fetchAnalytics = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        totalRevenue: 245680,
+        totalOrders: 1847,
+        activeUsers: 12543,
+        conversionRate: 3.24,
+        monthlyData: [
+          { month: "Jan", revenue: 18420, orders: 156 },
+          { month: "Feb", revenue: 22150, orders: 189 },
+          { month: "Mar", revenue: 28920, orders: 243 },
+          { month: "Apr", revenue: 31450, orders: 267 },
+          { month: "May", revenue: 35680, orders: 298 },
+          { month: "Jun", revenue: 42380, orders: 356 },
+        ],
+      });
+    }, 1200);
+  });
+};
+
+const fetchRecentActivities = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        {
+          id: 1,
+          type: "order",
+          title: "New order #1847",
+          description: "Order placed by John Doe for $156.99",
+          timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+          icon: "🛒",
+        },
+        {
+          id: 2,
+          type: "user",
+          title: "New user registration",
+          description: "Alice Smith joined the platform",
+          timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+          icon: "👤",
+        },
+        {
+          id: 3,
+          type: "payment",
+          title: "Payment processed",
+          description: "Payment of $2,340.50 received",
+          timestamp: new Date(Date.now() - 32 * 60 * 1000).toISOString(),
+          icon: "💳",
+        },
+        {
+          id: 4,
+          type: "alert",
+          title: "Low inventory alert",
+          description: "Product #234 is running low on stock",
+          timestamp: new Date(Date.now() - 47 * 60 * 1000).toISOString(),
+          icon: "⚠️",
+        },
+      ]);
+    }, 900);
+  });
+};
+
+const fetchNotifications = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        {
+          id: 1,
+          title: "Monthly Report Ready",
+          message: "Your monthly analytics report is now available for download.",
+          type: "info",
+          read: false,
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: 2,
+          title: "System Maintenance",
+          message: "Scheduled maintenance will occur tonight from 2-4 AM EST.",
+          type: "warning",
+          read: false,
+          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: 3,
+          title: "New Feature Released",
+          message: "Check out our new advanced analytics dashboard!",
+          type: "success",
+          read: true,
+          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        },
+      ]);
+    }, 800);
+  });
+};
+
+// Main Dashboard Component
+function Dashboard() {
+  // Coordinated initialization of all dashboard data
+  const { error, refetch } = useInitSync(dashboardStore, async (state) => {
+    state.loading = true;
+    state.error = null;
+    
+    try {
+      const dashboardData = await fetchDashboardData();
+      
+      // Update all data atomically
+      state.user = dashboardData.user;
+      state.analytics = dashboardData.analytics;
+      state.recentActivities = dashboardData.recentActivities;
+      state.notifications = dashboardData.notifications;
+      state.initialized = true;
+      
+    } catch (error) {
+      state.error = error.message;
+    } finally {
+      state.loading = false;
+    }
+  });
+
+  const { loading, initialized } = useStore(dashboardStore, s => ({
+    loading: s.loading,
+    initialized: s.initialized
+  }));
+
+  if (loading && !initialized) {
+    return <DashboardSkeleton />;
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} onRetry={refetch} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <StatsCards />
+            <RevenueChart />
+            <RecentActivities />
+          </div>
+          <div className="space-y-6">
+            <NotificationsPanel />
+            <QuickActions />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// Header Component
+function Header() {
+  const { user } = useStore(dashboardStore, s => ({ user: s.user }));
+  const unreadCount = useStore(dashboardStore, s => 
+    s.notifications.filter(n => !n.read).length
+  );
+
+  return (
+    <header className="bg-white shadow">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-sm text-gray-500">Welcome back, {user?.name}!</p>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <NotificationBell count={unreadCount} />
+            <UserAvatar user={user} />
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// Stats Cards Component
+function StatsCards() {
+  const analytics = useStore(dashboardStore, s => s.analytics);
+
+  const stats = [
+    {
+      title: "Total Revenue",
+      value: `$${analytics.totalRevenue.toLocaleString()}`,
+      icon: "💰",
+      color: "text-green-600",
+      bg: "bg-green-50",
+    },
+    {
+      title: "Total Orders",
+      value: analytics.totalOrders.toLocaleString(),
+      icon: "📦",
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+    },
+    {
+      title: "Active Users",
+      value: analytics.activeUsers.toLocaleString(),
+      icon: "👥",
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+    },
+    {
+      title: "Conversion Rate",
+      value: `${analytics.conversionRate}%`,
+      icon: "📈",
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {stats.map((stat, index) => (
+        <div key={index} className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center">
+            <div className={`p-3 rounded-md ${stat.bg} mr-4`}>
+              <span className="text-2xl">{stat.icon}</span>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">{stat.title}</p>
+              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Revenue Chart Component
+function RevenueChart() {
+  const monthlyData = useStore(dashboardStore, s => s.analytics.monthlyData);
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trend</h3>
+      <div className="space-y-3">
+        {monthlyData.map((data, index) => {
+          const maxRevenue = Math.max(...monthlyData.map(d => d.revenue));
+          const widthPercentage = (data.revenue / maxRevenue) * 100;
+          
+          return (
+            <div key={data.month} className="flex items-center space-x-4">
+              <div className="w-8 text-sm text-gray-600">{data.month}</div>
+              <div className="flex-1 bg-gray-200 rounded-full h-4 relative">
+                <div
+                  className="bg-blue-600 h-4 rounded-full transition-all duration-1000"
+                  style={{ width: `${widthPercentage}%` }}
+                ></div>
+              </div>
+              <div className="w-20 text-sm text-gray-900">
+                ${data.revenue.toLocaleString()}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Recent Activities Component
+function RecentActivities() {
+  const activities = useStore(dashboardStore, s => s.recentActivities);
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h3>
+      <div className="space-y-4">
+        {activities.map((activity) => (
+          <div key={activity.id} className="flex items-start space-x-3">
+            <div className="text-2xl">{activity.icon}</div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+              <p className="text-sm text-gray-600">{activity.description}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {formatTimeAgo(activity.timestamp)}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Notifications Panel Component
+function NotificationsPanel() {
+  const notifications = useStore(dashboardStore, s => s.notifications);
+
+  const markAsRead = (notificationId) => {
+    const notification = dashboardStore.notifications.find(n => n.id === notificationId);
+    if (notification) {
+      notification.read = true;
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Notifications</h3>
+      <div className="space-y-3">
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+              notification.read 
+                ? 'bg-gray-50 border-gray-200' 
+                : 'bg-blue-50 border-blue-200'
+            }`}
+            onClick={() => markAsRead(notification.id)}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className={`text-sm font-medium ${
+                  notification.read ? 'text-gray-700' : 'text-gray-900'
+                }`}>
+                  {notification.title}
+                </p>
+                <p className={`text-xs mt-1 ${
+                  notification.read ? 'text-gray-500' : 'text-gray-600'
+                }`}>
+                  {notification.message}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {formatTimeAgo(notification.timestamp)}
+                </p>
+              </div>
+              {!notification.read && (
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Quick Actions Component
+function QuickActions() {
+  const actions = [
+    { title: "Create Order", icon: "➕", color: "bg-green-600" },
+    { title: "Add User", icon: "👤", color: "bg-blue-600" },
+    { title: "Generate Report", icon: "📊", color: "bg-purple-600" },
+    { title: "Settings", icon: "⚙️", color: "bg-gray-600" },
+  ];
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+      <div className="grid grid-cols-2 gap-3">
+        {actions.map((action, index) => (
+          <button
+            key={index}
+            className={`${action.color} text-white p-3 rounded-lg hover:opacity-90 transition-opacity`}
+          >
+            <div className="text-xl mb-1">{action.icon}</div>
+            <div className="text-sm font-medium">{action.title}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Helper Components
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-300 rounded w-32 mb-2"></div>
+            <div className="h-4 bg-gray-300 rounded w-48"></div>
+          </div>
+        </div>
+      </div>
+      <main className="max-w-7xl mx-auto py-6 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+                  <div className="h-16 bg-gray-300 rounded"></div>
+                </div>
+              ))}
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow animate-pulse">
+              <div className="h-6 bg-gray-300 rounded w-32 mb-4"></div>
+              <div className="h-32 bg-gray-300 rounded"></div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow animate-pulse">
+              <div className="h-6 bg-gray-300 rounded w-24 mb-4"></div>
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-300 rounded"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function ErrorDisplay({ error, onRetry }) {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😔</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Failed to Load Dashboard
+          </h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={onRetry}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationBell({ count }) {
+  return (
+    <div className="relative">
+      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      </svg>
+      {count > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function UserAvatar({ user }) {
+  if (!user) return null;
+  
+  return (
+    <div className="flex items-center space-x-3">
+      <img
+        src={user.avatar}
+        alt={user.name}
+        className="w-8 h-8 rounded-full"
+      />
+      <div className="hidden sm:block">
+        <p className="text-sm font-medium text-gray-900">{user.name}</p>
+        <p className="text-xs text-gray-500">{user.role}</p>
+      </div>
+    </div>
+  );
+}
+
+// Helper function
+function formatTimeAgo(timestamp) {
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diffInMinutes = Math.floor((now - time) / (1000 * 60));
+
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes}m ago`;
+  } else if (diffInMinutes < 24 * 60) {
+    return `${Math.floor(diffInMinutes / 60)}h ago`;
+  } else {
+    return `${Math.floor(diffInMinutes / (24 * 60))}d ago`;
+  }
+}
+
+export default Dashboard;
+```
+
+## Key Implementation Patterns
+
+### 1. Coordinated Data Loading
+
+```jsx
+// Load all related data together
+const dashboardData = await fetchDashboardData();
+
+// Update store atomically
+state.user = dashboardData.user;
+state.analytics = dashboardData.analytics;
+state.recentActivities = dashboardData.recentActivities;
+state.notifications = dashboardData.notifications;
+```
+
+### 2. Parallel API Calls
+
+```jsx
+// Fetch different data sources concurrently
+const [userInfo, analyticsData, activities, notifications] = await Promise.all([
+  fetchUserInfo(),
+  fetchAnalytics(),
+  fetchRecentActivities(),
+  fetchNotifications(),
+]);
+```
+
+### 3. Progressive Loading State
+
+```jsx
+const { loading, initialized } = useStore(dashboardStore, s => ({
+  loading: s.loading,
+  initialized: s.initialized
+}));
+
+// Show skeleton until first load completes
+if (loading && !initialized) {
+  return <DashboardSkeleton />;
+}
+```
+
+### 4. Granular Subscriptions
+
+```jsx
+// Each component subscribes only to its needed data
+const analytics = useStore(dashboardStore, s => s.analytics);
+const activities = useStore(dashboardStore, s => s.recentActivities);
+const unreadCount = useStore(dashboardStore, s => 
+  s.notifications.filter(n => !n.read).length
+);
+```
+
+## Benefits of Coordinated Initialization
+
+1. **Atomic Updates**: All related data loads together, preventing inconsistent states
+2. **Reduced Loading States**: Single loading indicator instead of multiple
+3. **Better UX**: Complete dashboard appears at once
+4. **Data Consistency**: Related data is always in sync
+5. **Simplified Error Handling**: Single error boundary for all dashboard data
+
+## When to Use This Pattern
+
+- **Related Data**: When multiple data sources are conceptually related
+- **Dashboard Views**: Analytics, reporting, and overview screens
+- **Initial App Load**: When app needs multiple pieces of data to be functional
+- **Atomic Operations**: When partial data would create confusing UI states
+
+## Alternative Approaches
+
+### Progressive Loading
+
+```jsx
+// Load essential data first, then enhancements
+useInitSync(dashboardStore, async (state) => {
+  // Load critical data first
+  const user = await fetchUserInfo();
+  state.user = user;
+  state.initialized = true;
+  
+  // Load additional data in background
+  const [analytics, activities] = await Promise.all([
+    fetchAnalytics(),
+    fetchRecentActivities()
+  ]);
+  
+  state.analytics = analytics;
+  state.recentActivities = activities;
+});
+```
+
+### Lazy Loading Sections
+
+```jsx
+// Load sections on demand
+const [loadAnalytics, setLoadAnalytics] = useState(false);
+
+useInitSync(analyticsStore, async (state) => {
+  if (!loadAnalytics) return;
+  state.analytics = await fetchAnalytics();
+}, { deps: [loadAnalytics] });
+
+// Trigger loading when section becomes visible
+<InView onChange={(inView) => inView && setLoadAnalytics(true)}>
+  <AnalyticsSection />
+</InView>
+```
+
+## Performance Considerations
+
+- **Bundle Splitting**: Load dashboard code only when needed
+- **Data Caching**: Cache expensive calculations and API responses
+- **Subscription Optimization**: Use selective subscriptions to minimize re-renders
+- **Background Updates**: Refresh data periodically without showing loading states
+
+## See Also
+
+- **[useInitSync() API](/docs/api/useInitSync)** - Complete API reference
+- **[Shopping Cart Example](/docs/examples/shopping-cart)** - Multiple stores pattern
+- **[User Profile Example](/docs/examples/user-profile)** - Single entity loading
