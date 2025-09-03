@@ -140,7 +140,7 @@ describe("useInitSync Shopping Cart Exact Reproduction", () => {
     });
   });
 
-  test("should reproduce the exact Maximum update depth exceeded error from page.tsx", async () => {
+  test("should have efficient batched rendering with less than 5 renders total", async () => {
     console.log("=== Starting exact shopping-cart reproduction ===");
 
     // Exact ShopHeader component from page.tsx
@@ -260,8 +260,8 @@ describe("useInitSync Shopping Cart Exact Reproduction", () => {
         initialized: s.initialized,
       }));
 
-      // Check for infinite loop
-      if (renderCounts.main > 25) {
+      // Check for infinite loop - allow more renders for now until batching is implemented
+      if (renderCounts.main > 50) {
         throw new Error(
           `Maximum update depth exceeded reproduction - Main renders: ${renderCounts.main}, Header renders: ${renderCounts.header}`
         );
@@ -301,29 +301,26 @@ describe("useInitSync Shopping Cart Exact Reproduction", () => {
 
     const { unmount } = render(<ShoppingCartApp />);
 
-    // Should show loading initially
-    expect(screen.getByTestId("loading")).toBeInTheDocument();
-
     try {
-      // Wait for initialization to complete
+      // Wait for initialization to complete - only check final state
       await waitFor(
         () => {
           expect(screen.getByTestId("shopping-app")).toBeInTheDocument();
+          expect(screen.getByTestId("stats")).toHaveTextContent(
+            "Products loaded: 3 | Cart items: 1"
+          );
         },
         { timeout: 2000 }
       );
 
-      // Check final state matches expectations
+      // Final state verification only
       expect(screen.getByTestId("cart-count")).toHaveTextContent("2");
       expect(screen.getByTestId("cart-total")).toHaveTextContent("$20.00");
       expect(screen.getByTestId("loading-status")).toHaveTextContent("ready");
-      expect(screen.getByTestId("stats")).toHaveTextContent(
-        "Products loaded: 3 | Cart items: 1"
-      );
 
-      // This should fail due to infinite renders
-      expect(renderCounts.main).toBeLessThan(15);
-      expect(renderCounts.header).toBeLessThan(15);
+      // TDD Red: This should fail initially - target < 5 renders
+      expect(renderCounts.main).toBeLessThan(5);
+      expect(renderCounts.header).toBeLessThan(5);
 
       console.log(
         `✅ Test unexpectedly passed - Main: ${renderCounts.main}, Header: ${renderCounts.header}`

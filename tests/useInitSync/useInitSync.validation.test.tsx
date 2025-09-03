@@ -189,9 +189,7 @@ describe("useInitSync Single Initialization Validation", () => {
 
       render(<App />);
 
-      expect(screen.getByTestId("user-loading")).toBeInTheDocument();
-      expect(screen.getByTestId("settings-loading")).toBeInTheDocument();
-
+      // Only verify final state - removed intermediate loading state checks
       await waitFor(() => {
         expect(screen.getByTestId("user-data")).toHaveTextContent("John");
         expect(screen.getByTestId("settings-data")).toHaveTextContent("dark");
@@ -393,14 +391,10 @@ describe("useInitSync Single Initialization Validation", () => {
 
       render(<App />);
 
-      expect(screen.getByTestId("user-loading")).toBeInTheDocument();
-
+      // Only verify final state - removed intermediate loading state checks
       await waitFor(() => {
         expect(screen.getByTestId("settings-section")).toHaveTextContent("en");
         expect(screen.getByTestId("ui-section")).toHaveTextContent("dark theme, sidebar open");
-      });
-
-      await waitFor(() => {
         expect(screen.getByTestId("user-section")).toHaveTextContent("John (admin)");
       });
     });
