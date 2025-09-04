@@ -3,7 +3,7 @@ title: useInitSync()
 description: React hook for initializing proxy state with data fetching and loading states.
 ---
 
-The `useInitSync()` hook provides a declarative way to initialize your proxy state, handle loading states, and manage async data fetching. It enforces the "One Store, One Initialization" pattern for predictable state management.
+The `useInitSync()` hook provides a declarative way to initialize your proxy state with atomic updates and batched state changes. It enforces the "One Store, One Initialization" pattern and uses Mesa's batching system to ensure all initialization changes are applied together as a single update.
 
 ## Syntax
 
@@ -37,21 +37,21 @@ import { proxy, useStore, useInitSync } from "mesa-react";
 const userStore = proxy({
   name: "",
   email: "",
-  loading: true,
+  initialized: false, // Use 'initialized' instead of 'loading' for direct initialization
 });
 
 function UserProfile() {
-  // Initialize with direct values
+  // Initialize with direct values - all changes applied atomically
   useInitSync(userStore, {
     name: "John Doe",
     email: "john@example.com",
-    loading: false,
+    initialized: true,
   });
 
   const user = useStore(userStore);
 
-  if (user.loading) {
-    return <div>Loading...</div>;
+  if (!user.initialized) {
+    return <div>Initializing...</div>;
   }
 
   return (
@@ -96,10 +96,12 @@ function Counter() {
 
 ### Basic Async Initialization
 
+**⚠️ Important: Mesa batches all state changes during initialization. Intermediate loading states are not visible to components until initialization completes.**
+
 ```jsx
 const userStore = proxy({
   user: null,
-  loading: true,
+  initialized: false,
   error: null,
 });
 
@@ -119,22 +121,23 @@ const fetchUser = () => {
 
 function UserProfile() {
   useInitSync(userStore, async (state) => {
-    state.loading = true;
+    // ⚠️ All state changes below are batched - intermediate states won't trigger renders
     state.error = null;
     
     try {
       const user = await fetchUser();
       state.user = user;
+      state.initialized = true; // Only this final state is visible
     } catch (error) {
       state.error = error.message;
-    } finally {
-      state.loading = false;
+      state.initialized = true; // Ensure we exit loading state even on error
     }
+    // All changes above are applied atomically when initialization completes
   });
 
-  const { user, loading, error } = useStore(userStore);
+  const { user, initialized, error } = useStore(userStore);
 
-  if (loading) return <div>Loading user...</div>;
+  if (!initialized) return <div>Loading user...</div>; // Shows until ALL initialization completes
   if (error) return <div>Error: {error}</div>;
   if (!user) return <div>No user found</div>;
 
@@ -148,14 +151,14 @@ function UserProfile() {
 }
 ```
 
-### Multiple Data Sources
+### Multiple Data Sources (Atomic Updates)
 
 ```jsx
 const dashboardStore = proxy({
   user: null,
   stats: null,
   notifications: [],
-  loading: true,
+  initialized: false,
   error: null,
 });
 
@@ -182,24 +185,26 @@ const fetchDashboardData = async () => {
 
 function Dashboard() {
   useInitSync(dashboardStore, async (state) => {
-    state.loading = true;
+    // ✅ All state changes are batched - only final result triggers render
     state.error = null;
 
     try {
       const { user, stats, notifications } = await fetchDashboardData();
+      // All these assignments happen atomically
       state.user = user;
       state.stats = stats;
       state.notifications = notifications;
+      state.initialized = true;
     } catch (error) {
       state.error = error.message;
-    } finally {
-      state.loading = false;
+      state.initialized = true; // Ensure we complete initialization
     }
+    // Component will only re-render once with all data populated
   });
 
-  const { user, stats, notifications, loading, error } = useStore(dashboardStore);
+  const { user, stats, notifications, initialized, error } = useStore(dashboardStore);
 
-  if (loading) return <div>Loading dashboard...</div>;
+  if (!initialized) return <div>Loading dashboard...</div>; // Shows during entire initialization
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -222,6 +227,60 @@ function Dashboard() {
 }
 ```
 
+## Understanding Mesa's Batching System
+
+**🔥 Critical: `useInitSync` uses Mesa's global batching system to ensure atomic updates.**
+
+### How Batching Works
+
+```jsx
+// What you write:
+useInitSync(store, async (state) => {
+  state.loading = true;        // Queued in batch
+  const data = await fetch();  // Async operation
+  state.data = data;          // Queued in batch  
+  state.loading = false;      // Queued in batch
+  state.error = null;         // Queued in batch
+});
+
+// What actually happens:
+// 1. startGlobalBatch() - Begin queuing all state changes
+// 2. All state.* assignments are queued, not applied immediately
+// 3. Async operations run normally
+// 4. endGlobalBatch() - All queued changes applied atomically
+// 5. Component re-renders ONCE with final state
+
+// Component only sees: loading=false, data=fetchedData, error=null
+```
+
+### Why This Matters
+
+- **No intermediate renders** - Components never see `loading=true` state
+- **Performance optimized** - Only one render per initialization
+- **Atomic updates** - All changes appear together or not at all
+- **Predictable behavior** - No race conditions from partial updates
+
+### Correct Patterns
+
+```jsx
+// ✅ Use 'initialized' flag instead of 'loading'
+const store = proxy({
+  data: null,
+  initialized: false, // This will be false until ALL changes complete
+  error: null,
+});
+
+useInitSync(store, async (state) => {
+  try {
+    state.data = await fetchData();
+  } catch (error) {
+    state.error = error.message;
+  } finally {
+    state.initialized = true; // Mark completion
+  }
+});
+```
+
 ## Configuration Options
 
 ```typescript
@@ -239,17 +298,17 @@ interface UseInitSyncOptions {
 ```jsx
 function UserProfile({ userId }) {
   useInitSync(userStore, async (state) => {
-    state.loading = true;
+    // Reset and load new user data atomically
     const user = await fetchUser(userId);
     state.user = user;
-    state.loading = false;
+    state.initialized = true;
   }, {
     deps: [userId] // Re-run when userId changes
   });
 
-  const { user, loading } = useStore(userStore);
+  const { user, initialized } = useStore(userStore);
   
-  return loading ? <div>Loading...</div> : <UserCard user={user} />;
+  return !initialized ? <div>Loading...</div> : <UserCard user={user} />;
 }
 ```
 
@@ -293,37 +352,41 @@ function DataComponent() {
 
 ## Store Separation Patterns
 
-### Domain-Separated Stores
+### Domain-Separated Stores (Independent Initialization)
 
 ```jsx
 // ✅ Good: Separate stores for different concerns
-const userStore = proxy({ user: null, loading: false });
-const cartStore = proxy({ items: [], total: 0 });
-const uiStore = proxy({ theme: "light", sidebarOpen: false });
+const userStore = proxy({ user: null, initialized: false });
+const cartStore = proxy({ items: [], total: 0, initialized: false });
+const uiStore = proxy({ theme: "light", sidebarOpen: false, initialized: false });
 
 function App() {
-  // Each store gets its own initialization
+  // Each store initializes independently with atomic updates
   useInitSync(userStore, async (state) => {
     const user = await fetchCurrentUser();
     state.user = user;
+    state.initialized = true; // Atomic completion
   });
 
   useInitSync(cartStore, async (state) => {
     const cart = await fetchUserCart();
     state.items = cart.items;
     state.total = cart.total;
+    state.initialized = true; // Atomic completion
   });
 
   useInitSync(uiStore, (state) => {
+    // Synchronous initialization also batched
     state.theme = localStorage.getItem("theme") || "light";
     state.sidebarOpen = window.innerWidth > 1024;
+    state.initialized = true;
   });
 
   return <MainApp />;
 }
 ```
 
-### Coordinated Initialization
+### Coordinated Initialization (Single Store)
 
 ```jsx
 // ✅ Good: Single store with coordinated initialization
@@ -336,23 +399,25 @@ const appStore = proxy({
 
 function App() {
   useInitSync(appStore, async (state) => {
-    // Load all related data together
+    // Load all related data together - all changes batched
     const [user, settings, notifications] = await Promise.all([
       fetchUser(),
       fetchUserSettings(),
       fetchNotifications()
     ]);
 
+    // All assignments happen atomically
     state.user = user;
     state.settings = settings;
     state.notifications = notifications;
     state.initialized = true;
+    // Component will only re-render once with all data populated
   });
 
   const { initialized } = useStore(appStore);
 
   if (!initialized) {
-    return <LoadingScreen />;
+    return <LoadingScreen />; // Shows during entire initialization
   }
 
   return <MainApp />;
@@ -450,15 +515,18 @@ function TypedUserComponent() {
 const userStore = proxy({ user: null });
 const productsStore = proxy({ products: [] });
 
-// Handle loading states explicitly
+// Handle initialization states correctly with batching
 useInitSync(store, async (state) => {
-  state.loading = true;
+  // ✅ All state changes are batched until completion
   try {
     const data = await fetchData();
     state.data = data;
-  } finally {
-    state.loading = false;
+    state.initialized = true;
+  } catch (error) {
+    state.error = error.message;
+    state.initialized = true; // Always complete initialization
   }
+  // Component re-renders only once with final state
 });
 
 // Use dependencies for conditional re-initialization
@@ -472,9 +540,16 @@ useInitSync(store, fetchData, { deps: [userId] });
 useInitSync(store, initUser);
 useInitSync(store, initSettings); // ❌ Error!
 
-// Don't forget error handling
+// Don't expect intermediate loading states to be visible
 useInitSync(store, async (state) => {
-  const data = await fetchData(); // ❌ No error handling
+  state.loading = true;        // ❌ Won't trigger render
+  state.data = await fetch();  // ❌ Component won't see loading=true
+  state.loading = false;       // ❌ Only this final state is visible
+});
+
+// Don't forget error handling and completion state
+useInitSync(store, async (state) => {
+  const data = await fetchData(); // ❌ No error handling, no completion state
   state.data = data;
 });
 
@@ -483,14 +558,26 @@ function Component() {
   const store = proxy({ data: null }); // ❌ Creates new store each render
   useInitSync(store, fetchData);
 }
+
+// Don't access other stores during initialization (causes infinite loops)
+useInitSync(cartStore, async (state) => {
+  state.items = await fetchCart();
+  // ❌ Accessing productsStore during cart initialization
+  state.total = state.items.reduce((sum, item) => {
+    const product = productsStore.products.find(p => p.id === item.id);
+    return sum + product.price * item.quantity;
+  }, 0);
+});
 ```
 
 ## Performance Considerations
 
 - **Initialization runs only once** per component mount (unless dependencies change)
-- **Store separation** prevents unnecessary re-renders across unrelated components
-- **Fine-grained subscriptions** ensure optimal update patterns
+- **Store separation** prevents unnecessary re-renders across unrelated components  
+- **Atomic batching** ensures all initialization changes trigger only one render
+- **Fine-grained subscriptions** ensure optimal update patterns after initialization
 - **Async operations** don't block the UI thread
+- **Intermediate states are batched** - no performance cost from partial updates
 
 ## Common Patterns
 
@@ -500,28 +587,29 @@ function Component() {
 function ProductList() {
   const productsStore = proxy({
     products: [],
-    loading: true,
+    initialized: false, // Use initialized instead of loading
     error: null,
   });
 
   useInitSync(productsStore, async (state) => {
+    // ✅ All state changes are batched
     try {
       const products = await fetchProducts();
       state.products = products;
     } catch (error) {
       state.error = error.message;
     } finally {
-      state.loading = false;
+      state.initialized = true; // Always mark as complete
     }
   });
 
-  const { products, loading, error } = useStore(productsStore);
+  const { products, initialized, error } = useStore(productsStore);
 
   if (error) return <ErrorMessage error={error} />;
 
   return (
     <div>
-      {loading ? (
+      {!initialized ? (
         <SkeletonGrid count={6} />
       ) : (
         <ProductGrid products={products} />
@@ -536,11 +624,13 @@ function ProductList() {
 ```jsx
 function ConditionalData({ shouldLoad }) {
   useInitSync(dataStore, async (state) => {
+    // ✅ Both branches complete atomically
     if (shouldLoad) {
       state.data = await fetchData();
     } else {
       state.data = null;
     }
+    state.initialized = true; // Always mark completion
   }, {
     deps: [shouldLoad]
   });

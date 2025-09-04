@@ -524,22 +524,154 @@ const fetchCart = (userId: string) => fetchWithDelay(mockCart, 600); // Medium
 4. **Educational**: Clear learning value for each example
 5. **Consistent**: Matches existing example design patterns
 
+## 🚨 CRITICAL: Maximum Update Depth Prevention
+
+### 🔥 Common Infinite Loop Causes (NEVER DO THESE)
+
+#### 1. **Hook in useMemo Dependencies** 
+```tsx
+// ❌ NEVER: Hook inside dependency array
+const stats = useMemo(() => {
+  return { count: data.length };
+}, [
+  useStore(store, s => s.data.length) // ❌ This causes infinite loops
+]);
+
+// ✅ CORRECT: Separate useStore calls
+const dataLength = useStore(store, s => s.data.length);
+const stats = useMemo(() => {
+  return { count: dataLength };
+}, [dataLength]);
+```
+
+#### 2. **Unstable useInitSync Dependencies**
+```tsx
+// ❌ NEVER: Multiple separate primitive deps
+const userLoading = useStore(userStore, s => s.loading);
+const userAuth = useStore(userStore, s => s.isAuthenticated); 
+const userId = useStore(userStore, s => s.user?.id);
+useInitSync(cartStore, async (state) => {
+  // ...
+}, { 
+  deps: [userLoading, userAuth, userId] // ❌ Unstable array reference
+});
+
+// ✅ CORRECT: Single stable object dependency
+const userState = useStore(userStore, s => ({
+  loading: s.loading,
+  isAuthenticated: s.isAuthenticated,
+  userId: s.user?.id
+}));
+useInitSync(cartStore, async (state) => {
+  // ...
+}, { 
+  deps: [userState.loading, userState.isAuthenticated, userState.userId]
+});
+```
+
+#### 3. **Cross-Store Access in Calculations**
+```tsx
+// ❌ NEVER: External store access in shared functions
+const calculateCartTotals = () => {
+  const products = productsStore.products; // ❌ Cross-store access
+  cartStore.items.forEach(item => {
+    const product = products.find(p => p.id === item.productId);
+    // This creates circular dependencies
+  });
+  cartStore.total = total; // Multiple updates
+};
+
+// ✅ CORRECT: Inline calculations with local data
+const updateCart = () => {
+  // All calculations inline, no external function calls
+  let total = 0;
+  cartStore.items.forEach(item => {
+    const product = productsStore.products.find(p => p.id === item.productId);
+    if (product) total += product.price * item.quantity;
+  });
+  cartStore.total = total;
+};
+```
+
+#### 4. **Multiple Store Loading Checks**
+```tsx
+// ❌ NEVER: Separate boolean checks that change frequently
+const productsReady = useStore(productsStore, s => !s.loading);
+const userReady = useStore(userStore, s => !s.loading);
+const cartReady = useStore(cartStore, s => !s.loading);
+const allReady = productsReady && userReady && cartReady; // ❌ Recalculates constantly
+
+// ✅ CORRECT: Single subscription with stable reference
+const allStoresReady = useStore([productsStore, userStore, cartStore], 
+  ([products, user, cart]) => !products.loading && !user.loading && !cart.loading
+);
+```
+
+### 🛡️ Prevention Rules (MANDATORY)
+
+#### Rule 1: **No Hooks in Dependencies**
+- Never call `useStore`, `useState`, `useEffect`, etc. inside dependency arrays
+- Always declare hooks at component top level first
+
+#### Rule 2: **Stable Dependencies Only**
+- Use object destructuring for multiple values from same store
+- Avoid array literals in deps (use primitive values)
+- Prefer single store subscriptions over multiple
+
+#### Rule 3: **No Shared Calculation Functions**
+- Inline all calculations that modify store state
+- Avoid helper functions that access multiple stores
+- Each update should be self-contained
+
+#### Rule 4: **Single Responsibility Updates**
+- One store update per user action
+- Batch related changes within same store
+- Avoid cascading store updates
+
+#### Rule 5: **useInitSync Stability**
+- Dependencies should be primitives or stable object properties
+- Use conditional return instead of conditional execution
+- Keep deps array as short as possible
+
+### ⚠️ Debug Checklist (When Infinite Loops Occur)
+
+1. **Check useMemo/useCallback deps**: Any hooks inside?
+2. **Check useInitSync deps**: Are they stable primitives?
+3. **Check cross-store access**: Any external store reads in calculations?
+4. **Check component subscriptions**: Too many useStore calls?
+5. **Check update cascades**: Does one store update trigger another?
+
+### 🧪 Testing for Infinite Loops
+
+```tsx
+// Add this to components during development
+const renderCount = useRef(0);
+renderCount.current++;
+console.log(`Component rendered ${renderCount.current} times`);
+if (renderCount.current > 10) {
+  console.error('⚠️ Possible infinite loop detected!');
+}
+```
+
 ## Risk Mitigation
 
 ### Technical Risks
-- **Cross-store dependencies**: Use proper dependency management patterns
+- **Cross-store dependencies**: Use proper dependency management patterns with stable references
 - **Performance issues**: Implement selective subscriptions correctly
-- **State synchronization**: Avoid circular dependencies
+- **State synchronization**: Avoid circular dependencies with single-direction data flow
+- **Infinite loops**: Follow the prevention rules above religiously
 
 ### Implementation Risks  
 - **Pattern confusion**: Clear documentation of which pattern to use when
 - **Complexity creep**: Keep examples focused on core concepts
 - **Maintenance burden**: Use consistent, reusable patterns
+- **Hook violations**: Always run ESLint with React hooks plugin
 
 ### User Experience Risks
 - **Cognitive overload**: Progressive disclosure of complexity
 - **Confusing interactions**: Clear labeling and feedback
 - **Mobile experience**: Test early and often on devices
+- **Performance degradation**: Monitor for infinite loops in development
 
 ## Timeline
 
