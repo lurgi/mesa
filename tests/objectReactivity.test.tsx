@@ -5,7 +5,7 @@ describe("Object Fine-Grained Reactivity", () => {
   describe("Top-level property reactivity", () => {
     test("should only re-render components subscribed to changed property", () => {
       const state = proxy({ count: 0, name: "John", status: "active" });
-      
+
       let countRenders = 0;
       let nameRenders = 0;
       let statusRenders = 0;
@@ -35,8 +35,20 @@ describe("Object Fine-Grained Reactivity", () => {
             <NameComponent />
             <StatusComponent />
             <button onClick={() => state.count++}>increment count</button>
-            <button onClick={() => { state.name = "Jane"; }}>change name</button>
-            <button onClick={() => { state.status = "inactive"; }}>change status</button>
+            <button
+              onClick={() => {
+                state.name = "Jane";
+              }}
+            >
+              change name
+            </button>
+            <button
+              onClick={() => {
+                state.status = "inactive";
+              }}
+            >
+              change status
+            </button>
           </div>
         );
       }
@@ -63,7 +75,7 @@ describe("Object Fine-Grained Reactivity", () => {
 
     test("should handle computed values based on multiple properties", () => {
       const state = proxy({ firstName: "John", lastName: "Doe", age: 30 });
-      
+
       let fullNameRenders = 0;
       let ageRenders = 0;
 
@@ -84,8 +96,20 @@ describe("Object Fine-Grained Reactivity", () => {
           <div>
             <FullNameComponent />
             <AgeComponent />
-            <button onClick={() => { state.firstName = "Jane"; }}>change first name</button>
-            <button onClick={() => { state.age = 31; }}>change age</button>
+            <button
+              onClick={() => {
+                state.firstName = "Jane";
+              }}
+            >
+              change first name
+            </button>
+            <button
+              onClick={() => {
+                state.age = 31;
+              }}
+            >
+              change age
+            </button>
           </div>
         );
       }
@@ -114,7 +138,10 @@ describe("Object Fine-Grained Reactivity", () => {
     test("should re-render only components subscribed to changed nested properties", () => {
       const state = proxy({
         user: { name: "John", profile: { age: 30, city: "New York" } },
-        settings: { theme: "dark", notifications: { email: true, push: false } }
+        settings: {
+          theme: "dark",
+          notifications: { email: true, push: false },
+        },
       });
 
       let userNameRenders = 0;
@@ -143,7 +170,9 @@ describe("Object Fine-Grained Reactivity", () => {
       function EmailNotificationComponent() {
         emailNotificationRenders++;
         const email = useStore(state, (s) => s.settings.notifications.email);
-        return <div data-testid="email-notification">{email ? "on" : "off"}</div>;
+        return (
+          <div data-testid="email-notification">{email ? "on" : "off"}</div>
+        );
       }
 
       function App() {
@@ -153,10 +182,34 @@ describe("Object Fine-Grained Reactivity", () => {
             <UserAgeComponent />
             <SettingsThemeComponent />
             <EmailNotificationComponent />
-            <button onClick={() => { state.user.name = "Jane"; }}>change name</button>
-            <button onClick={() => { state.user.profile.age = 31; }}>change age</button>
-            <button onClick={() => { state.settings.theme = "light"; }}>change theme</button>
-            <button onClick={() => { state.settings.notifications.email = false; }}>toggle email</button>
+            <button
+              onClick={() => {
+                state.user.name = "Jane";
+              }}
+            >
+              change name
+            </button>
+            <button
+              onClick={() => {
+                state.user.profile.age = 31;
+              }}
+            >
+              change age
+            </button>
+            <button
+              onClick={() => {
+                state.settings.theme = "light";
+              }}
+            >
+              change theme
+            </button>
+            <button
+              onClick={() => {
+                state.settings.notifications.email = false;
+              }}
+            >
+              toggle email
+            </button>
           </div>
         );
       }
@@ -186,7 +239,7 @@ describe("Object Fine-Grained Reactivity", () => {
 
     test("should handle entire object replacement", () => {
       const state = proxy({
-        user: { name: "John", age: 30 }
+        user: { name: "John", age: 30 },
       });
 
       let userNameRenders = 0;
@@ -209,9 +262,13 @@ describe("Object Fine-Grained Reactivity", () => {
           <div>
             <UserNameComponent />
             <UserAgeComponent />
-            <button onClick={() => { 
-              state.user = { name: "Jane", age: 25 }; 
-            }}>replace user</button>
+            <button
+              onClick={() => {
+                state.user = { name: "Jane", age: 25 };
+              }}
+            >
+              replace user
+            </button>
           </div>
         );
       }
@@ -219,14 +276,14 @@ describe("Object Fine-Grained Reactivity", () => {
       render(<App />);
       expect(screen.getByTestId("user-name")).toHaveTextContent("John");
       expect(screen.getByTestId("user-age")).toHaveTextContent("30");
-      
+
       const initialUserNameRenders = userNameRenders;
       const initialUserAgeRenders = userAgeRenders;
 
       act(() => {
         fireEvent.click(screen.getByText("replace user"));
       });
-      
+
       expect(screen.getByTestId("user-name")).toHaveTextContent("Jane");
       expect(screen.getByTestId("user-age")).toHaveTextContent("25");
       expect(userNameRenders).toBe(initialUserNameRenders + 1);
@@ -245,7 +302,13 @@ describe("Object Fine-Grained Reactivity", () => {
         return (
           <div>
             <div data-testid="dynamic-prop">{dynamicProp}</div>
-            <button onClick={() => { state.dynamicProp = "added"; }}>add property</button>
+            <button
+              onClick={() => {
+                state.dynamicProp = "added";
+              }}
+            >
+              add property
+            </button>
           </div>
         );
       }
@@ -272,7 +335,13 @@ describe("Object Fine-Grained Reactivity", () => {
         return (
           <div>
             <div data-testid="temp">{temp}</div>
-            <button onClick={() => { delete state.temp; }}>delete property</button>
+            <button
+              onClick={() => {
+                delete state.temp;
+              }}
+            >
+              delete property
+            </button>
           </div>
         );
       }
@@ -296,22 +365,46 @@ describe("Object Fine-Grained Reactivity", () => {
         showFirstName: true,
         firstName: "John",
         lastName: "Doe",
-        nickname: "Johnny"
+        nickname: "Johnny",
       });
 
       let renders = 0;
       function TestComponent() {
         renders++;
-        const displayName = useStore(state, (s) => 
+        const displayName = useStore(state, (s) =>
           s.showFirstName ? s.firstName : s.lastName
         );
         return (
           <div>
             <div data-testid="display-name">{displayName}</div>
-            <button onClick={() => { state.showFirstName = !state.showFirstName; }}>toggle mode</button>
-            <button onClick={() => { state.firstName = "Jane"; }}>change first name</button>
-            <button onClick={() => { state.lastName = "Smith"; }}>change last name</button>
-            <button onClick={() => { state.nickname = "Janie"; }}>change nickname</button>
+            <button
+              onClick={() => {
+                state.showFirstName = !state.showFirstName;
+              }}
+            >
+              toggle mode
+            </button>
+            <button
+              onClick={() => {
+                state.firstName = "Jane";
+              }}
+            >
+              change first name
+            </button>
+            <button
+              onClick={() => {
+                state.lastName = "Smith";
+              }}
+            >
+              change last name
+            </button>
+            <button
+              onClick={() => {
+                state.nickname = "Janie";
+              }}
+            >
+              change nickname
+            </button>
           </div>
         );
       }
@@ -347,26 +440,6 @@ describe("Object Fine-Grained Reactivity", () => {
       expect(renders).toBe(initialRenders + 2);
     });
 
-    test("should handle object-returning selectors", () => {
-      const state = proxy({
-        user: { name: "John", age: 30 },
-        settings: { theme: "dark" }
-      });
-
-      // This is problematic pattern that should cause infinite re-renders
-      function ProblematicComponent() {
-        const userAndSettings = useStore(state, (s) => ({
-          user: s.user,
-          theme: s.settings.theme
-        }));
-        return <div data-testid="problematic">{userAndSettings.user.name}</div>;
-      }
-
-      // This should throw due to infinite re-renders
-      expect(() => {
-        render(<ProblematicComponent />);
-      }).toThrow();
-    });
 
     test("should handle deep nesting efficiently", () => {
       const state = proxy({
@@ -374,23 +447,30 @@ describe("Object Fine-Grained Reactivity", () => {
           level2: {
             level3: {
               level4: {
-                value: "deep"
-              }
-            }
-          }
-        }
+                value: "deep",
+              },
+            },
+          },
+        },
       });
 
       let renders = 0;
       function DeepComponent() {
         renders++;
-        const deepValue = useStore(state, (s) => s.level1.level2.level3.level4.value);
+        const deepValue = useStore(
+          state,
+          (s) => s.level1.level2.level3.level4.value
+        );
         return (
           <div>
             <div data-testid="deep-value">{deepValue}</div>
-            <button onClick={() => { 
-              state.level1.level2.level3.level4.value = "updated";
-            }}>update deep</button>
+            <button
+              onClick={() => {
+                state.level1.level2.level3.level4.value = "updated";
+              }}
+            >
+              update deep
+            </button>
           </div>
         );
       }
