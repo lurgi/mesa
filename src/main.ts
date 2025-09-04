@@ -15,6 +15,7 @@ export {
   clearBatchedCallbacks,
   withBatch,
   flushBatchedCallbacks,
+  maybeBatchCallback,
 } from "./core/batch-manager";
 
 export type * from "./types";

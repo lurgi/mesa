@@ -9,7 +9,7 @@ import { StoreValidator } from "./useInitSync/store-validator";
 import { InitializerExecutor } from "./useInitSync/initializer-executor";
 import { CleanupManager } from "./useInitSync/cleanup-manager";
 import { ErrorManager } from "./useInitSync/error-manager";
-import { startGlobalBatch, endGlobalBatch } from "./core/batch-manager";
+import { startGlobalBatch, endGlobalBatch, maybeBatchCallback } from "./core/batch-manager";
 
 export function useInitSync<T extends object>(
   store: T,
@@ -29,7 +29,11 @@ export function useInitSync<T extends object>(
   const [, forceUpdate] = useState({});
 
   const triggerUpdate = useCallback(() => {
-    forceUpdate({});
+    // Try to batch the update - if batching is active, it will be queued
+    // If not active, execute immediately
+    if (!maybeBatchCallback(() => forceUpdate({}))) {
+      forceUpdate({});
+    }
   }, []);
 
   const refetch = useCallback(() => {
@@ -124,6 +128,8 @@ export function useInitSync<T extends object>(
               onSuccess
             );
           }
+          
+          // triggerUpdate will be batched and executed after endGlobalBatch
           triggerUpdate();
         } catch (error) {
           triggerUpdate();
@@ -131,7 +137,7 @@ export function useInitSync<T extends object>(
             throw error;
           }
         } finally {
-          endGlobalBatch(); // 🔥 일괄 플러시
+          endGlobalBatch(); // 🔥 일괄 플러시 (여기서 triggerUpdate 실행됨)
         }
       };
 

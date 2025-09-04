@@ -3,7 +3,7 @@ import { proxy, useStore, useInitSync } from "../../src/main";
 
 describe("useInitSync Batching Tests", () => {
   describe("Multiple state changes batching", () => {
-    test("should batch multiple synchronous state changes into single render", () => {
+    test("should batch multiple synchronous state changes into single render", async () => {
       let renderCount = 0;
 
       const store = proxy({
@@ -29,9 +29,12 @@ describe("useInitSync Batching Tests", () => {
 
       render(<TestComponent />);
 
-      expect(screen.getByTestId("result")).toHaveTextContent(
-        '{"a":1,"b":2,"c":3,"d":4}'
-      );
+      // Wait for batched state changes to be applied
+      await waitFor(() => {
+        expect(screen.getByTestId("result")).toHaveTextContent(
+          '{"a":1,"b":2,"c":3,"d":4}'
+        );
+      });
 
       // TDD Red: This should fail initially - target 3 renders or less
       expect(renderCount).toBeLessThan(3);

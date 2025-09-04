@@ -253,11 +253,17 @@ describe("useInitSync Shopping Cart Exact Reproduction", () => {
         }
       );
 
-      // Exact state extraction from page.tsx
+      // All hooks must be called before any conditional returns
       const { loading, error, initialized } = useStore(shoppingState, (s) => ({
         loading: s.loading,
         error: s.error,
         initialized: s.initialized,
+      }));
+
+      // Exact statsData from page.tsx - moved before conditional rendering
+      const statsData = useStore(shoppingState, (s) => ({
+        productsCount: s.products.length,
+        cartCount: s.cart.length,
       }));
 
       // Check for infinite loop - allow more renders for now until batching is implemented
@@ -281,12 +287,6 @@ describe("useInitSync Shopping Cart Exact Reproduction", () => {
           </div>
         );
       }
-
-      // Exact statsData from page.tsx
-      const statsData = useStore(shoppingState, (s) => ({
-        productsCount: s.products.length,
-        cartCount: s.cart.length,
-      }));
 
       return (
         <div data-testid="shopping-app">

@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useRef, useLayoutEffect } from "react";
+import { useSyncExternalStore, useRef, useLayoutEffect, useCallback } from "react";
 import { PathTracker } from "./useStore/path-tracker";
 import { SubscriptionManager } from "./useStore/subscription-manager";
 import { ValueComparator } from "./useStore/value-comparator";
@@ -18,7 +18,7 @@ export function useStore<T extends object, R = T>(
 
   selectorRef.current = actualSelector;
 
-  const subscribe = (callback: () => void) => {
+  const subscribe = useCallback((callback: () => void) => {
     const { paths, initialValue } = PathTracker.trackPaths(
       store,
       selectorRef.current
@@ -59,7 +59,7 @@ export function useStore<T extends object, R = T>(
     };
 
     return cleanup;
-  };
+  }, []); // 의존성 제거 - store는 ref로 접근
 
   const getSnapshot = (): R => {
     return SnapshotManager.getSnapshot(
