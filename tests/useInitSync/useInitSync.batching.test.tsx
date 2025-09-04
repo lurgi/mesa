@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { proxy, useStore, useInitSync } from "../../src/main";
-import { vi } from "vitest";
 
 describe("useInitSync Batching Tests", () => {
   describe("Multiple state changes batching", () => {
@@ -69,10 +68,10 @@ describe("useInitSync Batching Tests", () => {
         return (
           <div>
             <div data-testid="status">{data.status}</div>
-            <div data-testid="loading">{data.loading ? "loading" : "ready"}</div>
-            <div data-testid="content">
-              {JSON.stringify(data.data)}
+            <div data-testid="loading">
+              {data.loading ? "loading" : "ready"}
             </div>
+            <div data-testid="content">{JSON.stringify(data.data)}</div>
           </div>
         );
       }
@@ -130,7 +129,7 @@ describe("useInitSync Batching Tests", () => {
           // Stage 3: Final updates
           state.user = userData;
           state.settings = settingsData;
-          state.notifications = notificationData;
+          state.notifications = notificationData as any[];
           state.loading = false;
           state.initialized = true;
         });
@@ -143,9 +142,7 @@ describe("useInitSync Batching Tests", () => {
             <div data-testid="notifications">
               {data.notifications.length} notifications
             </div>
-            <div data-testid="status">
-              {data.loading ? "loading" : "ready"}
-            </div>
+            <div data-testid="status">{data.loading ? "loading" : "ready"}</div>
             <div data-testid="initialized">{data.initialized.toString()}</div>
           </div>
         );
@@ -212,9 +209,7 @@ describe("useInitSync Batching Tests", () => {
           <div>
             <div data-testid="phase">{data.phase}</div>
             <div data-testid="final">{data.final.toString()}</div>
-            <div data-testid="steps">
-              {data.step3?.status || "waiting"}
-            </div>
+            <div data-testid="steps">{data.step3?.status || "waiting"}</div>
           </div>
         );
       }

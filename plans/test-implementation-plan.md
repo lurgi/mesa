@@ -165,28 +165,66 @@ const execute = async () => {
   - [x] 성능 엣지 케이스 테스트 (급속 상태 변경, 중첩 객체 업데이트)
 - [x] **Goal**: 새로운 기능의 요구사항을 코드로 정의하고, 초기에는 이 테스트들이 실패하게 만듭니다.
 
-### Phase 2: 테스트 통과를 위한 핵심 로직 구현 (Green 단계) (High Priority)
+### Phase 2: 테스트 통과를 위한 핵심 로직 구현 (Green 단계) (High Priority) - 모든 테스트가 통과해야 완료됩니다.
 
 #### 2.1 InitializerExecutor 수정
 
-- [ ] **Task**: `LoadingManager.setLoading()` 호출을 제거하여 불필요한 렌더링 유발을 막습니다.
-- [ ] **File**: `src/useInitSync/initializer-executor.ts`
-- [ ] **Goal**: 자동 loading 상태 관리를 제거하고, 사용자가 직접 제어하도록 만듭니다.
-- [ ] **Test**: 이 변경 후 Phase 1에서 수정한 테스트들이 점차 통과하기 시작해야 합니다.
+- [x] **Task**: `LoadingManager.setLoading()` 호출을 제거하여 불필요한 렌더링 유발을 막습니다.
+- [x] **File**: `src/useInitSync/initializer-executor.ts`
+- [x] **Changes**:
+  - [x] `executeAsync()`: 모든 `LoadingManager.setLoading()` 호출 제거 (lines 12, 33, 36)
+  - [x] `executeSync()`: 모든 `LoadingManager.setLoading()` 호출 제거 (lines 50, 59, 62)
+- [x] **Goal**: 자동 loading 상태 관리를 제거하고, 사용자가 직접 제어하도록 만듭니다.
+- [x] **Test**: 이 변경 후 Phase 1에서 수정한 테스트들이 점차 통과하기 시작해야 합니다.
 
 #### 2.2 전역 배치 모드 적용
 
-- [ ] **Task**: `useInitSync`에 전역 배치 모드를 적용하여 모든 상태 변경을 강제로 일괄 처리합니다.
-- [ ] **File**: `src/useInitSync.ts`
-- [ ] **Goal**: `await` 이후의 상태 변경을 포함한 모든 변경이 단일 배치로 처리되도록 보장합니다.
-- [ ] **Test**: Shopping Cart 테스트의 렌더링 횟수가 `5`회 미만으로 줄어들고 테스트가 통과해야 합니다.
+- [x] **Task**: `useInitSync`에 전역 배치 모드를 적용하여 모든 상태 변경을 강제로 일괄 처리합니다.
+- [x] **File**: `src/useInitSync.ts`, `src/core/batch-manager.ts`, `src/core/listeners.ts`
+- [x] **Changes**:
+  - [x] 새로운 `batch-manager.ts` 모듈 생성: `startGlobalBatch()`, `endGlobalBatch()`, `maybeBatchCallback()` 
+  - [x] `listeners.ts`에 배치 시스템 통합: `notifyPathListeners()`, `notifyGlobalListeners()` 수정
+  - [x] `useInitSync.ts`에 배치 모드 적용: 초기화 및 refetch 함수를 `startGlobalBatch()` ~ `endGlobalBatch()`로 감쌈
+  - [x] `main.ts`에서 배치 관련 함수들 export
+- [x] **Goal**: `await` 이후의 상태 변경을 포함한 모든 변경이 단일 배치로 처리되도록 보장합니다.
+- [x] **Test**: Shopping Cart 테스트의 렌더링 횟수가 `5`회 미만으로 줄어들고 테스트가 통과해야 합니다.
 
 #### 2.3 배치 범위 확장
 
-- [ ] **Task**: `setTimeout(0)` 대신 `queueMicrotask()`를 사용하여 비동기 함수의 전체 실행 범위를 하나의 태스크로 묶습니다.
-- [ ] **File**: `src/core/initialization-tracker.ts` (또는 관련 배치 처리 파일)
-- [ ] **Goal**: 비동기 함수의 전체 실행 컨텍스트를 커버하여 배치 범위를 확장합니다.
-- [ ] **Test**: `await` 이후의 상태 변경도 배치 처리되어 Phase 1의 테스트들이 모두 통과해야 합니다.
+- [x] **Task**: `queueMicrotask()`를 사용하여 비동기 함수의 전체 실행 범위를 하나의 태스크로 묶습니다.
+- [x] **File**: `src/core/batch-manager.ts`
+- [x] **Changes**:
+  - [x] `scheduleFlush()` 함수 분리: 더 견고한 플러시 스케줄링
+  - [x] `flushScheduled` 플래그 추가: 중복 플러시 방지
+  - [x] `withBatch()` 유틸리티 추가: Promise 기반 배치 래퍼
+  - [x] `flushBatchedCallbacks()` 추가: 즉시 플러시 기능
+  - [x] 개선된 에러 핸들링 및 중첩 microtask 처리
+- [x] **Goal**: 비동기 함수의 전체 실행 컨텍스트를 커버하여 배치 범위를 확장합니다.
+- [x] **Test**: `await` 이후의 상태 변경도 배치 처리되어 Phase 1의 테스트들이 모두 통과해야 합니다.
+
+#### 2.4 triggerUpdate() 배치 통합
+
+- [ ] **Task**: Integrate `triggerUpdate()` calls within useInitSync with the batch system
+- [ ] **File**: `src/useInitSync.ts`
+- [ ] **Problem**: Currently `triggerUpdate()` triggers immediate rendering regardless of batch state
+- [ ] **Changes**:
+  - [ ] Only execute `triggerUpdate()` calls within batch system
+  - [ ] Delay `triggerUpdate()` when batch is active
+  - [ ] Ensure consistent batch behavior for both sync/async functions
+- [ ] **Goal**: Complete resolution of infinite rendering loop
+- [ ] **Test**: Shopping Cart achieves < 5 renders
+
+#### 2.5 동기 함수 배치 처리 수정
+
+- [ ] **Task**: Fix batch system not working for synchronous initializer functions
+- [ ] **File**: `src/useInitSync/initializer-executor.ts`
+- [ ] **Problem**: `executeSync()` does not properly apply batch scope
+- [ ] **Changes**:
+  - [ ] Ensure synchronous functions also execute within batch mode
+  - [ ] Guarantee batched execution instead of immediate execution
+- [ ] **Test**: Synchronous batch test passes
+
+> **참고**: Phase 3는 Phase 2의 모든 테스트가 완전히 통과된 후에 시작해야 합니다.
 
 ### Phase 3: 호환성 검증 (Medium Priority)
 

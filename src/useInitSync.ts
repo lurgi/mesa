@@ -9,6 +9,7 @@ import { StoreValidator } from "./useInitSync/store-validator";
 import { InitializerExecutor } from "./useInitSync/initializer-executor";
 import { CleanupManager } from "./useInitSync/cleanup-manager";
 import { ErrorManager } from "./useInitSync/error-manager";
+import { startGlobalBatch, endGlobalBatch } from "./core/batch-manager";
 
 export function useInitSync<T extends object>(
   store: T,
@@ -36,6 +37,8 @@ export function useInitSync<T extends object>(
 
     const execute = async () => {
       try {
+        startGlobalBatch(); // 🔥 모든 알림 큐잉 시작
+        
         if (!suspense) {
           await InitializerExecutor.executeAsync(
             store,
@@ -57,6 +60,8 @@ export function useInitSync<T extends object>(
         if (errorBoundary) {
           throw error;
         }
+      } finally {
+        endGlobalBatch(); // 🔥 일괄 플러시
       }
     };
 
@@ -102,6 +107,8 @@ export function useInitSync<T extends object>(
 
       const execute = async () => {
         try {
+          startGlobalBatch(); // 🔥 모든 알림 큐잉 시작
+          
           if (!suspense) {
             await InitializerExecutor.executeAsync(
               store,
@@ -123,6 +130,8 @@ export function useInitSync<T extends object>(
           if (errorBoundary) {
             throw error;
           }
+        } finally {
+          endGlobalBatch(); // 🔥 일괄 플러시
         }
       };
 
