@@ -440,7 +440,6 @@ describe("Object Fine-Grained Reactivity", () => {
       expect(renders).toBe(initialRenders + 2);
     });
 
-
     test("should handle deep nesting efficiently", () => {
       const state = proxy({
         level1: {

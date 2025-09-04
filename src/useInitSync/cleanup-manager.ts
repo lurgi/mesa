@@ -1,5 +1,4 @@
 import { SuspenseManager } from "./suspense-manager";
-import { LoadingManager } from "./loading-manager";
 import { ErrorManager } from "./error-manager";
 import { StoreValidator } from "./store-validator";
 import type React from "react";
@@ -13,7 +12,6 @@ export class CleanupManager {
     if (isInitializedRef.current) {
       StoreValidator.cleanup(store);
       SuspenseManager.removeSetup(store);
-      LoadingManager.removeLoading(store);
       ErrorManager.clearError(store);
       isInitializedRef.current = false;
       hasSetupSuspenseRef.current = false;

@@ -265,15 +265,15 @@ const execute = async () => {
 
 #### 2.8 객체 반환 선택자(Object-Returning Selector) 오류 수정 (High Priority)
 
-- [ ] **Task**: 객체를 반환하는 선택자(selector)가 잠재적 성능 문제를 경고하기 위해 에러를 발생시켜야 하지만, 현재 그렇지 않은 문제를 수정합니다.
-- [ ] **File**: `tests/objectReactivity.test.tsx`, `src/useStore/value-comparator.ts` (추정)
-- [ ] **Problem**: `tests/objectReactivity.test.tsx`의 'should handle object-returning selectors' 테스트가 실패하고 있습니다. 이 테스트는 객체 선택자 사용 시 에러 발생을 기대하지만, 현재 에러가 발생하지 않습니다.
-- [ ] **Root Cause**: `useStore`의 선택자 값 비교 로직(`value-comparator` 또는 유사 로직)이 새로운 객체 참조가 반환될 때 이를 안티패턴으로 감지하지 못하고 있습니다. 이는 배칭 시스템과 무관한 `useStore`의 핵심적인 문제입니다.
-- [ ] **Changes**:
-  - [ ] `useStore`에서 선택자가 반환한 값의 동등성 비교 로직을 검토합니다.
-  - [ ] 반환된 값이 객체일 경우, 이것이 의도된 에러 발생 조건에 해당하는지 확인하고, 해당 로직을 수정하여 에러가 정상적으로 발생하도록 합니다.
-- [ ] **Goal**: 불필요한 리렌더링을 유발할 수 있는 객체 선택자 사용의 위험성에 대해 개발자에게 명확히 경고하는 기능을 복구합니다.
-- [ ] **Test**: `tests/objectReactivity.test.tsx` 테스트가 통과해야 합니다.
+- [x] **Task**: 객체를 반환하는 선택자(selector)가 잠재적 성능 문제를 경고하기 위해 에러를 발생시켜야 하지만, 현재 그렇지 않은 문제를 수정합니다.
+- [x] **File**: `tests/objectReactivity.test.tsx`, `src/useStore/value-comparator.ts` (추정)
+- [x] **Problem**: `tests/objectReactivity.test.tsx`의 'should handle object-returning selectors' 테스트가 실패하고 있습니다. 이 테스트는 객체 선택자 사용 시 에러 발생을 기대하지만, 현재 에러가 발생하지 않습니다.
+- [x] **Root Cause**: `useStore`의 선택자 값 비교 로직(`value-comparator` 또는 유사 로직)이 새로운 객체 참조가 반환될 때 이를 안티패턴으로 감지하지 못하고 있습니다. 이는 배칭 시스템과 무관한 `useStore`의 핵심적인 문제입니다.
+- [x] **Changes**:
+  - [x] `useStore`에서 선택자가 반환한 값의 동등성 비교 로직을 검토합니다.
+  - [x] 반환된 값이 객체일 경우, 이것이 의도된 에러 발생 조건에 해당하는지 확인하고, 해당 로직을 수정하여 에러가 정상적으로 발생하도록 합니다.
+- [x] **Goal**: 불필요한 리렌더링을 유발할 수 있는 객체 선택자 사용의 위험성에 대해 개발자에게 명확히 경고하는 기능을 복구합니다.
+- [x] **Test**: `tests/objectReactivity.test.tsx` 테스트가 통과해야 합니다.
 
 ---
 
@@ -290,15 +290,16 @@ const execute = async () => {
 - [x] useStore 무한 렌더링 루프 해결 (핵심 해결)
 - [x] LoadingManager 제거 및 사용자 직접 관리로 전환
 - [x] Error 테스트 호환성 수정 완료
+- [x] `objectReactivity` 문제 해결 완료
 
 **남은 과제**:
-- [ ] `objectReactivity` 테스트 실패 해결 (Phase 2.8)
+- 없음
 
 **테스트 결과**:
 - [x] Shopping Cart 테스트: < 5 renders 목표 달성 ✅
 - [x] Batching 테스트: 6/6 통과 ✅  
 - [x] Error 테스트: 12/12 통과 ✅
-- [ ] **전체 테스트: 105/106 통과 → 106/106 통과 목표**
+- [x] **전체 테스트: 106/106 통과 ✅**
 
 **Phase 3는 Phase 2.8 완료 후 진행하는 것을 권장합니다.**
 
@@ -306,34 +307,34 @@ const execute = async () => {
 
 #### 3.1 Suspense 테스트 호환성
 
-- [ ] **Task**: Suspense 관련 테스트가 여전히 잘 동작하는지 확인합니다.
-- [ ] **File**: `tests/useInitSync/useInitSync.suspense.test.tsx`
-- [ ] **Changes**: 수정 불필요 (기존 그대로 유지)
-- [ ] **Test**: 모든 Suspense 테스트 통과 확인
+- [x] **Task**: Suspense 관련 테스트가 여전히 잘 동작하는지 확인합니다.
+- [x] **File**: `tests/useInitSync/useInitSync.suspense.test.tsx`
+- [x] **Changes**: 수정 불필요 (기존 그대로 유지)
+- [x] **Test**: 모든 Suspense 테스트 통과 확인 ✅ (3/3 통과)
 
 #### 3.2 Error 테스트 호환성
 
-- [ ] **Task**: 에러 처리 테스트가 여전히 잘 동작하는지 확인합니다.
-- [ ] **File**: `tests/useInitSync/useInitSync.errors.test.tsx`
-- [ ] **Changes**: Phase 2에서 수정 완료됨. 최종 확인만 필요.
-- [ ] **Test**: 에러 처리 로직 정상 동작 확인
+- [x] **Task**: 에러 처리 테스트가 여전히 잘 동작하는지 확인합니다.
+- [x] **File**: `tests/useInitSync/useInitSync.errors.test.tsx`
+- [x] **Changes**: Phase 2에서 수정 완료됨. 최종 확인 완료.
+- [x] **Test**: 에러 처리 로직 정상 동작 확인 ✅ (12/12 통과)
 
 #### 3.3 전체 테스트 스위트 실행
 
-- [ ] **Task**: 모든 useInitSync 관련 테스트를 통합 실행합니다.
-- [ ] **Command**: `npm test tests/useInitSync/`
-- [ ] **Goal**: 모든 테스트 통과 및 성능 목표 달성
-- [ ] **Metrics**:
-  - [ ] 테스트 통과율: 100%
-  - [ ] Shopping Cart 렌더링: < 5회
-  - [ ] 기존 기능 호환성: 100%
+- [x] **Task**: 모든 useInitSync 관련 테스트를 통합 실행합니다.
+- [x] **Command**: `npm test tests/useInitSync/`
+- [x] **Goal**: 모든 테스트 통과 및 성능 목표 달성
+- [x] **Metrics**:
+  - [x] 테스트 통과율: 100%
+  - [x] Shopping Cart 렌더링: < 5회
+  - [x] 기존 기능 호환성: 100%
 
 #### 3.4 객체 선택자(Object Selector) 동작 검증
 
-- [ ] **Task**: `useStore`의 객체 반환 선택자가 의도대로 에러를 발생하는지 검증합니다.
-- [ ] **File**: `tests/objectReactivity.test.tsx`
-- [ ] **Changes**: Phase 2.8의 수정 사항에 따라 `should handle object-returning selectors` 테스트가 통과하는지 확인합니다.
-- [ ] **Test**: `objectReactivity.test.tsx`의 모든 테스트가 통과해야 합니다.
+- [x] **Task**: `useStore`의 객체 반환 선택자가 의도대로 에러를 발생하는지 검증합니다.
+- [x] **File**: `tests/objectReactivity.test.tsx`
+- [x] **Changes**: Phase 2.8의 수정 사항에 따라 `should handle object-returning selectors` 테스트가 통과하는지 확인합니다.
+- [x] **Test**: `objectReactivity.test.tsx`의 모든 테스트가 통과해야 합니다.
 
 ### Phase 4: 성능 및 최적화 (Low Priority)
 
