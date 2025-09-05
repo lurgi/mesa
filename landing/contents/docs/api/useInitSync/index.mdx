@@ -120,22 +120,21 @@ const fetchUser = () => {
 };
 
 function UserProfile() {
-  useInitSync(userStore, async (state) => {
-    // ⚠️ All state changes below are batched - intermediate states won't trigger renders
-    state.error = null;
-    
-    try {
-      const user = await fetchUser();
-      state.user = user;
-      state.initialized = true; // Only this final state is visible
-    } catch (error) {
-      state.error = error.message;
-      state.initialized = true; // Ensure we exit loading state even on error
-    }
+  const { error } = useInitSync(userStore, async (state) => {
+    // ✅ All state changes below are batched - intermediate states won't trigger renders
+    const user = await fetchUser(); // Let errors throw naturally - Mesa's ErrorManager handles them
+    state.user = user;
+    state.initialized = true; // Only this final state is visible
     // All changes above are applied atomically when initialization completes
+  }, {
+    onError: (error) => {
+      // Mesa's recommended error handling - executed outside batching context
+      console.error('User fetch failed:', error);
+      // Error is automatically managed by Mesa's ErrorManager
+    }
   });
 
-  const { user, initialized, error } = useStore(userStore);
+  const { user, initialized } = useStore(userStore);
 
   if (!initialized) return <div>Loading user...</div>; // Shows until ALL initialization completes
   if (error) return <div>Error: {error}</div>;
@@ -184,25 +183,24 @@ const fetchDashboardData = async () => {
 };
 
 function Dashboard() {
-  useInitSync(dashboardStore, async (state) => {
+  const { error } = useInitSync(dashboardStore, async (state) => {
     // ✅ All state changes are batched - only final result triggers render
-    state.error = null;
-
-    try {
-      const { user, stats, notifications } = await fetchDashboardData();
-      // All these assignments happen atomically
-      state.user = user;
-      state.stats = stats;
-      state.notifications = notifications;
-      state.initialized = true;
-    } catch (error) {
-      state.error = error.message;
-      state.initialized = true; // Ensure we complete initialization
-    }
+    const { user, stats, notifications } = await fetchDashboardData(); // Let errors throw naturally
+    // All these assignments happen atomically
+    state.user = user;
+    state.stats = stats;
+    state.notifications = notifications;
+    state.initialized = true;
     // Component will only re-render once with all data populated
+  }, {
+    onError: (error) => {
+      // Mesa's recommended error handling pattern
+      console.error('Dashboard initialization failed:', error);
+      // Mesa's ErrorManager automatically handles error state
+    }
   });
 
-  const { user, stats, notifications, initialized, error } = useStore(dashboardStore);
+  const { user, stats, notifications, initialized } = useStore(dashboardStore);
 
   if (!initialized) return <div>Loading dashboard...</div>; // Shows during entire initialization
   if (error) return <div>Error: {error}</div>;
@@ -280,6 +278,52 @@ useInitSync(store, async (state) => {
   }
 });
 ```
+
+## ⚠️ Error Handling Best Practices
+
+### Mesa's Recommended Pattern: throw + onError
+
+Mesa's internal architecture is optimized for the **throw + onError** pattern. This approach aligns with Mesa's batching system and ErrorManager for optimal performance and stability.
+
+```jsx
+// ✅ RECOMMENDED: throw + onError pattern (matches Mesa tests)
+useInitSync(store, async (state) => {
+  const data = await fetchData(); // Let errors throw naturally
+  state.data = data;
+  state.initialized = true;
+}, {
+  onError: (error) => {
+    // Mesa's ErrorManager automatically handles error state
+    // This callback executes outside the batching context
+    console.error('Initialization failed:', error);
+    showErrorNotification(error.message);
+  }
+});
+```
+
+### ❌ Avoid try-catch in Initializer
+
+While try-catch may seem intuitive, it can cause issues with Mesa's batching system and lead to excessive re-renders:
+
+```jsx
+// ❌ NOT RECOMMENDED: try-catch pattern (can cause infinite loops)
+useInitSync(store, async (state) => {
+  try {
+    const data = await fetchData();
+    state.data = data;
+  } catch (error) {
+    state.error = error.message; // Can trigger excessive re-renders
+  }
+  state.initialized = true;
+});
+```
+
+**Why avoid try-catch?**
+- Mesa's batching system handles thrown errors more efficiently
+- onError callbacks execute outside the batching context  
+- Prevents complex state transitions that can cause render loops
+- Aligns with Mesa's internal error handling architecture (ErrorManager)
+- Matches the pattern used in all Mesa test suites
 
 ## Configuration Options
 
@@ -515,18 +559,18 @@ function TypedUserComponent() {
 const userStore = proxy({ user: null });
 const productsStore = proxy({ products: [] });
 
-// Handle initialization states correctly with batching
+// Handle initialization states correctly with batching (Mesa recommended pattern)
 useInitSync(store, async (state) => {
   // ✅ All state changes are batched until completion
-  try {
-    const data = await fetchData();
-    state.data = data;
-    state.initialized = true;
-  } catch (error) {
-    state.error = error.message;
-    state.initialized = true; // Always complete initialization
-  }
+  const data = await fetchData(); // Let errors throw naturally
+  state.data = data;
+  state.initialized = true;
   // Component re-renders only once with final state
+}, {
+  onError: (error) => {
+    // Mesa's ErrorManager handles error state automatically
+    console.error('Initialization failed:', error);
+  }
 });
 
 // Use dependencies for conditional re-initialization
