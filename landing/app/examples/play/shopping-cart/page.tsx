@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { proxy, useStore, useInitSync } from "mesa-react";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,7 @@ import {
   Trash2,
   Heart,
   Search,
-  Filter,
   CreditCard,
-  MapPin,
-  Phone,
-  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "react-error-boundary";
@@ -170,9 +166,7 @@ const fetchUser = async (): Promise<{
 
   // Simulate 80% chance of authenticated user
   const isAuthenticated = Math.random() > 0.2;
-  console.log(
-    `✅ User session fetched: ${isAuthenticated ? "authenticated" : "guest"}`
-  );
+  console.log(`✅ User session fetched: ${isAuthenticated ? "authenticated" : "guest"}`);
 
   return {
     user: isAuthenticated ? mockUser : null,
@@ -243,7 +237,7 @@ const calculateCartTotals = () => {
 // =============================================================================
 
 function useProductsInitialization() {
-  const { error } = useInitSync(
+  useInitSync(
     productsStore,
     async (state) => {
       const data = await fetchProducts();
@@ -260,7 +254,7 @@ function useProductsInitialization() {
 }
 
 function useUserInitialization() {
-  const { error } = useInitSync(
+  useInitSync(
     userStore,
     async (state) => {
       const data = await fetchUser();
@@ -283,7 +277,7 @@ function useUserInitialization() {
 function useCartInitialization() {
   const isUserReady = useStore(userStore, (s) => !s.loading);
 
-  const { error } = useInitSync(
+  useInitSync(
     cartStore,
     async (state) => {
       if (!isUserReady) return; // Wait for user data
@@ -307,7 +301,8 @@ function useCartInitialization() {
 // ERROR & LOADING COMPONENTS
 // =============================================================================
 
-function ErrorFallback({ error, resetErrorBoundary }: any) {
+function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
+  console.error(error);
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="max-w-md w-full mx-auto p-6">
@@ -315,12 +310,8 @@ function ErrorFallback({ error, resetErrorBoundary }: any) {
           <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
             <Package className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Something went wrong
-          </h1>
-          <p className="text-gray-600 mb-6">
-            We encountered an error loading the shopping cart.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
+          <p className="text-gray-600 mb-6">We encountered an error loading the shopping cart.</p>
           <div className="space-y-3">
             <Button onClick={resetErrorBoundary} className="w-full">
               Try again
@@ -346,19 +337,12 @@ function LoadingFallback() {
             <ShoppingCart className="w-8 h-8 text-primary animate-pulse" />
           </div>
           <h2 className="text-xl font-semibold mb-2">Loading Shopping Cart</h2>
-          <p className="text-muted-foreground mb-6">
-            Setting up your shopping experience...
-          </p>
+          <p className="text-muted-foreground mb-6">Setting up your shopping experience...</p>
           <div className="space-y-3">
             <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full animate-pulse"
-                style={{ width: "60%" }}
-              />
+              <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: "60%" }} />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Initializing stores and loading data
-            </p>
+            <p className="text-sm text-muted-foreground">Initializing stores and loading data</p>
           </div>
         </div>
       </div>
@@ -385,9 +369,7 @@ function StoreManager({ children }: { children: React.ReactNode }) {
 
   const allReady = productsReady && userReady && cartReady;
 
-  console.log(
-    `🏪 Store status: products=${productsReady}, user=${userReady}, cart=${cartReady}`
-  );
+  console.log(`🏪 Store status: products=${productsReady}, user=${userReady}, cart=${cartReady}`);
 
   if (!allReady) {
     return <LoadingFallback />;
@@ -401,9 +383,9 @@ function StoreManager({ children }: { children: React.ReactNode }) {
 // =============================================================================
 
 const addToCart = (productId: string) => {
-  const existingItem = cartStore.items.find(item => item.productId === productId);
-  const product = productsStore.products.find(p => p.id === productId);
-  
+  const existingItem = cartStore.items.find((item) => item.productId === productId);
+  const product = productsStore.products.find((p) => p.id === productId);
+
   if (!product) return;
 
   if (existingItem) {
@@ -416,26 +398,26 @@ const addToCart = (productId: string) => {
       addedAt: new Date(),
     });
   }
-  
+
   calculateCartTotals();
 };
 
 const updateCartQuantity = (productId: string, quantity: number) => {
-  const itemIndex = cartStore.items.findIndex(item => item.productId === productId);
-  
+  const itemIndex = cartStore.items.findIndex((item) => item.productId === productId);
+
   if (itemIndex === -1) return;
-  
+
   if (quantity <= 0) {
     cartStore.items.splice(itemIndex, 1);
   } else {
     cartStore.items[itemIndex].quantity = quantity;
   }
-  
+
   calculateCartTotals();
 };
 
 const removeFromCart = (productId: string) => {
-  cartStore.items = cartStore.items.filter(item => item.productId !== productId);
+  cartStore.items = cartStore.items.filter((item) => item.productId !== productId);
   calculateCartTotals();
 };
 
@@ -445,65 +427,52 @@ const removeFromCart = (productId: string) => {
 
 function ProductCard({ product }: { product: Product }) {
   const cartItems = useStore(cartStore, (s) => s.items);
-  const cartItem = cartItems.find(item => item.productId === product.id);
+  const cartItem = cartItems.find((item) => item.productId === product.id);
   const inCart = !!cartItem;
   const quantity = cartItem?.quantity || 0;
 
-  const discountPrice = product.discount 
-    ? product.price * (1 - product.discount / 100)
-    : product.price;
+  const discountPrice = product.discount ? product.price * (1 - product.discount / 100) : product.price;
 
   return (
     <div className="bg-card rounded-lg border p-4 hover:shadow-md transition-shadow">
       {/* Product Image */}
       <div className="text-4xl mb-3 text-center">{product.image}</div>
-      
+
       {/* Product Info */}
       <div className="space-y-2 mb-4">
         <h3 className="font-semibold text-lg leading-tight">{product.name}</h3>
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {product.description}
-        </p>
-        
+        <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+
         {/* Rating */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm font-medium">{product.rating}</span>
           </div>
-          <span className="text-sm text-muted-foreground">
-            ({product.reviews} reviews)
-          </span>
+          <span className="text-sm text-muted-foreground">({product.reviews} reviews)</span>
         </div>
 
         {/* Price */}
         <div className="flex items-center gap-2">
           {product.discount ? (
             <>
-              <span className="text-lg font-bold text-primary">
-                ${discountPrice.toFixed(2)}
-              </span>
-              <span className="text-sm text-muted-foreground line-through">
-                ${product.price.toFixed(2)}
-              </span>
-              <span className="text-xs bg-red-500 text-white px-2 py-1 rounded">
-                -{product.discount}%
-              </span>
+              <span className="text-lg font-bold text-primary">${discountPrice.toFixed(2)}</span>
+              <span className="text-sm text-muted-foreground line-through">${product.price.toFixed(2)}</span>
+              <span className="text-xs bg-red-500 text-white px-2 py-1 rounded">-{product.discount}%</span>
             </>
           ) : (
-            <span className="text-lg font-bold text-primary">
-              ${product.price.toFixed(2)}
-            </span>
+            <span className="text-lg font-bold text-primary">${product.price.toFixed(2)}</span>
           )}
         </div>
 
         {/* Stock Status */}
         <div className="flex items-center gap-2">
-          <div className={cn(
-            "w-2 h-2 rounded-full",
-            product.stock > 10 ? "bg-green-500" : 
-            product.stock > 0 ? "bg-yellow-500" : "bg-red-500"
-          )} />
+          <div
+            className={cn(
+              "w-2 h-2 rounded-full",
+              product.stock > 10 ? "bg-green-500" : product.stock > 0 ? "bg-yellow-500" : "bg-red-500"
+            )}
+          />
           <span className="text-sm text-muted-foreground">
             {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
           </span>
@@ -513,21 +482,13 @@ function ProductCard({ product }: { product: Product }) {
       {/* Actions */}
       <div className="space-y-2">
         {!inCart ? (
-          <Button 
-            onClick={() => addToCart(product.id)}
-            disabled={product.stock === 0}
-            className="w-full"
-          >
+          <Button onClick={() => addToCart(product.id)} disabled={product.stock === 0} className="w-full">
             <Plus className="w-4 h-4 mr-2" />
             Add to Cart
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateCartQuantity(product.id, quantity - 1)}
-            >
+            <Button variant="outline" size="sm" onClick={() => updateCartQuantity(product.id, quantity - 1)}>
               <Minus className="w-4 h-4" />
             </Button>
             <span className="flex-1 text-center font-medium">{quantity}</span>
@@ -541,7 +502,7 @@ function ProductCard({ product }: { product: Product }) {
             </Button>
           </div>
         )}
-        
+
         <Button variant="ghost" size="sm" className="w-full">
           <Heart className="w-4 h-4 mr-2" />
           Add to Wishlist
@@ -558,9 +519,10 @@ function ProductGrid() {
   const categories = useStore(productsStore, (s) => s.categories);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return products.filter((product) => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
@@ -571,9 +533,7 @@ function ProductGrid() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Products</h2>
-        <div className="text-sm text-muted-foreground">
-          {filteredProducts.length} products
-        </div>
+        <div className="text-sm text-muted-foreground">{filteredProducts.length} products</div>
       </div>
 
       {/* Search and Filter */}
@@ -621,9 +581,7 @@ function ProductGrid() {
         <div className="text-center py-12">
           <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">No products found</h3>
-          <p className="text-muted-foreground">
-            Try adjusting your search or filters
-          </p>
+          <p className="text-muted-foreground">Try adjusting your search or filters</p>
         </div>
       )}
     </div>
@@ -632,7 +590,7 @@ function ProductGrid() {
 
 function CartItem({ item }: { item: CartItem }) {
   const products = useStore(productsStore, (s) => s.products);
-  const product = products.find(p => p.id === item.productId);
+  const product = products.find((p) => p.id === item.productId);
 
   if (!product) return null;
 
@@ -641,12 +599,10 @@ function CartItem({ item }: { item: CartItem }) {
   return (
     <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
       <div className="text-2xl">{product.image}</div>
-      
+
       <div className="flex-1 min-w-0">
         <h4 className="font-medium text-sm leading-tight">{product.name}</h4>
-        <p className="text-xs text-muted-foreground">
-          ${product.price.toFixed(2)} each
-        </p>
+        <p className="text-xs text-muted-foreground">${product.price.toFixed(2)} each</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -658,11 +614,9 @@ function CartItem({ item }: { item: CartItem }) {
         >
           <Minus className="w-3 h-3" />
         </Button>
-        
-        <span className="text-sm font-medium w-6 text-center">
-          {item.quantity}
-        </span>
-        
+
+        <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+
         <Button
           variant="outline"
           size="sm"
@@ -701,13 +655,11 @@ function ShoppingCartSidebar() {
           <ShoppingCart className="w-5 h-5" />
           <h2 className="text-xl font-semibold">Shopping Cart</h2>
         </div>
-        
+
         <div className="text-center py-8">
           <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-medium mb-2">Your cart is empty</h3>
-          <p className="text-sm text-muted-foreground">
-            Add some products to get started
-          </p>
+          <p className="text-sm text-muted-foreground">Add some products to get started</p>
         </div>
       </div>
     );
@@ -720,9 +672,7 @@ function ShoppingCartSidebar() {
           <ShoppingCart className="w-5 h-5" />
           <h2 className="text-xl font-semibold">Shopping Cart</h2>
         </div>
-        <span className="text-sm text-muted-foreground">
-          {itemCount} items
-        </span>
+        <span className="text-sm text-muted-foreground">{itemCount} items</span>
       </div>
 
       <div className="space-y-3 mb-6">
@@ -736,12 +686,12 @@ function ShoppingCartSidebar() {
           <span className="font-medium">Subtotal:</span>
           <span className="font-medium">${total.toFixed(2)}</span>
         </div>
-        
+
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>Shipping:</span>
           <span>Free</span>
         </div>
-        
+
         <div className="flex items-center justify-between text-lg font-bold border-t pt-3">
           <span>Total:</span>
           <span>${total.toFixed(2)}</span>
@@ -751,7 +701,7 @@ function ShoppingCartSidebar() {
           <CreditCard className="w-4 h-4 mr-2" />
           Proceed to Checkout
         </Button>
-        
+
         <Button variant="outline" className="w-full">
           Continue Shopping
         </Button>
@@ -770,12 +720,8 @@ function UserProfile() {
         {user?.avatar || <User className="w-5 h-5 text-primary" />}
       </div>
       <div>
-        <div className="font-medium">
-          {isAuthenticated ? user?.name : "Guest User"}
-        </div>
-        <div className="text-sm text-muted-foreground">
-          {isAuthenticated ? user?.email : "Shopping as guest"}
-        </div>
+        <div className="font-medium">{isAuthenticated ? user?.name : "Guest User"}</div>
+        <div className="text-sm text-muted-foreground">{isAuthenticated ? user?.email : "Shopping as guest"}</div>
       </div>
     </div>
   );
@@ -787,7 +733,7 @@ function UserProfile() {
 
 function ShoppingCartApp() {
   console.log("🎯 ShoppingCartApp render");
-  
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -806,12 +752,9 @@ function ShoppingCartApp() {
               Mesa <span className="text-primary">Shopping Cart</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
-              A complete shopping cart implementation showcasing Mesa's{" "}
-              <code className="px-2 py-1 bg-muted rounded text-sm">
-                useInitSync
-              </code>{" "}
-              with multi-store architecture, Suspense, and ErrorBoundary
-              integration.
+              A complete shopping cart implementation showcasing Mesa&apos;s
+              <code className="px-2 py-1 bg-muted rounded text-sm">useInitSync</code> with multi-store architecture,
+              Suspense, and ErrorBoundary integration.
             </p>
           </div>
 
@@ -848,10 +791,12 @@ function ShoppingCartApp() {
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span>Loading:</span>
-                  <span className={cn(
-                    "px-2 py-0.5 rounded text-white text-xs",
-                    productsStore.loading ? "bg-yellow-500" : "bg-green-500"
-                  )}>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded text-white text-xs",
+                      productsStore.loading ? "bg-yellow-500" : "bg-green-500"
+                    )}
+                  >
                     {productsStore.loading ? "true" : "false"}
                   </span>
                 </div>
@@ -865,25 +810,29 @@ function ShoppingCartApp() {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <div className="font-medium text-green-600">User Store</div>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span>Loading:</span>
-                  <span className={cn(
-                    "px-2 py-0.5 rounded text-white text-xs",
-                    userStore.loading ? "bg-yellow-500" : "bg-green-500"
-                  )}>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded text-white text-xs",
+                      userStore.loading ? "bg-yellow-500" : "bg-green-500"
+                    )}
+                  >
                     {userStore.loading ? "true" : "false"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Authenticated:</span>
-                  <span className={cn(
-                    "px-2 py-0.5 rounded text-white text-xs",
-                    userStore.isAuthenticated ? "bg-green-500" : "bg-gray-500"
-                  )}>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded text-white text-xs",
+                      userStore.isAuthenticated ? "bg-green-500" : "bg-gray-500"
+                    )}
+                  >
                     {userStore.isAuthenticated ? "yes" : "no"}
                   </span>
                 </div>
@@ -893,16 +842,18 @@ function ShoppingCartApp() {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <div className="font-medium text-purple-600">Cart Store</div>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span>Loading:</span>
-                  <span className={cn(
-                    "px-2 py-0.5 rounded text-white text-xs",
-                    cartStore.loading ? "bg-yellow-500" : "bg-green-500"
-                  )}>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded text-white text-xs",
+                      cartStore.loading ? "bg-yellow-500" : "bg-green-500"
+                    )}
+                  >
                     {cartStore.loading ? "true" : "false"}
                   </span>
                 </div>
@@ -917,11 +868,11 @@ function ShoppingCartApp() {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-4 pt-4 border-t text-center">
             <p className="text-xs text-muted-foreground">
-              <strong>Mesa Features Demo:</strong> Multi-store architecture • useInitSync initialization • 
-              Fine-grained reactivity • Suspense & ErrorBoundary integration
+              <strong>Mesa Features Demo:</strong> Multi-store architecture • useInitSync initialization • Fine-grained
+              reactivity • Suspense & ErrorBoundary integration
             </p>
           </div>
         </div>
@@ -936,9 +887,13 @@ function ShoppingCartApp() {
 
 export default function ShoppingCartPlayPage() {
   console.log("🔍 ShoppingCartPlayPage render - entry point");
-  
+
   return (
-    <ErrorBoundary fallback={ErrorFallback}>
+    <ErrorBoundary
+      fallbackRender={({ error, resetErrorBoundary }) => (
+        <ErrorFallback error={error} resetErrorBoundary={resetErrorBoundary} />
+      )}
+    >
       <Suspense fallback={<LoadingFallback />}>
         <StoreManager>
           <ShoppingCartApp />
