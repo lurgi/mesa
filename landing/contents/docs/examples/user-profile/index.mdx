@@ -59,8 +59,7 @@ import { proxy, useStore, useInitSync } from "mesa-react";
 // Create a user store
 const userStore = proxy({
   user: null,
-  loading: true,
-  error: null,
+  lastFetchTime: null,
 });
 
 // Mock API function - simulates network request
@@ -98,21 +97,13 @@ const fetchUserProfile = (userId) => {
 
 function UserProfile({ userId = 1 }) {
   // Initialize user data with useInitSync
-  const { error, refetch } = useInitSync(userStore, async (state) => {
-    state.loading = true;
-    state.error = null;
-
-    try {
-      const userProfile = await fetchUserProfile(userId);
-      state.user = userProfile;
-    } catch (err) {
-      state.error = err.message;
-    } finally {
-      state.loading = false;
-    }
+  const { loading, error, refetch } = useInitSync(userStore, async (state) => {
+    const userProfile = await fetchUserProfile(userId);
+    state.user = userProfile;
+    state.lastFetchTime = Date.now();
   }, {
     deps: [userId], // Re-fetch when userId changes
-    onSuccess: (data) => {
+    onSuccess: () => {
       console.log("User profile loaded successfully");
     },
     onError: (err) => {
@@ -120,9 +111,8 @@ function UserProfile({ userId = 1 }) {
     }
   });
 
-  // Subscribe to different parts of the store
-  const { loading } = useStore(userStore, s => ({ loading: s.loading }));
-  const error = useStore(userStore, s => s.error);
+  // Subscribe to user data only
+  const user = useStore(userStore, s => s.user);
 
   // Loading state
   if (loading) {
@@ -134,7 +124,12 @@ function UserProfile({ userId = 1 }) {
     return <ErrorDisplay error={error} onRetry={refetch} />;
   }
 
-  return <UserProfileContent />;
+  // No user data
+  if (!user) {
+    return null;
+  }
+
+  return <UserProfileContent user={user} />;
 }
 
 // Loading skeleton component
@@ -193,10 +188,7 @@ function ErrorDisplay({ error, onRetry }) {
 }
 
 // Main profile content component
-function UserProfileContent() {
-  const user = useStore(userStore, s => s.user);
-
-  if (!user) return null;
+function UserProfileContent({ user }) {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -296,43 +288,38 @@ export default UserProfile;
 
 ```jsx
 const userStore = proxy({
-  user: null,        // User data object
-  loading: true,     // Loading state
-  error: null,       // Error message string
+  user: null,              // User data object
+  lastFetchTime: null,     // Timestamp of last successful fetch
 });
 ```
 
 ### Async Initialization Pattern
 
 ```jsx
-useInitSync(userStore, async (state) => {
-  state.loading = true;
-  state.error = null;
-
-  try {
-    const userProfile = await fetchUserProfile(userId);
-    state.user = userProfile;
-  } catch (err) {
-    state.error = err.message;
-  } finally {
-    state.loading = false;  // Always set loading to false
-  }
+const { loading, error, refetch } = useInitSync(userStore, async (state) => {
+  const userProfile = await fetchUserProfile(userId);
+  state.user = userProfile;
+  state.lastFetchTime = Date.now();
 }, {
-  deps: [userId]  // Re-run when dependencies change
+  deps: [userId],  // Re-run when dependencies change
+  onSuccess: () => console.log("User loaded successfully"),
+  onError: (err) => console.error("Failed to load user:", err)
 });
 ```
 
 ### Fine-Grained Subscriptions
 
 ```jsx
-// Only re-renders when loading changes
-const { loading } = useStore(userStore, s => ({ loading: s.loading }));
-
-// Only re-renders when error changes  
-const error = useStore(userStore, s => s.error);
+// useInitSync automatically provides loading and error states
+const { loading, error, refetch } = useInitSync(/* ... */);
 
 // Only re-renders when user data changes
 const user = useStore(userStore, s => s.user);
+
+// Components receive data via props to minimize subscriptions
+function UserProfileContent({ user }) {
+  return <div>/* ... */</div>;
+}
 ```
 
 ## Expected Output
@@ -404,12 +391,13 @@ useEffect(() => {
 
 ## Best Practices Demonstrated
 
-1. **Clear Loading States**: Always handle loading, success, and error states
-2. **Error Recovery**: Provide retry functionality for failed requests
-3. **Dependency Management**: Use `deps` array for conditional re-initialization
-4. **Fine-Grained Updates**: Subscribe to specific parts of state to minimize re-renders
-5. **Separation of Concerns**: Break components into focused, reusable pieces
-6. **User Experience**: Show skeleton loading states instead of blank screens
+1. **Automatic State Management**: Let `useInitSync` handle loading and error states automatically
+2. **Clean Store Design**: Store only business data, not UI state
+3. **Error Recovery**: Provide retry functionality for failed requests
+4. **Dependency Management**: Use `deps` array for conditional re-initialization
+5. **Fine-Grained Updates**: Subscribe to specific parts of state to minimize re-renders
+6. **Prop-Based Data Flow**: Pass data via props to reduce subscription points
+7. **User Experience**: Show skeleton loading states instead of blank screens
 
 ## See Also
 
