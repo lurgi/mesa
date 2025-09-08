@@ -125,10 +125,10 @@ function ProfileStats({ stats }) {
 - [x] **문서 내 설명 업데이트**: 수정된 패턴에 맞는 설명 갱신
 
 ### Phase 1: 기본 구조 설정
-- [ ] **타입 정의**: User, UserStore, PlaygroundStore 인터페이스
-- [ ] **모크 API 함수**: fetchUserProfile, 사용자 데이터 시뮬레이션
-- [ ] **Store 생성**: userStore, playgroundStore 초기 상태
-- [ ] **기본 레이아웃**: 헤더, 메인 컨텐츠, 플레이그라운드 컨트롤
+- [x] **타입 정의**: User, UserStore, PlaygroundStore 인터페이스
+- [x] **모크 API 함수**: fetchUserProfile, 사용자 데이터 시뮬레이션
+- [x] **Store 생성**: userStore, playgroundStore 초기 상태
+- [x] **기본 레이아웃**: 헤더, 메인 컨텐츠, 플레이그라운드 컨트롤
 
 ### Phase 2: useInitSync 통합
 - [ ] **사용자 프로필 초기화**: useInitSync로 프로필 데이터 로딩
