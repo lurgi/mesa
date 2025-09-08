@@ -1,5 +1,7 @@
 "use client";
 
+import { UserProfile } from './components/UserProfile';
+
 export default function UserProfilePlayPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -35,12 +37,8 @@ export default function UserProfilePlayPage() {
 
           {/* User Profile */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="text-center py-12">
-                <div className="text-gray-500 text-lg">
-                  User profile will be implemented in Phase 2...
-                </div>
-              </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <UserProfile />
             </div>
           </div>
         </div>
