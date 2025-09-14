@@ -80,7 +80,7 @@ export default function Home() {
           </div>
           <div className="text-center">
             <h3 className="font-semibold mb-2">Simple API</h3>
-            <p className="text-sm text-muted-foreground">Just two functions: proxy() and useStore()</p>
+            <p className="text-sm text-muted-foreground">Three core functions: proxy(), useStore(), useInitSync()</p>
           </div>
           <div className="text-center">
             <h3 className="font-semibold mb-2">Zero Dependencies</h3>
