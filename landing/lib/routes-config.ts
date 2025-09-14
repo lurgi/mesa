@@ -48,7 +48,6 @@ export const ROUTES: EachRoute[] = [
     noLink: true,
     items: [
       { title: "Counter Example", href: "/counter" },
-      { title: "User Profile", href: "/user-profile" },
       { title: "Shopping Cart", href: "/shopping-cart" },
       { title: "Dashboard", href: "/dashboard" },
       { title: "Todo List", href: "/todo-list" },
