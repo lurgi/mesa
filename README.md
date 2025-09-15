@@ -12,7 +12,7 @@ Only re-render components that use changed data. Mesa automatically tracks depen
 
 ### 🚀 Simple API
 
-Just two functions: `proxy()` and `useStore()`. No complex selectors, no manual optimizations.
+Three core functions: `proxy()`, `useStore()`, and `useInitSync()`. No complex selectors, no manual optimizations.
 
 ### 🪶 Lightweight
 
@@ -29,7 +29,7 @@ npm install mesa-react
 ### Basic Usage
 
 ```tsx
-import { proxy, useStore } from "mesa-react";
+import { proxy, useStore, useInitSync } from "mesa-react";
 
 // Create a reactive store
 const store = proxy({
@@ -134,7 +134,7 @@ function Summary() {
 }
 ```
 
-### Async Operations
+### Declarative Initialization with useInitSync
 
 ```tsx
 const store = proxy({
@@ -143,21 +143,20 @@ const store = proxy({
   error: null,
 });
 
-async function fetchData() {
-  store.loading = true;
-  store.error = null;
-
-  try {
-    const response = await fetch("/api/data");
-    store.data = await response.json();
-  } catch (err) {
-    store.error = err.message;
-  } finally {
-    store.loading = false;
-  }
-}
-
 function DataComponent() {
+  // Declarative initialization - runs once per component tree
+  useInitSync(store, async (state) => {
+    state.loading = true;
+    try {
+      const response = await fetch("/api/data");
+      state.data = await response.json();
+    } catch (err) {
+      state.error = err.message;
+    } finally {
+      state.loading = false;
+    }
+  });
+
   const data = useStore(store, (s) => s.data);
   const loading = useStore(store, (s) => s.loading);
   const error = useStore(store, (s) => s.error);
@@ -248,6 +247,31 @@ Hook to subscribe to store changes. Returns the selected value.
 ```tsx
 const count = useStore(store, (s) => s.count);
 const userName = useStore(store, (s) => s.user.name);
+```
+
+### `useInitSync(store, initializer, options?)`
+
+Hook for declarative state initialization with atomic updates.
+
+```tsx
+// Object initialization
+useInitSync(store, {
+  data: initialData,
+  initialized: true,
+});
+
+// Function initialization
+useInitSync(store, async (state) => {
+  const data = await fetchData();
+  state.data = data;
+  state.loading = false;
+});
+
+// With dependency tracking
+useInitSync(store, async (state) => {
+  const userData = await fetchUser(userId);
+  state.user = userData;
+}, { deps: [userId] });
 ```
 
 ## Migration Guide
