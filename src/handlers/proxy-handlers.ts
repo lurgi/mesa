@@ -5,13 +5,22 @@ import { handleArrayMethodCall } from "./array-handler";
 import { proxy } from "../proxy";
 
 export function createGetHandler(parentPath: string) {
-  return function get(target: any, property: string | symbol, receiver: any): any {
+  return function get(
+    target: any,
+    property: string | symbol,
+    receiver: any
+  ): any {
     const currentPath = createPath(parentPath, property);
     trackAccess(currentPath);
 
     const value = Reflect.get(target, property, receiver);
 
-    const arrayHandler = handleArrayMethodCall(target, String(property), value, parentPath || "root");
+    const arrayHandler = handleArrayMethodCall(
+      target,
+      String(property),
+      value,
+      parentPath || "root"
+    );
     if (arrayHandler) {
       return arrayHandler;
     }
@@ -25,7 +34,12 @@ export function createGetHandler(parentPath: string) {
 }
 
 export function createSetHandler(parentPath: string) {
-  return function set(target: any, property: string | symbol, value: any, receiver: any): boolean {
+  return function set(
+    target: any,
+    property: string | symbol,
+    value: any,
+    receiver: any
+  ): boolean {
     const oldValue = Reflect.get(target, property, receiver);
 
     if (isObject(value)) {
@@ -49,7 +63,10 @@ export function createSetHandler(parentPath: string) {
 }
 
 export function createDeleteHandler(parentPath: string) {
-  return function deleteProperty(target: any, property: string | symbol): boolean {
+  return function deleteProperty(
+    target: any,
+    property: string | symbol
+  ): boolean {
     const result = Reflect.deleteProperty(target, property);
 
     if (result) {
@@ -61,7 +78,11 @@ export function createDeleteHandler(parentPath: string) {
   };
 }
 
-function handleArrayPropertyChange(_target: any[], property: string | symbol, parentPath: string): void {
+function handleArrayPropertyChange(
+  _target: any[],
+  property: string | symbol,
+  parentPath: string
+): void {
   const rootPath = parentPath || "root";
 
   if (property === "length" || !isNaN(Number(property))) {

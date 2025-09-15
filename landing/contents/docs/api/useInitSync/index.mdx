@@ -1,0 +1,691 @@
+---
+title: useInitSync()
+description: React hook for initializing proxy state with data fetching and loading states.
+---
+
+The `useInitSync()` hook provides a declarative way to initialize your proxy state with atomic updates and batched state changes. It enforces the "One Store, One Initialization" pattern and uses Mesa's batching system to ensure all initialization changes are applied together as a single update.
+
+## Syntax
+
+```typescript
+function useInitSync<T extends object>(
+  store: T,
+  initializer: UseInitSyncInitializer<T>,
+  options?: UseInitSyncOptions
+): UseInitSyncReturn
+```
+
+### Parameters
+
+- **`store`** - A proxy object created with `proxy()`
+- **`initializer`** - Either a plain object to merge into the store, or a function that modifies the store state
+- **`options`** _(optional)_ - Configuration options for error handling, dependencies, etc.
+
+### Returns
+
+Returns an object with:
+- **`error`** - Any error that occurred during initialization
+- **`refetch`** - Function to re-run the initialization
+
+## Basic Usage
+
+### Direct Value Initialization
+
+```jsx
+import { proxy, useStore, useInitSync } from "mesa-react";
+
+const userStore = proxy({
+  name: "",
+  email: "",
+  initialized: false, // Use 'initialized' instead of 'loading' for direct initialization
+});
+
+function UserProfile() {
+  // Initialize with direct values - all changes applied atomically
+  useInitSync(userStore, {
+    name: "John Doe",
+    email: "john@example.com",
+    initialized: true,
+  });
+
+  const user = useStore(userStore);
+
+  if (!user.initialized) {
+    return <div>Initializing...</div>;
+  }
+
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+    </div>
+  );
+}
+```
+
+### Function-Based Initialization
+
+```jsx
+const counterStore = proxy({
+  count: 0,
+  lastUpdated: null,
+});
+
+function Counter() {
+  // Initialize with a function
+  useInitSync(counterStore, (state) => {
+    state.count = 10;
+    state.lastUpdated = new Date().toISOString();
+  });
+
+  const { count, lastUpdated } = useStore(counterStore);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Last updated: {lastUpdated}</p>
+      <button onClick={() => counterStore.count++}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+## Async Data Fetching
+
+### Basic Async Initialization
+
+**⚠️ Important: Mesa batches all state changes during initialization. Intermediate loading states are not visible to components until initialization completes.**
+
+```jsx
+const userStore = proxy({
+  user: null,
+  initialized: false,
+  error: null,
+});
+
+// Mock API function
+const fetchUser = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        id: 1,
+        name: "John Doe",
+        email: "john@example.com",
+        avatar: "https://example.com/avatar.jpg",
+      });
+    }, 1000);
+  });
+};
+
+function UserProfile() {
+  const { error } = useInitSync(userStore, async (state) => {
+    // ✅ All state changes below are batched - intermediate states won't trigger renders
+    const user = await fetchUser(); // Let errors throw naturally - Mesa's ErrorManager handles them
+    state.user = user;
+    state.initialized = true; // Only this final state is visible
+    // All changes above are applied atomically when initialization completes
+  }, {
+    onError: (error) => {
+      // Mesa's recommended error handling - executed outside batching context
+      console.error('User fetch failed:', error);
+      // Error is automatically managed by Mesa's ErrorManager
+    }
+  });
+
+  const { user, initialized } = useStore(userStore);
+
+  if (!initialized) return <div>Loading user...</div>; // Shows until ALL initialization completes
+  if (error) return <div>Error: {error}</div>;
+  if (!user) return <div>No user found</div>;
+
+  return (
+    <div>
+      <img src={user.avatar} alt={user.name} />
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+    </div>
+  );
+}
+```
+
+### Multiple Data Sources (Atomic Updates)
+
+```jsx
+const dashboardStore = proxy({
+  user: null,
+  stats: null,
+  notifications: [],
+  initialized: false,
+  error: null,
+});
+
+const fetchDashboardData = async () => {
+  // Simulate multiple API calls
+  const [user, stats, notifications] = await Promise.all([
+    new Promise(resolve => setTimeout(() => resolve({
+      name: "John Doe",
+      role: "Admin"
+    }), 500)),
+    new Promise(resolve => setTimeout(() => resolve({
+      totalUsers: 1234,
+      activeUsers: 856,
+      revenue: "$12,345"
+    }), 800)),
+    new Promise(resolve => setTimeout(() => resolve([
+      { id: 1, message: "Welcome back!", type: "info" },
+      { id: 2, message: "You have 3 new messages", type: "alert" }
+    ]), 300))
+  ]);
+
+  return { user, stats, notifications };
+};
+
+function Dashboard() {
+  const { error } = useInitSync(dashboardStore, async (state) => {
+    // ✅ All state changes are batched - only final result triggers render
+    const { user, stats, notifications } = await fetchDashboardData(); // Let errors throw naturally
+    // All these assignments happen atomically
+    state.user = user;
+    state.stats = stats;
+    state.notifications = notifications;
+    state.initialized = true;
+    // Component will only re-render once with all data populated
+  }, {
+    onError: (error) => {
+      // Mesa's recommended error handling pattern
+      console.error('Dashboard initialization failed:', error);
+      // Mesa's ErrorManager automatically handles error state
+    }
+  });
+
+  const { user, stats, notifications, initialized } = useStore(dashboardStore);
+
+  if (!initialized) return <div>Loading dashboard...</div>; // Shows during entire initialization
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      <h1>Welcome, {user?.name}</h1>
+      <div className="stats">
+        <div>Total Users: {stats?.totalUsers}</div>
+        <div>Active Users: {stats?.activeUsers}</div>
+        <div>Revenue: {stats?.revenue}</div>
+      </div>
+      <div className="notifications">
+        {notifications.map(notif => (
+          <div key={notif.id} className={notif.type}>
+            {notif.message}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Understanding Mesa's Batching System
+
+**🔥 Critical: `useInitSync` uses Mesa's global batching system to ensure atomic updates.**
+
+### How Batching Works
+
+```jsx
+// What you write:
+useInitSync(store, async (state) => {
+  state.loading = true;        // Queued in batch
+  const data = await fetch();  // Async operation
+  state.data = data;          // Queued in batch  
+  state.loading = false;      // Queued in batch
+  state.error = null;         // Queued in batch
+});
+
+// What actually happens:
+// 1. startGlobalBatch() - Begin queuing all state changes
+// 2. All state.* assignments are queued, not applied immediately
+// 3. Async operations run normally
+// 4. endGlobalBatch() - All queued changes applied atomically
+// 5. Component re-renders ONCE with final state
+
+// Component only sees: loading=false, data=fetchedData, error=null
+```
+
+### Why This Matters
+
+- **No intermediate renders** - Components never see `loading=true` state
+- **Performance optimized** - Only one render per initialization
+- **Atomic updates** - All changes appear together or not at all
+- **Predictable behavior** - No race conditions from partial updates
+
+### Correct Patterns
+
+```jsx
+// ✅ Use 'initialized' flag instead of 'loading'
+const store = proxy({
+  data: null,
+  initialized: false, // This will be false until ALL changes complete
+  error: null,
+});
+
+useInitSync(store, async (state) => {
+  try {
+    state.data = await fetchData();
+  } catch (error) {
+    state.error = error.message;
+  } finally {
+    state.initialized = true; // Mark completion
+  }
+});
+```
+
+## ⚠️ Error Handling Best Practices
+
+### Mesa's Recommended Pattern: throw + onError
+
+Mesa's internal architecture is optimized for the **throw + onError** pattern. This approach aligns with Mesa's batching system and ErrorManager for optimal performance and stability.
+
+```jsx
+// ✅ RECOMMENDED: throw + onError pattern (matches Mesa tests)
+useInitSync(store, async (state) => {
+  const data = await fetchData(); // Let errors throw naturally
+  state.data = data;
+  state.initialized = true;
+}, {
+  onError: (error) => {
+    // Mesa's ErrorManager automatically handles error state
+    // This callback executes outside the batching context
+    console.error('Initialization failed:', error);
+    showErrorNotification(error.message);
+  }
+});
+```
+
+### ❌ Avoid try-catch in Initializer
+
+While try-catch may seem intuitive, it can cause issues with Mesa's batching system and lead to excessive re-renders:
+
+```jsx
+// ❌ NOT RECOMMENDED: try-catch pattern (can cause infinite loops)
+useInitSync(store, async (state) => {
+  try {
+    const data = await fetchData();
+    state.data = data;
+  } catch (error) {
+    state.error = error.message; // Can trigger excessive re-renders
+  }
+  state.initialized = true;
+});
+```
+
+**Why avoid try-catch?**
+- Mesa's batching system handles thrown errors more efficiently
+- onError callbacks execute outside the batching context  
+- Prevents complex state transitions that can cause render loops
+- Aligns with Mesa's internal error handling architecture (ErrorManager)
+- Matches the pattern used in all Mesa test suites
+
+## Configuration Options
+
+```typescript
+interface UseInitSyncOptions {
+  deps?: any[];                    // Dependencies that trigger re-initialization
+  onSuccess?: (data: any) => void; // Success callback
+  onError?: (error: Error) => void;// Error callback
+  suspense?: boolean;              // Enable React Suspense
+  errorBoundary?: boolean;         // Throw errors to Error Boundary
+}
+```
+
+### Dependency Tracking
+
+```jsx
+function UserProfile({ userId }) {
+  useInitSync(userStore, async (state) => {
+    // Reset and load new user data atomically
+    const user = await fetchUser(userId);
+    state.user = user;
+    state.initialized = true;
+  }, {
+    deps: [userId] // Re-run when userId changes
+  });
+
+  const { user, initialized } = useStore(userStore);
+  
+  return !initialized ? <div>Loading...</div> : <UserCard user={user} />;
+}
+```
+
+### Error Handling
+
+```jsx
+function DataComponent() {
+  const [retryCount, setRetryCount] = useState(0);
+
+  const { error, refetch } = useInitSync(dataStore, async (state) => {
+    const data = await fetchData();
+    state.data = data;
+  }, {
+    onError: (error) => {
+      console.error("Data fetch failed:", error);
+      // Could trigger toast notification
+    },
+    onSuccess: (data) => {
+      console.log("Data loaded successfully:", data);
+      setRetryCount(0);
+    }
+  });
+
+  if (error) {
+    return (
+      <div>
+        <p>Failed to load data</p>
+        <button onClick={() => {
+          setRetryCount(prev => prev + 1);
+          refetch();
+        }}>
+          Retry ({retryCount} attempts)
+        </button>
+      </div>
+    );
+  }
+
+  // Rest of component...
+}
+```
+
+## Store Separation Patterns
+
+### Domain-Separated Stores (Independent Initialization)
+
+```jsx
+// ✅ Good: Separate stores for different concerns
+const userStore = proxy({ user: null, initialized: false });
+const cartStore = proxy({ items: [], total: 0, initialized: false });
+const uiStore = proxy({ theme: "light", sidebarOpen: false, initialized: false });
+
+function App() {
+  // Each store initializes independently with atomic updates
+  useInitSync(userStore, async (state) => {
+    const user = await fetchCurrentUser();
+    state.user = user;
+    state.initialized = true; // Atomic completion
+  });
+
+  useInitSync(cartStore, async (state) => {
+    const cart = await fetchUserCart();
+    state.items = cart.items;
+    state.total = cart.total;
+    state.initialized = true; // Atomic completion
+  });
+
+  useInitSync(uiStore, (state) => {
+    // Synchronous initialization also batched
+    state.theme = localStorage.getItem("theme") || "light";
+    state.sidebarOpen = window.innerWidth > 1024;
+    state.initialized = true;
+  });
+
+  return <MainApp />;
+}
+```
+
+### Coordinated Initialization (Single Store)
+
+```jsx
+// ✅ Good: Single store with coordinated initialization
+const appStore = proxy({
+  user: null,
+  settings: null,
+  notifications: [],
+  initialized: false,
+});
+
+function App() {
+  useInitSync(appStore, async (state) => {
+    // Load all related data together - all changes batched
+    const [user, settings, notifications] = await Promise.all([
+      fetchUser(),
+      fetchUserSettings(),
+      fetchNotifications()
+    ]);
+
+    // All assignments happen atomically
+    state.user = user;
+    state.settings = settings;
+    state.notifications = notifications;
+    state.initialized = true;
+    // Component will only re-render once with all data populated
+  });
+
+  const { initialized } = useStore(appStore);
+
+  if (!initialized) {
+    return <LoadingScreen />; // Shows during entire initialization
+  }
+
+  return <MainApp />;
+}
+```
+
+## Validation and Error Prevention
+
+### One Store, One Initialization
+
+```jsx
+// ❌ This will throw an error
+function BadExample() {
+  const store = proxy({ data: null });
+
+  useInitSync(store, { data: "first" });
+  useInitSync(store, { data: "second" }); // Error: Multiple useInitSync calls!
+
+  return <div>This won't render</div>;
+}
+
+// ✅ Use separate stores instead
+function GoodExample() {
+  const store1 = proxy({ data: null });
+  const store2 = proxy({ data: null });
+
+  useInitSync(store1, { data: "first" });
+  useInitSync(store2, { data: "second" });
+
+  return <div>This works perfectly!</div>;
+}
+```
+
+## TypeScript Support
+
+Mesa provides full TypeScript support for `useInitSync`:
+
+```typescript
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  preferences: {
+    theme: "light" | "dark";
+    notifications: boolean;
+  };
+}
+
+interface UserStore {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+const userStore = proxy<UserStore>({
+  user: null,
+  loading: true,
+  error: null,
+});
+
+function TypedUserComponent() {
+  // TypeScript ensures type safety
+  const { error } = useInitSync(userStore, async (state) => {
+    state.loading = true;
+    
+    try {
+      const user: User = await fetchUser();
+      state.user = user; // ✓ Type-safe
+      state.loading = false;
+    } catch (err) {
+      state.error = err.message;
+      state.loading = false;
+    }
+  });
+
+  // TypeScript infers correct return types
+  const { user, loading } = useStore(userStore);
+
+  return (
+    <div>
+      {loading && <div>Loading...</div>}
+      {error && <div>Error: {error}</div>}
+      {user && <h1>Hello, {user.name}!</h1>}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### ✅ Do
+
+```jsx
+// Use separate stores for different domains
+const userStore = proxy({ user: null });
+const productsStore = proxy({ products: [] });
+
+// Handle initialization states correctly with batching (Mesa recommended pattern)
+useInitSync(store, async (state) => {
+  // ✅ All state changes are batched until completion
+  const data = await fetchData(); // Let errors throw naturally
+  state.data = data;
+  state.initialized = true;
+  // Component re-renders only once with final state
+}, {
+  onError: (error) => {
+    // Mesa's ErrorManager handles error state automatically
+    console.error('Initialization failed:', error);
+  }
+});
+
+// Use dependencies for conditional re-initialization
+useInitSync(store, fetchData, { deps: [userId] });
+```
+
+### ❌ Don't
+
+```jsx
+// Don't use multiple useInitSync on the same store
+useInitSync(store, initUser);
+useInitSync(store, initSettings); // ❌ Error!
+
+// Don't expect intermediate loading states to be visible
+useInitSync(store, async (state) => {
+  state.loading = true;        // ❌ Won't trigger render
+  state.data = await fetch();  // ❌ Component won't see loading=true
+  state.loading = false;       // ❌ Only this final state is visible
+});
+
+// Don't forget error handling and completion state
+useInitSync(store, async (state) => {
+  const data = await fetchData(); // ❌ No error handling, no completion state
+  state.data = data;
+});
+
+// Don't create stores inside components
+function Component() {
+  const store = proxy({ data: null }); // ❌ Creates new store each render
+  useInitSync(store, fetchData);
+}
+
+// Don't access other stores during initialization (causes infinite loops)
+useInitSync(cartStore, async (state) => {
+  state.items = await fetchCart();
+  // ❌ Accessing productsStore during cart initialization
+  state.total = state.items.reduce((sum, item) => {
+    const product = productsStore.products.find(p => p.id === item.id);
+    return sum + product.price * item.quantity;
+  }, 0);
+});
+```
+
+## Performance Considerations
+
+- **Initialization runs only once** per component mount (unless dependencies change)
+- **Store separation** prevents unnecessary re-renders across unrelated components  
+- **Atomic batching** ensures all initialization changes trigger only one render
+- **Fine-grained subscriptions** ensure optimal update patterns after initialization
+- **Async operations** don't block the UI thread
+- **Intermediate states are batched** - no performance cost from partial updates
+
+## Common Patterns
+
+### Loading States with Skeleton UI
+
+```jsx
+function ProductList() {
+  const productsStore = proxy({
+    products: [],
+    initialized: false, // Use initialized instead of loading
+    error: null,
+  });
+
+  useInitSync(productsStore, async (state) => {
+    // ✅ All state changes are batched
+    try {
+      const products = await fetchProducts();
+      state.products = products;
+    } catch (error) {
+      state.error = error.message;
+    } finally {
+      state.initialized = true; // Always mark as complete
+    }
+  });
+
+  const { products, initialized, error } = useStore(productsStore);
+
+  if (error) return <ErrorMessage error={error} />;
+
+  return (
+    <div>
+      {!initialized ? (
+        <SkeletonGrid count={6} />
+      ) : (
+        <ProductGrid products={products} />
+      )}
+    </div>
+  );
+}
+```
+
+### Conditional Initialization
+
+```jsx
+function ConditionalData({ shouldLoad }) {
+  useInitSync(dataStore, async (state) => {
+    // ✅ Both branches complete atomically
+    if (shouldLoad) {
+      state.data = await fetchData();
+    } else {
+      state.data = null;
+    }
+    state.initialized = true; // Always mark completion
+  }, {
+    deps: [shouldLoad]
+  });
+
+  // Component implementation...
+}
+```
+
+## See Also
+
+- **[proxy()](/docs/api/proxy)** - Creating reactive state objects
+- **[useStore()](/docs/api/useStore)** - Subscribing to proxy state in components  
+- **[Examples](/docs/examples/user-profile)** - Practical useInitSync examples
+- **[Integration Guide](/docs/guides/integration)** - Using all Mesa APIs together

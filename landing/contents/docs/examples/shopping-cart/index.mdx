@@ -1,0 +1,707 @@
+---
+title: Shopping Cart Example
+description: Learn how to use multiple stores with useInitSync for domain separation and independent data loading.
+---
+
+This example demonstrates the **domain-separated stores pattern** using `useInitSync()` with multiple independent stores. Each domain (products, cart, user) has its own store and initialization logic.
+
+## 🚀 Live Interactive Playground
+
+Experience Mesa's multi-store architecture with our comprehensive shopping cart playground:
+
+<div style={{ textAlign: "center", margin: "32px 0" }}>
+  <a
+    href="/examples/play/shopping-cart"
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "12px",
+      background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+      color: "white",
+      padding: "16px 32px",
+      borderRadius: "12px",
+      textDecoration: "none",
+      fontWeight: "600",
+      fontSize: "16px",
+      boxShadow: "0 8px 25px rgba(59, 130, 246, 0.3)",
+      transition: "all 0.3s ease",
+    }}
+    className="playground-button"
+  >
+    <span style={{ fontSize: "24px" }}>🎮</span>
+    Open Interactive Shopping Cart →
+  </a>
+</div>
+
+The playground demonstrates:
+
+- **Multi-store architecture** with independent domain stores
+- **Parallel data initialization** without blocking UI
+- **Real shopping cart functionality** with add/remove/update operations  
+- **User authentication flow** with conditional cart loading
+- **Product catalog filtering** and category management
+- **Performance monitoring** showing independent store updates
+
+## Features Demonstrated
+
+- 🏪 **Multiple Independent Stores**: Separate stores for different domains
+- 🚀 **Parallel Data Loading**: Independent initialization without blocking
+- 🎯 **Domain Separation**: Clear separation of concerns
+- 🔄 **Independent Updates**: Each store updates independently
+- 🛒 **Complex State Management**: Shopping cart functionality with proper architecture
+
+## Store Architecture
+
+```jsx
+import { proxy } from "mesa-react";
+
+// Products domain - manages product catalog
+const productsStore = proxy({
+  products: [],
+  loading: true,
+  error: null,
+  categories: [],
+});
+
+// Shopping cart domain - manages cart state
+const cartStore = proxy({
+  items: [],
+  total: 0,
+  itemCount: 0,
+  loading: false,
+});
+
+// User domain - manages user session
+const userStore = proxy({
+  user: null,
+  isAuthenticated: false,
+  preferences: {
+    currency: 'USD',
+    theme: 'light',
+  },
+  loading: true,
+});
+```
+
+## Complete Implementation
+
+```jsx
+import React, { useState } from "react";
+import { proxy, useStore, useInitSync } from "mesa-react";
+
+// Store definitions (as shown above)
+const productsStore = proxy({
+  products: [],
+  loading: true,
+  error: null,
+  categories: [],
+});
+
+const cartStore = proxy({
+  items: [],
+  total: 0,
+  itemCount: 0,
+  loading: false,
+});
+
+const userStore = proxy({
+  user: null,
+  isAuthenticated: false,
+  preferences: {
+    currency: 'USD',
+    theme: 'light',
+  },
+  loading: true,
+});
+
+// Mock API functions
+const fetchProducts = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        {
+          id: 1,
+          name: "Wireless Headphones",
+          price: 99.99,
+          image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop",
+          category: "Electronics",
+          description: "High-quality wireless headphones with noise cancellation.",
+          stock: 15,
+        },
+        {
+          id: 2,
+          name: "Smart Watch",
+          price: 299.99,
+          image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&h=200&fit=crop",
+          category: "Electronics",
+          description: "Feature-rich smartwatch with health tracking.",
+          stock: 8,
+        },
+        {
+          id: 3,
+          name: "Coffee Mug",
+          price: 14.99,
+          image: "https://images.unsplash.com/photo-1514228742587-6b1558fcf93a?w=200&h=200&fit=crop",
+          category: "Home",
+          description: "Beautiful ceramic coffee mug for your morning brew.",
+          stock: 25,
+        },
+        {
+          id: 4,
+          name: "Notebook Set",
+          price: 24.99,
+          image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&h=200&fit=crop",
+          category: "Stationery",
+          description: "Premium notebook set for all your writing needs.",
+          stock: 12,
+        },
+      ]);
+    }, 800);
+  });
+};
+
+const fetchUserSession = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        user: {
+          id: 1,
+          name: "Alex Smith",
+          email: "alex@example.com",
+          avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
+        },
+        isAuthenticated: true,
+        preferences: {
+          currency: 'USD',
+          theme: 'light',
+        }
+      });
+    }, 500);
+  });
+};
+
+const fetchCart = (userId) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // Simulate existing cart items
+      resolve([
+        { productId: 1, quantity: 1 },
+        { productId: 3, quantity: 2 },
+      ]);
+    }, 600);
+  });
+};
+
+// Main Shopping App Component
+function ShoppingApp() {
+  // Initialize all stores independently
+  useProductsInitialization();
+  useUserInitialization();
+  useCartInitialization();
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <Header />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3">
+          <ProductCatalog />
+        </div>
+        <div>
+          <CartSidebar />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Products store initialization
+function useProductsInitialization() {
+  useInitSync(productsStore, async (state) => {
+    state.loading = true;
+    state.error = null;
+
+    try {
+      const products = await fetchProducts();
+      const categories = [...new Set(products.map(p => p.category))];
+      
+      state.products = products;
+      state.categories = categories;
+    } catch (error) {
+      state.error = error.message;
+    } finally {
+      state.loading = false;
+    }
+  });
+}
+
+// User store initialization  
+function useUserInitialization() {
+  useInitSync(userStore, async (state) => {
+    state.loading = true;
+
+    try {
+      const sessionData = await fetchUserSession();
+      state.user = sessionData.user;
+      state.isAuthenticated = sessionData.isAuthenticated;
+      state.preferences = sessionData.preferences;
+    } catch (error) {
+      state.isAuthenticated = false;
+      state.user = null;
+    } finally {
+      state.loading = false;
+    }
+  });
+}
+
+// Cart store initialization
+function useCartInitialization() {
+  const { user, isAuthenticated } = useStore(userStore, s => ({ 
+    user: s.user, 
+    isAuthenticated: s.isAuthenticated 
+  }));
+
+  useInitSync(cartStore, async (state) => {
+    if (!isAuthenticated || !user) {
+      // Empty cart for non-authenticated users
+      state.items = [];
+      state.total = 0;
+      state.itemCount = 0;
+      return;
+    }
+
+    state.loading = true;
+
+    try {
+      const cartItems = await fetchCart(user.id);
+      state.items = cartItems;
+      calculateCartTotals(state);
+    } catch (error) {
+      console.error("Failed to load cart:", error);
+      state.items = [];
+    } finally {
+      state.loading = false;
+    }
+  }, {
+    deps: [user?.id, isAuthenticated] // Re-run when user changes
+  });
+}
+
+// Header Component
+function Header() {
+  const { user, isAuthenticated, loading } = useStore(userStore);
+  const { itemCount } = useStore(cartStore, s => ({ itemCount: s.itemCount }));
+
+  return (
+    <header className="flex justify-between items-center mb-8 pb-4 border-b">
+      <h1 className="text-3xl font-bold text-gray-900">Mesa Store</h1>
+      
+      <div className="flex items-center space-x-4">
+        <CartIcon itemCount={itemCount} />
+        
+        {loading ? (
+          <div className="w-8 h-8 bg-gray-300 rounded-full animate-pulse"></div>
+        ) : isAuthenticated && user ? (
+          <UserMenu user={user} />
+        ) : (
+          <LoginButton />
+        )}
+      </div>
+    </header>
+  );
+}
+
+// Product Catalog Component
+function ProductCatalog() {
+  const { products, loading, error, categories } = useStore(productsStore);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  if (loading) {
+    return <ProductLoadingSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">Failed to load products: {error}</p>
+      </div>
+    );
+  }
+
+  const filteredProducts = selectedCategory === 'All' 
+    ? products 
+    : products.filter(p => p.category === selectedCategory);
+
+  return (
+    <div>
+      <CategoryFilter
+        categories={['All', ...categories]}
+        selected={selectedCategory}
+        onSelect={setSelectedCategory}
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filteredProducts.map(product => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Product Card Component
+function ProductCard({ product }) {
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddToCart = async () => {
+    setIsAdding(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Add to cart store
+    const existingItem = cartStore.items.find(item => item.productId === product.id);
+    
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cartStore.items.push({ productId: product.id, quantity: 1 });
+    }
+    
+    calculateCartTotals(cartStore);
+    setIsAdding(false);
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <img
+        src={product.image}
+        alt={product.name}
+        className="w-full h-32 object-cover rounded-md mb-3"
+      />
+      <h3 className="font-semibold text-gray-900">{product.name}</h3>
+      <p className="text-sm text-gray-600 mb-2">{product.description}</p>
+      <div className="flex justify-between items-center">
+        <span className="text-lg font-bold text-green-600">
+          ${product.price.toFixed(2)}
+        </span>
+        <button
+          onClick={handleAddToCart}
+          disabled={isAdding || product.stock === 0}
+          className={`px-3 py-1 rounded text-sm font-medium ${
+            isAdding 
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : product.stock === 0
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          } transition-colors`}
+        >
+          {isAdding ? 'Adding...' : product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 mt-1">
+        {product.stock} in stock
+      </p>
+    </div>
+  );
+}
+
+// Cart Sidebar Component
+function CartSidebar() {
+  const { items, total, itemCount, loading } = useStore(cartStore);
+  const products = useStore(productsStore, s => s.products);
+  
+  if (loading) {
+    return (
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="animate-pulse space-y-3">
+          <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+          <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold mb-3">Shopping Cart</h3>
+        <p className="text-gray-600 text-sm">Your cart is empty</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg sticky top-6">
+      <h3 className="font-semibold mb-3">
+        Shopping Cart ({itemCount} items)
+      </h3>
+      
+      <div className="space-y-2 mb-4">
+        {items.map(item => {
+          const product = products.find(p => p.id === item.productId);
+          if (!product) return null;
+          
+          return (
+            <CartItem
+              key={item.productId}
+              item={item}
+              product={product}
+            />
+          );
+        })}
+      </div>
+      
+      <div className="border-t pt-3">
+        <div className="flex justify-between items-center text-lg font-bold">
+          <span>Total:</span>
+          <span className="text-green-600">${total.toFixed(2)}</span>
+        </div>
+        
+        <button className="w-full mt-3 bg-green-600 text-white py-2 rounded hover:bg-green-700 transition-colors">
+          Checkout
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Cart Item Component
+function CartItem({ item, product }) {
+  const updateQuantity = (newQuantity) => {
+    if (newQuantity === 0) {
+      const index = cartStore.items.findIndex(i => i.productId === item.productId);
+      cartStore.items.splice(index, 1);
+    } else {
+      item.quantity = newQuantity;
+    }
+    calculateCartTotals(cartStore);
+  };
+
+  return (
+    <div className="flex items-center space-x-3 py-2">
+      <img
+        src={product.image}
+        alt={product.name}
+        className="w-10 h-10 object-cover rounded"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{product.name}</p>
+        <p className="text-xs text-gray-600">${product.price.toFixed(2)}</p>
+      </div>
+      <div className="flex items-center space-x-1">
+        <button
+          onClick={() => updateQuantity(item.quantity - 1)}
+          className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-sm"
+        >
+          -
+        </button>
+        <span className="w-8 text-center text-sm">{item.quantity}</span>
+        <button
+          onClick={() => updateQuantity(item.quantity + 1)}
+          className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-sm"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Helper Components
+function ProductLoadingSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="border border-gray-200 rounded-lg p-4 animate-pulse">
+          <div className="w-full h-32 bg-gray-300 rounded-md mb-3"></div>
+          <div className="h-4 bg-gray-300 rounded mb-2"></div>
+          <div className="h-3 bg-gray-300 rounded mb-4 w-3/4"></div>
+          <div className="flex justify-between items-center">
+            <div className="h-5 bg-gray-300 rounded w-16"></div>
+            <div className="h-8 bg-gray-300 rounded w-20"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CategoryFilter({ categories, selected, onSelect }) {
+  return (
+    <div className="mb-6">
+      <div className="flex flex-wrap gap-2">
+        {categories.map(category => (
+          <button
+            key={category}
+            onClick={() => onSelect(category)}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              selected === category
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            } transition-colors`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CartIcon({ itemCount }) {
+  return (
+    <div className="relative">
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5-6M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6"/>
+      </svg>
+      {itemCount > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          {itemCount > 99 ? '99+' : itemCount}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function UserMenu({ user }) {
+  return (
+    <div className="flex items-center space-x-2">
+      <img
+        src={user.avatar}
+        alt={user.name}
+        className="w-8 h-8 rounded-full"
+      />
+      <span className="text-sm font-medium">{user.name}</span>
+    </div>
+  );
+}
+
+function LoginButton() {
+  return (
+    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+      Login
+    </button>
+  );
+}
+
+// Helper function to calculate cart totals
+function calculateCartTotals(cartState) {
+  const products = productsStore.products;
+  let total = 0;
+  let itemCount = 0;
+
+  cartState.items.forEach(item => {
+    const product = products.find(p => p.id === item.productId);
+    if (product) {
+      total += product.price * item.quantity;
+      itemCount += item.quantity;
+    }
+  });
+
+  cartState.total = total;
+  cartState.itemCount = itemCount;
+}
+
+export default ShoppingApp;
+```
+
+## Key Architecture Patterns
+
+### 1. Domain-Separated Stores
+
+```jsx
+// ✅ Good: Each domain has its own store
+const productsStore = proxy({ /* products logic */ });
+const cartStore = proxy({ /* cart logic */ });  
+const userStore = proxy({ /* user logic */ });
+
+// Each store is initialized independently
+useInitSync(productsStore, loadProducts);
+useInitSync(cartStore, loadCart);  
+useInitSync(userStore, loadUser);
+```
+
+### 2. Independent Loading States
+
+```jsx
+// Each store manages its own loading state
+const { loading: productsLoading } = useStore(productsStore);
+const { loading: userLoading } = useStore(userStore);
+const { loading: cartLoading } = useStore(cartStore);
+
+// UI can show different loading states
+if (productsLoading) return <ProductsSkeleton />;
+if (userLoading) return <UserSkeleton />;
+```
+
+### 3. Cross-Store Dependencies
+
+```jsx
+// Cart initialization depends on user data
+useInitSync(cartStore, async (state) => {
+  if (!user?.id) {
+    state.items = [];
+    return;
+  }
+  
+  const cartItems = await fetchCart(user.id);
+  state.items = cartItems;
+}, {
+  deps: [user?.id] // Re-run when user changes
+});
+```
+
+### 4. Selective Subscriptions
+
+```jsx
+// Only subscribe to what you need
+const { itemCount } = useStore(cartStore, s => ({ itemCount: s.itemCount }));
+const { user, isAuthenticated } = useStore(userStore, s => ({ 
+  user: s.user, 
+  isAuthenticated: s.isAuthenticated 
+}));
+```
+
+## Benefits of This Pattern
+
+1. **Independence**: Each store can load and update independently
+2. **Performance**: Components only re-render when their specific data changes  
+3. **Scalability**: Easy to add new domains without affecting existing ones
+4. **Testability**: Each domain can be tested in isolation
+5. **Maintainability**: Clear separation of concerns
+
+## Alternative: Single Store Approach
+
+For comparison, here's how the same functionality could be implemented with a single coordinated store:
+
+```jsx
+const appStore = proxy({
+  products: { data: [], loading: true, error: null },
+  cart: { items: [], total: 0, loading: false },
+  user: { data: null, loading: true, isAuthenticated: false }
+});
+
+useInitSync(appStore, async (state) => {
+  // Load all data in parallel
+  const [products, user, cart] = await Promise.allSettled([
+    fetchProducts(),
+    fetchUserSession(), 
+    fetchCart()
+  ]);
+  
+  // Handle results...
+});
+```
+
+## When to Use Multiple Stores
+
+- **Different loading patterns** (some data loads immediately, some on demand)
+- **Independent update frequencies** (user data rarely changes, cart changes often)
+- **Separate error handling** (product errors shouldn't affect user experience)
+- **Different access patterns** (some data is global, some is component-specific)
+
+## See Also
+
+- **[useInitSync() API](/docs/api/useInitSync)** - Complete API reference
+- **[Dashboard Example](/docs/examples/dashboard)** - Coordinated initialization pattern
+- **[User Profile Example](/docs/examples/user-profile)** - Single store async pattern

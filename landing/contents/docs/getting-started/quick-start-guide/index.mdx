@@ -102,7 +102,72 @@ Let's build a counter application that showcases Mesa's core features:
 
   </StepperItem>
 
-  <StepperItem title="Step 4: Run Your App">
+  <StepperItem title="Step 4: Initialize Data">
+    Use `useInitSync()` to load initial data when your components mount:
+
+    ```jsx
+    import { useInitSync } from "mesa-react";
+
+    function Counter() {
+      const count = useStore(appState, (state) => state.count);
+
+      // Initialize counter from localStorage
+      useInitSync(appState, async (state) => {
+        const saved = localStorage.getItem("count");
+        if (saved) {
+          state.count = parseInt(saved, 10);
+        }
+      });
+
+      // Save to localStorage when count changes
+      React.useEffect(() => {
+        localStorage.setItem("count", String(appState.count));
+      }, [count]);
+
+      return (
+        <div>
+          <h2>Count: {count}</h2>
+          <button onClick={() => appState.count++}>
+            Increment
+          </button>
+          <button onClick={() => appState.count--}>
+            Decrement
+          </button>
+          <button onClick={() => appState.count = 0}>
+            Reset
+          </button>
+        </div>
+      );
+    }
+
+    function UserProfile() {
+      const user = useStore(appState, (state) => state.user);
+
+      // Load user data from API
+      useInitSync(appState, async (state) => {
+        state.user.name = "Loading...";
+        try {
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const userData = { name: "John Doe", isLoggedIn: true };
+          state.user = userData;
+        } catch (error) {
+          state.user.name = "Error loading user";
+        }
+      });
+
+      return (
+        <div>
+          <h3>User: {user.name}</h3>
+          <p>Status: {user.isLoggedIn ? "Logged In" : "Guest"}</p>
+        </div>
+      );
+    }
+    ```
+
+  </StepperItem>
+
+  <StepperItem title="Step 5: Run Your App">
     Start your development server and see Mesa in action:
 
     ```bash
@@ -113,7 +178,7 @@ Let's build a counter application that showcases Mesa's core features:
     pnpm dev
     ```
 
-    Try clicking the buttons and notice how only the relevant components re-render!
+    Try clicking the buttons and notice how only the relevant components re-render! The counter will now persist between page refreshes, and user data loads asynchronously.
 
   </StepperItem>
 </Stepper>
@@ -132,7 +197,15 @@ This simple example showcases Mesa's core benefits:
 
 - `proxy()` creates reactive state
 - `useStore()` subscribes to specific data
+- `useInitSync()` handles async initialization
 - Direct mutations trigger updates automatically
+
+### Async Initialization
+
+- `useInitSync()` runs once per store per component tree
+- Supports async operations like API calls and localStorage
+- Maintains loading states and error handling patterns
+- Ensures consistent initialization across your application
 
 ### Performance
 
@@ -144,9 +217,9 @@ This simple example showcases Mesa's core benefits:
 
 Now that you've built your first Mesa app, explore these topics:
 
-- **[API Reference](/docs/api/proxy)** - Deep dive into `proxy()` and `useStore()`
+- **[API Reference](/docs/api/proxy)** - Deep dive into `proxy()`, `useStore()`, and `useInitSync()`
+- **[API Integration Guide](/docs/guides/integration)** - Complete patterns for building production apps
 - **[Fine-Grained Reactivity](/docs/guides/fine-grained)** - Understanding how Mesa tracks dependencies
-- **[Performance Guide](/docs/guides/performance)** - Optimizing your Mesa applications
 - **[Examples](/docs/examples/counter)** - More practical examples and patterns
 
 <Note type="success">

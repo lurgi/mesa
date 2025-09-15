@@ -1,16 +1,13 @@
 {
   "name": "mesa-react",
   "private": false,
-  "version": "0.0.10",
+  "version": "0.1.1",
   "type": "module",
-  "main": "./dist/mesa.umd.cjs",
-  "module": "./dist/mesa.js",
-  "types": "./dist/src/main.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/main.d.ts",
       "import": "./dist/mesa.js",
-      "require": "./dist/mesa.umd.cjs",
-      "types": "./dist/src/main.d.ts"
+      "require": "./dist/mesa.umd.cjs"
     }
   },
   "files": [
@@ -19,29 +16,33 @@
   "scripts": {
     "build": "vite build",
     "preview": "vite preview",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "test:ui": "vitest --ui",
     "dev": "cd landing && npm run dev",
-    "patch": "npm version patch && npm publish",
-    "minor": "npm version minor && npm publish",
-    "major": "npm version major && npm publish"
+    "publish-beta:patch": "npm version prerelease --preid=beta && npm publish --tag beta",
+    "publish-beta:minor": "npm version preminor --preid=beta && npm publish --tag beta",
+    "publish-beta:major": "npm version premajor --preid=beta && npm publish --tag beta",
+    "promote-beta": "npm version patch && npm publish --tag latest",
+    "update-landing": "cd landing && npm install mesa-react@beta"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@types/jest": "^30.0.0",
-    "jest": "^30.0.5",
-    "jest-environment-jsdom": "^30.0.5",
-    "ts-jest": "^29.4.0",
+    "@types/node": "^22.18.0",
+    "@vitest/ui": "^3.2.4",
+    "jsdom": "^26.1.0",
+    "react-error-boundary": "^6.0.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@types/react": ">=16.8.0",
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "@types/react": ">=18.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   }
 }

@@ -1,5 +1,9 @@
-import type { PathNotificationOptions } from "./types";
-import { notifyPathListeners, notifyGlobalListeners, getPathListeners } from "./listeners";
+import type { PathNotificationOptions } from "../types";
+import {
+  notifyPathListeners,
+  notifyGlobalListeners,
+  getPathListeners,
+} from "./listeners";
 
 const DEFAULT_OPTIONS: Required<PathNotificationOptions> = {
   notifyParents: true,
@@ -7,7 +11,10 @@ const DEFAULT_OPTIONS: Required<PathNotificationOptions> = {
   notifyArrayChanges: true,
 };
 
-export function notifyPath(path: string, options: PathNotificationOptions = {}): void {
+export function notifyPath(
+  path: string,
+  options: PathNotificationOptions = {}
+): void {
   const config = { ...DEFAULT_OPTIONS, ...options };
 
   notifyPathListeners(path);

@@ -26,6 +26,7 @@ export const ROUTES: EachRoute[] = [
     items: [
       { title: "proxy()", href: "/proxy" },
       { title: "useStore()", href: "/useStore" },
+      { title: "useInitSync()", href: "/useInitSync" },
     ],
   },
   {
@@ -33,6 +34,7 @@ export const ROUTES: EachRoute[] = [
     href: "/guides",
     noLink: true,
     items: [
+      { title: "API Integration Guide", href: "/integration" },
       { title: "Fine-Grained Reactivity", href: "/fine-grained" },
       { title: "Working with Arrays and Objects", href: "/arrays-objects" },
       // { title: "Performance Optimization", href: "/performance" },
@@ -46,9 +48,9 @@ export const ROUTES: EachRoute[] = [
     noLink: true,
     items: [
       { title: "Counter Example", href: "/counter" },
+      { title: "Shopping Cart", href: "/shopping-cart" },
+      { title: "Dashboard", href: "/dashboard" },
       { title: "Todo List", href: "/todo-list" },
-      // { title: "User Management", href: "/user-management" },
-      // { title: "Shopping Cart", href: "/shopping-cart" },
     ],
   },
 ];
